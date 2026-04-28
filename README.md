@@ -36,5 +36,5 @@ Het doel van deze applicatie is om:
 - Artin Ghandfatehi
 
 ## 🔗 Links
-- Trello:(https://trello.com/invite/b/69ea172ef0b635518570ccde/ATTIb666ee83c803f9922ba894d87f88a63b819E09C4/programming-project)
-Programming Project - Stage Monitoring Tool
+- Trello:https://trello.com/invite/b/69ea172ef0b635518570ccde/ATTIb666ee83c803f9922ba894d87f88a63b819E09C4/programming-project
+- Teams:https://teams.microsoft.com/l/channel/19%3Aqc2dTZi0_ZBfb5x0hLUtsnD5PJQ7xciro5UCIZL1jf81%40thread.tacv2/General?groupId=b03cd19c-2cf9-442a-925a-a2a54206dae6&tenantId=c2a59f2b-5d20-4b2a-a9a3-7a8605b14e3f
