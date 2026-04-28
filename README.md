@@ -28,6 +28,7 @@ Het doel van deze applicatie is om:
 ## 🛠️ Gebruikte tools
 - GitHub
 - Trello
+- Microsoft Teams
 - (later: HTML, CSS, JavaScript, ...)
 
 ## 👨‍💻 Teamleden
