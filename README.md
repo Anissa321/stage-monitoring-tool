@@ -25,11 +25,29 @@ Het doel van deze applicatie is om:
 - Evaluaties en feedback
 - Eindoverzicht per student
 
-## 🛠️ Gebruikte tools
-- GitHub
-- Trello
-- Teams
-- (later: HTML, CSS, JavaScript, ...)
+🛠️ Gebruikte tools
+
+GitHub
+Trello
+Teams
+Supabase (cloud database)
+HTML
+CSS
+JavaScript
+
+🗄️ Database
+
+De applicatie maakt gebruik van een cloud database via Supabase.
+
+De database ondersteunt het beheer van:
+- gebruikers en rollen
+- stagevoorstellen
+- stageovereenkomsten
+- logboeken
+- documenten
+- evaluaties en feedback
+
+De database wordt verder uitgebreid tijdens de ontwikkeling van het project.
 
 ## 👨‍💻 Teamleden
 - Anissa Canton
