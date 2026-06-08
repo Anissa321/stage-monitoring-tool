@@ -25,3 +25,16 @@ export async function login(req, res) {
     res.status(500).json({ error: 'Server fout' })
   }
 }
+
+
+// POST /api/auth/logout
+export async function logout(req, res) {
+  try {
+    // TODO: Supabase signOut wordt toegevoegd in checkbox 2
+    // Voor nu een succesvolle respons
+    res.json({ message: 'Uitgelogd' })
+  } catch (err) {
+    console.error('Logout error:', err)
+    res.status(500).json({ error: 'Server fout bij uitloggen' })
+  }
+}
