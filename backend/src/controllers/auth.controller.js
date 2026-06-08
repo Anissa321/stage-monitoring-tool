@@ -25,16 +25,24 @@ export async function login(req, res) {
     })
 
     if (error) {
-      // Generieke foutmelding (geen user enumeration mogelijk)
       return res.status(401).json({ error: 'Ongeldige login gegevens' })
     }
 
-    // Login succesvol — stuur user info + tokens terug
+    // Profiel ophalen uit profiles tabel
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email, voornaam, achternaam, rol')
+      .eq('id', data.user.id)
+      .single()
+
+    if (profileError || !profile) {
+      console.error('Profiel niet gevonden voor user:', data.user.id)
+      return res.status(404).json({ error: 'Profiel niet gevonden' })
+    }
+
+    // Login succesvol — stuur volledige user info + tokens terug
     res.json({
-      user: {
-        id: data.user.id,
-        email: data.user.email
-      },
+      user: profile,
       session: {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -59,7 +67,6 @@ export async function logout(req, res) {
     res.json({ message: 'Uitgelogd' })
   } catch (err) {
     console.error('Logout error:', err)
-    // Logout faalt zelden — we geven altijd 200 terug
     res.json({ message: 'Uitgelogd' })
   }
 }
