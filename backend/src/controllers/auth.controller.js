@@ -70,3 +70,9 @@ export async function logout(req, res) {
     res.json({ message: 'Uitgelogd' })
   }
 }
+
+// GET /api/auth/me — huidige user opvragen (protected route)
+export async function me(req, res) {
+  // req.user is gezet door authMiddleware
+  res.json({ user: req.user })
+}

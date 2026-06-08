@@ -1,10 +1,10 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
-import { login, logout } from '../controllers/auth.controller.js'
+import { login, logout, me } from '../controllers/auth.controller.js'
+import { authMiddleware } from '../middleware/auth.js'
 
 const router = Router()
 
-// Rate limiter: max 5 login pogingen per 15 minuten per IP
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -16,6 +16,7 @@ const loginLimiter = rateLimit({
 })
 
 router.post('/login', loginLimiter, login)
-router.post('/logout', logout)
+router.post('/logout', authMiddleware, logout)
+router.get('/me', authMiddleware, me)
 
 export default router
