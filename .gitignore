@@ -1,0 +1,24 @@
+# Dependencies — voor het geval iemand per ongeluk in de root npm install runt
+node_modules/
+
+# Environment variabelen (BEVATTEN SECRETS)
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
