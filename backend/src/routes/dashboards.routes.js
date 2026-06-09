@@ -12,5 +12,11 @@ router.get('/mentor', authMiddleware, requireRole('mentor'), (req, res) => {
     user: req.user
   })
 })
-
+// GET /api/dashboards/commissie (US-10)
+router.get('/commissie', authMiddleware, requireRole('stagecommissie'), (req, res) => {
+  res.json({
+    message: 'Welkom op het stagecommissie dashboard',
+    user: req.user
+  })
+})
 export default router
