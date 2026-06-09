@@ -19,4 +19,11 @@ router.get('/commissie', authMiddleware, requireRole('stagecommissie'), (req, re
     user: req.user
   })
 })
+// GET /api/dashboards/administratie (US-12)
+router.get('/administratie', authMiddleware, requireRole('administratie'), (req, res) => {
+  res.json({
+    message: 'Welkom op het administratie dashboard',
+    user: req.user
+  })
+})
 export default router
