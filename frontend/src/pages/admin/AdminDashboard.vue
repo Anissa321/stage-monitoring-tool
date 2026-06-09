@@ -140,4 +140,66 @@ nav a.active {
   margin: 8px 0 0;
   opacity: 0.9;
 }
+.card {
+  margin: 24px 64px;
+  background: white;
+  border-radius: 22px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
+}
+
+.card-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.card-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.actions {
+  padding: 24px 28px;
+}
+
+.action-card {
+  width: 280px;
+  border: 2px solid #991b1b;
+  border-radius: 18px;
+  padding: 22px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.action-card:hover {
+  background: #fff7f7;
+}
+
+.action-icon {
+  width: 44px;
+  height: 44px;
+  background: #fee2e2;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+}
+
+.action-card h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.action-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
 </style>
