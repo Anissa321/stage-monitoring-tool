@@ -1,5 +1,5 @@
 <template>
-  <main class="docent-page">
+  <main class="mentor-page">
     <header class="topbar">
       <div class="brand">
         <div class="logo-circle">SM</div>
@@ -8,26 +8,85 @@
 
       <nav>
         <a class="active">Dashboard</a>
-        <a>Studenten</a>
+        <a>Stagiairs</a>
+        <a>Logboeken</a>
         <a>Evaluaties</a>
       </nav>
 
       <div class="profile">
-        <span>Jan De Vries</span>
-        <div class="avatar">JD</div>
+        <span>Sven Janssens</span>
+        <div class="avatar">SJ</div>
       </div>
     </header>
 
     <section class="hero">
-      <p class="label">Docentenportaal</p>
-      <h1>Welkom terug, Jan</h1>
+      <p class="label">Mentor Dashboard</p>
+      <h1>Welkom terug, Sven</h1>
+      <p>Acme Corp • Je begeleidt 2 stagiairs</p>
     </section>
 
     <section class="card">
       <div class="card-header">
         <div>
-          <h2>Mijn studenten</h2>
-          <p>Overzicht van de stagevoortgang</p>
+          <h2>Mijn stagiairs</h2>
+          <p>Overzicht van studenten die jij begeleidt tijdens hun stage</p>
+        </div>
+      </div>
+
+      <div class="student-grid">
+        <article class="student-card">
+          <div class="student-top">
+            <div class="student-avatar blue">AC</div>
+            <div>
+              <h3>Anissa Canton</h3>
+              <p>anissa.canton@student.ehb.be</p>
+              <span class="badge green">Op schema</span>
+            </div>
+          </div>
+
+          <p class="meta">Stage: Acme Corp • Week 12 / 16</p>
+          <p class="progress-text">Logboeken: 52 / 65</p>
+
+          <div class="progress">
+            <div class="progress-fill green-fill"></div>
+          </div>
+
+          <div class="card-actions">
+            <button class="primary-btn">Bekijk logboeken</button>
+            <button class="secondary-btn">Evaluatie</button>
+          </div>
+        </article>
+
+        <article class="student-card">
+          <div class="student-top">
+            <div class="student-avatar orange-avatar">TJ</div>
+            <div>
+              <h3>Tom Janssens</h3>
+              <p>tom.janssens@student.ehb.be</p>
+              <span class="badge orange">Logboek mist</span>
+            </div>
+          </div>
+
+          <p class="meta">Stage: TechBV • Week 12 / 16</p>
+          <p class="progress-text">Logboeken: 48 / 65</p>
+
+          <div class="progress">
+            <div class="progress-fill orange-fill"></div>
+          </div>
+
+          <div class="card-actions">
+            <button class="primary-btn">Bekijk logboeken</button>
+            <button class="secondary-btn">Evaluatie</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Logboeken te tekenen</h2>
+          <p>5 logboeken wachten op jouw aftekening</p>
         </div>
       </div>
 
@@ -35,7 +94,7 @@
         <thead>
           <tr>
             <th>Student</th>
-            <th>Bedrijf</th>
+            <th>Datum</th>
             <th>Week</th>
             <th>Status</th>
             <th>Actie</th>
@@ -45,87 +104,51 @@
         <tbody>
           <tr>
             <td class="name">Anissa Canton</td>
-            <td>Acme Corp</td>
-            <td>Week 12 / 16</td>
-            <td><span class="badge green">Op schema</span></td>
-            <td><button class="icon-btn">Bekijk</button></td>
+            <td>Maandag 12 mei 2026</td>
+            <td>Week 12</td>
+            <td><span class="badge orange">Wacht op aftekening</span></td>
+            <td><button class="icon-btn">Aftekenen</button></td>
+          </tr>
+
+          <tr>
+            <td class="name">Anissa Canton</td>
+            <td>Dinsdag 13 mei 2026</td>
+            <td>Week 12</td>
+            <td><span class="badge orange">Wacht op aftekening</span></td>
+            <td><button class="icon-btn">Aftekenen</button></td>
           </tr>
 
           <tr>
             <td class="name">Tom Janssens</td>
-            <td>TechBV</td>
-            <td>Week 12 / 16</td>
-            <td><span class="badge orange">Logboek mist</span></td>
-            <td><button class="icon-btn">Bekijk</button></td>
+            <td>Maandag 12 mei 2026</td>
+            <td>Week 12</td>
+            <td><span class="badge orange">Wacht op aftekening</span></td>
+            <td><button class="icon-btn">Aftekenen</button></td>
           </tr>
 
           <tr>
-            <td class="name">Sara De Vos</td>
-            <td>DataLab</td>
-            <td>Week 12 / 16</td>
-            <td><span class="badge green">Op schema</span></td>
-            <td><button class="icon-btn">Bekijk</button></td>
+            <td class="name">Tom Janssens</td>
+            <td>Dinsdag 13 mei 2026</td>
+            <td>Week 12</td>
+            <td><span class="badge orange">Wacht op aftekening</span></td>
+            <td><button class="icon-btn">Aftekenen</button></td>
           </tr>
 
           <tr>
-            <td class="name">Mohammed El Idrissi</td>
-            <td>WebStudio</td>
-            <td>Week 12 / 16</td>
-            <td><span class="badge red">Achterstand</span></td>
-            <td><button class="icon-btn">Bekijk</button></td>
-          </tr>
-
-          <tr>
-            <td class="name">Emma Peeters</td>
-            <td>InnovateBE</td>
-            <td>Week 12 / 16</td>
-            <td><span class="badge green">Op schema</span></td>
-            <td><button class="icon-btn">Bekijk</button></td>
+            <td class="name">Anissa Canton</td>
+            <td>Woensdag 14 mei 2026</td>
+            <td>Week 12</td>
+            <td><span class="badge orange">Wacht op aftekening</span></td>
+            <td><button class="icon-btn">Aftekenen</button></td>
           </tr>
         </tbody>
       </table>
     </section>
-
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <h2>Aankomende afspraken</h2>
-          <p>Geplande besprekingen en presentaties</p>
-        </div>
-      </div>
-
-      <div class="appointments">
-        <div class="appointment">
-          <div class="date-box">
-            <strong>15</strong>
-            <span>MEI</span>
-          </div>
-
-          <div class="appt-info">
-            <h3>Tussentijdse bespreking — Anissa Canton</h3>
-            <p>14:00 · Online / lokaal overleg</p>
-          </div>
-
-          <button class="secondary-btn">Bekijk</button>
-        </div>
-
-        <div class="appointment">
-          <div class="date-box">
-            <strong>20</strong>
-            <span>MEI</span>
-          </div>
-
-          <div class="appt-info">
-            <h3>Eindpresentatie — Tom Janssens</h3>
-            <p>10:00 · Eindbeoordeling stage</p>
-          </div>
-
-          <button class="secondary-btn">Bekijk</button>
-        </div>
-      </div>
-    </section>
   </main>
 </template>
+
+<script setup>
+</script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -135,13 +158,12 @@
   font-family: 'Inter', sans-serif;
 }
 
-.docent-page {
+.mentor-page {
   min-height: 100vh;
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   color: #111827;
 }
 
-/* Topbar */
 .topbar {
   height: 72px;
   background: rgba(255, 255, 255, 0.95);
@@ -188,7 +210,6 @@ nav a {
   padding: 10px 18px;
   border-radius: 12px;
   cursor: pointer;
-  transition: 0.2s ease;
 }
 
 nav a:hover,
@@ -217,7 +238,6 @@ nav a.active {
   font-size: 13px;
 }
 
-/* Hero */
 .hero {
   margin: 40px 64px 28px;
   padding: 42px;
@@ -238,11 +258,15 @@ nav a.active {
 
 .hero h1 {
   font-size: 38px;
-  margin: 0;
+  margin: 0 0 8px;
   font-weight: 800;
 }
 
-/* Cards */
+.hero p:last-child {
+  margin: 0;
+  opacity: 0.9;
+}
+
 .card {
   margin: 24px 64px;
   background: white;
@@ -268,7 +292,131 @@ nav a.active {
   font-size: 14px;
 }
 
-/* Table */
+.student-grid {
+  padding: 28px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28px;
+}
+
+.student-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 24px;
+  background: #ffffff;
+  transition: 0.25s ease;
+}
+
+.student-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+}
+
+.student-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.student-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+
+.blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.orange-avatar {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.student-card h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.student-card p {
+  margin: 4px 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.meta {
+  margin-top: 22px !important;
+  color: #334155 !important;
+  font-weight: 500;
+}
+
+.progress-text {
+  margin-top: 12px !important;
+}
+
+.progress {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 8px 0 18px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.green-fill {
+  width: 80%;
+  background: #22c55e;
+}
+
+.orange-fill {
+  width: 74%;
+  background: #f59e0b;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.primary-btn,
+.secondary-btn,
+.icon-btn {
+  border: 1px solid #e2e8f0;
+  padding: 9px 15px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background: #991b1b;
+  color: white;
+  border-color: #991b1b;
+}
+
+.secondary-btn,
+.icon-btn {
+  background: white;
+  color: #334155;
+}
+
+.secondary-btn:hover,
+.icon-btn:hover,
+.primary-btn:hover {
+  background: #7f1d1d;
+  color: white;
+  border-color: #7f1d1d;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -289,7 +437,6 @@ td {
   border-top: 1px solid #f1f5f9;
   font-size: 14px;
   color: #334155;
-  transition: 0.25s ease;
 }
 
 tbody tr {
@@ -301,11 +448,6 @@ tbody tr:hover {
   background: #fafafa;
   transform: scale(1.002);
   box-shadow: inset 5px 0 0 #991b1b;
-}
-
-tbody tr:hover td {
-  color: #111827;
-  background: #fafafa;
 }
 
 .name {
@@ -330,87 +472,13 @@ tbody tr:hover td {
   color: #b45309;
 }
 
-.red {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.icon-btn,
-.secondary-btn {
-  border: 1px solid #e2e8f0;
-  background: white;
-  color: #334155;
-  padding: 9px 15px;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.icon-btn:hover,
-.secondary-btn:hover {
-  background: #991b1b;
-  color: white;
-  border-color: #991b1b;
-}
-
-/* Appointments */
-.appointments {
-  padding: 8px 28px 20px;
-}
-
-.appointment {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 0;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.appointment:last-child {
-  border-bottom: none;
-}
-
-.date-box {
-  width: 58px;
-  height: 58px;
-  border-radius: 16px;
-  background: #fee2e2;
-  color: #991b1b;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.date-box strong {
-  font-size: 20px;
-}
-
-.date-box span {
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.appt-info {
-  flex: 1;
-}
-
-.appt-info h3 {
-  margin: 0 0 5px;
-  font-size: 15px;
-}
-
-.appt-info p {
-  margin: 0;
-  color: #64748b;
-  font-size: 13px;
-}
-
-/* Responsive */
 @media (max-width: 900px) {
   .topbar {
     padding: 0 20px;
+  }
+
+  nav {
+    display: none;
   }
 
   .hero,
@@ -425,6 +493,10 @@ tbody tr:hover td {
 
   .hero h1 {
     font-size: 30px;
+  }
+
+  .student-grid {
+    grid-template-columns: 1fr;
   }
 
   table {
