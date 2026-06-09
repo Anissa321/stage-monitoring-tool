@@ -230,4 +230,54 @@ button {
   border-radius: 8px;
   cursor: pointer;
 }
+
+.topbar strong {
+  font-size: 15px;
+  color: #1a1d2e;
+}
+ 
+nav a:hover {
+  color: #1a1d2e;
+}
+ 
+tr:hover td {
+  background: #fafbff;
+}
+ 
+button:hover {
+  background: #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 16px;
+  }
+ 
+  nav {
+    gap: 16px;
+  }
+ 
+  .welcome,
+  .section {
+    margin: 20px 16px;
+  }
+ 
+  .welcome h1 {
+    font-size: 22px;
+  }
+ 
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+ 
+  .appointment {
+    grid-template-columns: 40px 1fr;
+    grid-template-rows: auto auto;
+  }
+ 
+  .appointment button {
+    grid-column: 2;
+  }
+}
 </style>
