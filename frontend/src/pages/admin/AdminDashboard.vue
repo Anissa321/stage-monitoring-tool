@@ -22,6 +22,20 @@
       <h1>Welkom terug, Sarah</h1>
       <p class="subtitle">Beheer het stagesysteem en houd het overzicht</p>
     </section>
+   <section class="card">
+  <div class="card-header">
+    <div>
+      <h2>Status</h2>
+      <p>Overzicht van de huidige competentie-instellingen</p>
+    </div>
+  </div>
+
+  <div class="status-row">
+    <span>4 actieve competenties</span>
+    <span>Totaal gewicht 100%</span>
+    <span>Laatst gewijzigd 8 mei</span>
+  </div>
+</section>
   </main>
 </template>
 
@@ -201,5 +215,17 @@ nav a.active {
   margin: 0;
   color: #64748b;
   font-size: 13px;
+}
+.status-row {
+  padding: 24px 28px;
+  display: flex;
+  gap: 32px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.status-row span::before {
+  content: "✓ ";
+  color: #15803d;
 }
 </style>
