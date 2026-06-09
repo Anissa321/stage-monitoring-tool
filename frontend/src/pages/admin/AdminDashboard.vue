@@ -19,23 +19,58 @@
 
     <section class="hero">
       <p class="label">Administratieportaal</p>
-      <h1>Welkom terug, Sarah</h1>
-      <p class="subtitle">Beheer het stagesysteem en houd het overzicht</p>
+      <h1>Welkom terug, Sarah </h1>
+      <p class="subtitle">
+        Beheer het stagesysteem en houd het overzicht
+      </p>
     </section>
-   <section class="card">
-  <div class="card-header">
-    <div>
-      <h2>Status</h2>
-      <p>Overzicht van de huidige competentie-instellingen</p>
-    </div>
-  </div>
 
-  <div class="status-row">
-    <span>4 actieve competenties</span>
-    <span>Totaal gewicht 100%</span>
-    <span>Laatst gewijzigd 8 mei</span>
-  </div>
-</section>
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Rol van de administratie</h2>
+          <p>
+            De administratie beheert enkel het competentieprofiel waarop
+            stages worden geëvalueerd.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Snelle acties</h2>
+          <p>Beheer de belangrijkste onderdelen van het stagesysteem</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="action-card">
+          <div class="action-icon">🎯</div>
+
+          <div>
+            <h3>Competenties beheren</h3>
+            <p>Bewerk profielen en gewichten</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Status</h2>
+          <p>Overzicht van de huidige competentie-instellingen</p>
+        </div>
+      </div>
+
+      <div class="status-row">
+        <span>4 actieve competenties</span>
+        <span>Totaal gewicht 100%</span>
+        <span>Laatst gewijzigd 8 mei</span>
+      </div>
+    </section>
   </main>
 </template>
 
@@ -52,6 +87,8 @@
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   color: #111827;
 }
+
+/* Topbar */
 
 .topbar {
   height: 72px;
@@ -99,8 +136,10 @@ nav a {
   padding: 10px 18px;
   border-radius: 12px;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
+nav a:hover,
 nav a.active {
   background: #fee2e2;
   color: #991b1b;
@@ -125,6 +164,8 @@ nav a.active {
   place-items: center;
   font-size: 13px;
 }
+
+/* Hero */
 
 .hero {
   margin: 40px 64px 28px;
@@ -151,9 +192,12 @@ nav a.active {
 }
 
 .subtitle {
-  margin: 8px 0 0;
+  margin-top: 10px;
   opacity: 0.9;
 }
+
+/* Cards */
+
 .card {
   margin: 24px 64px;
   background: white;
@@ -179,6 +223,8 @@ nav a.active {
   font-size: 14px;
 }
 
+/* Acties */
+
 .actions {
   padding: 24px 28px;
 }
@@ -189,7 +235,7 @@ nav a.active {
   border-radius: 18px;
   padding: 22px;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: 0.25s ease;
 }
 
 .action-card:hover {
@@ -203,7 +249,7 @@ nav a.active {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .action-card h3 {
@@ -216,16 +262,54 @@ nav a.active {
   color: #64748b;
   font-size: 13px;
 }
+
+/* Status */
+
 .status-row {
   padding: 24px 28px;
   display: flex;
-  gap: 32px;
-  color: #334155;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.status-row span {
   font-weight: 600;
+  color: #334155;
 }
 
 .status-row span::before {
   content: "✓ ";
-  color: #15803d;
+  color: #16a34a;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .topbar {
+    padding: 0 20px;
+  }
+
+  .hero,
+  .card {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+
+  .hero {
+    padding: 30px;
+  }
+
+  .hero h1 {
+    font-size: 30px;
+  }
+
+  .status-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .action-card {
+    width: 100%;
+  }
 }
 </style>
