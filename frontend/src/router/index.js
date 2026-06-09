@@ -12,12 +12,19 @@ const routes = [
     path: '/commissie',
     name: 'CommissieDashboard',
     component: CommissieDashboard
-  }
+  },
+  {
+  path: '/mentor',
+  name: 'MentorDashboard',
+  component: MentorDashboard
+}
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
 })
+
+
 
 export default router
