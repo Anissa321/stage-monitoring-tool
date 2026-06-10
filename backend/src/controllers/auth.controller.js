@@ -19,6 +19,9 @@ export async function login(req, res) {
       email,
       password
     })
+console.log('EMAIL:', email)
+console.log('PASSWORD:', password)
+console.log('SUPABASE ERROR:', error)
 
     if (error) {
       return res.status(401).json({ error: 'Ongeldige login gegevens' })
