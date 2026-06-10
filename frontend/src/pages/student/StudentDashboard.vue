@@ -1,3 +1,29 @@
+<script setup>
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+async function logout() {
+  const token = localStorage.getItem('token')
+
+  try {
+    await fetch('http://localhost:3000/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  } catch (err) {
+    console.log(err)
+  }
+
+  localStorage.removeItem('token')
+  localStorage.removeItem('role')
+  localStorage.removeItem('user')
+
+  router.push('/login')
+}
+</script>
 <template>
   <main class="student-page">
     <header class="topbar">
@@ -14,9 +40,14 @@
       </nav>
 
       <div class="profile">
-        <span>Anissa</span>
-        <div class="avatar">A</div>
-      </div>
+  <span>Anissa</span>
+
+  <button class="logout-btn" @click="logout">
+    Uitloggen
+  </button>
+
+  <div class="avatar">A</div>
+</div>
     </header>
 
     <section class="welcome">
@@ -160,7 +191,21 @@ nav a.active {
   place-items: center;
   font-size: 13px;
 }
+.logout-btn {
+  border: none;
+  background: #991b1b;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
 
+.logout-btn:hover {
+  background: #7f1d1d;
+}
 .welcome {
   margin: 40px 64px 24px;
 }

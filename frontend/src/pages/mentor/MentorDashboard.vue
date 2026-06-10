@@ -1,336 +1,382 @@
+<script setup>
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+async function logout() {
+  const token = localStorage.getItem('token')
+
+  try {
+    await fetch('http://localhost:3000/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  } catch (err) {
+    console.log(err)
+  }
+
+  localStorage.removeItem('token')
+  localStorage.removeItem('role')
+  localStorage.removeItem('user')
+
+  router.push('/login')
+}
+</script>
+
 <template>
   <main class="mentor-page">
-    <p class="page-label">Mentor Dashboard</p>
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-circle">SM</div>
+        <span>Stage Monitor</span>
+      </div>
 
-    <section class="dashboard-shell">
-      <header class="topbar">
-        <div class="brand">Stage Monitor</div>
+      <nav>
+        <a class="active">Dashboard</a>
+        <a>Stagiairs</a>
+        <a>Logboeken</a>
+        <a>Evaluaties</a>
+      </nav>
 
-        <nav>
-          <a class="active">Dashboard</a>
-          <a>Stagiairs</a>
-          <a>Evaluaties</a>
-        </nav>
+      <div class="profile">
+        <span>Peter Mentor</span>
 
-        <div class="profile">
-          <div class="avatar">SJ</div>
-          <span>Sven Janssens ▾</span>
+        <button class="logout-btn" @click="logout">
+          Uitloggen
+        </button>
+
+        <div class="avatar">PM</div>
+      </div>
+    </header>
+
+    <section class="hero">
+      <p class="label">Mentor Dashboard</p>
+      <h1>Welkom terug, Peter</h1>
+      <p>Acme Corp • Je begeleidt 2 stagiairs</p>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Mijn stagiairs</h2>
+          <p>Overzicht van studenten die jij begeleidt tijdens hun stage</p>
         </div>
-      </header>
+      </div>
 
-      <section class="hero">
-        <h1>Welkom terug, Sven!</h1>
-        <p>Acme Corp • Je begeleidt 2 stagiairs</p>
-      </section>
+      <div class="student-grid">
+        <article class="student-card">
+          <div class="student-top">
+            <div class="student-avatar blue">AC</div>
 
-      <section class="content">
-        <h2>Mijn stagiairs</h2>
-
-        <div class="student-grid">
-          <article class="student-card">
-            <div class="student-top">
-              <div class="student-avatar blue">AC</div>
-
-              <div>
-                <h3>Anissa Canton</h3>
-                <p>anissa.canton@student.ehb.be</p>
-                <span class="badge green">● Op schema</span>
-              </div>
+            <div>
+              <h3>Anissa Canton</h3>
+              <p>anissa.canton@student.ehb.be</p>
+              <span class="badge green">Op schema</span>
             </div>
+          </div>
 
-            <p class="meta">Stage: Acme Corp • Week 12/16</p>
-            <p class="progress-text">Logboeken: 52/65</p>
+          <p class="meta">Stage: Acme Corp • Week 12 / 16</p>
+          <p class="progress-text">Logboeken: 52 / 65</p>
 
-            <div class="progress">
-              <div class="progress-fill green-fill"></div>
+          <div class="progress">
+            <div class="progress-fill green-fill"></div>
+          </div>
+
+          <div class="card-actions">
+            <button class="primary-btn">Bekijk logboeken</button>
+            <button class="secondary-btn">Evaluatie</button>
+          </div>
+        </article>
+
+        <article class="student-card">
+          <div class="student-top">
+            <div class="student-avatar orange-avatar">TJ</div>
+
+            <div>
+              <h3>Tom Janssens</h3>
+              <p>tom.janssens@student.ehb.be</p>
+              <span class="badge orange">Logboek mist</span>
             </div>
+          </div>
 
-            <div class="card-actions">
-              <button class="primary-btn">Bekijk logboeken</button>
-              <button class="outline-btn">Evaluatie</button>
-            </div>
-          </article>
+          <p class="meta">Stage: TechBV • Week 12 / 16</p>
+          <p class="progress-text">Logboeken: 48 / 65</p>
 
-          <article class="student-card">
-            <div class="student-top">
-              <div class="student-avatar orange">TJ</div>
+          <div class="progress">
+            <div class="progress-fill orange-fill"></div>
+          </div>
 
-              <div>
-                <h3>Tom Janssens</h3>
-                <p>tom.janssens@student.ehb.be</p>
-                <span class="badge orange-badge">⚠ Logboek mist</span>
-              </div>
-            </div>
+          <div class="card-actions">
+            <button class="primary-btn">Bekijk logboeken</button>
+            <button class="secondary-btn">Evaluatie</button>
+          </div>
+        </article>
+      </div>
+    </section>
 
-            <p class="meta">Stage: TechBV • Week 12/16</p>
-            <p class="progress-text">Logboeken: 48/65</p>
-
-            <div class="progress">
-              <div class="progress-fill orange-fill"></div>
-            </div>
-
-            <div class="card-actions">
-              <button class="primary-btn">Bekijk logboeken</button>
-              <button class="outline-btn">Evaluatie</button>
-            </div>
-          </article>
-        </div>
-
-        <section class="table-section">
+    <section class="card">
+      <div class="card-header">
+        <div>
           <h2>Logboeken te tekenen</h2>
           <p>5 logboeken wachten op jouw aftekening</p>
+        </div>
+      </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Datum</th>
-                <th>Week</th>
-                <th>Status</th>
-                <th>Actie</th>
-              </tr>
-            </thead>
+      <table>
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Datum</th>
+            <th>Week</th>
+            <th>Status</th>
+            <th>Actie</th>
+          </tr>
+        </thead>
 
-            <tbody>
-              <tr>
-                <td>Anissa Canton</td>
-                <td>Maandag 12 mei 2026</td>
-                <td>Week 12</td>
-                <td><span class="status-pill">Wacht op aftekening</span></td>
-                <td><button class="link-btn">Aftekenen →</button></td>
-              </tr>
+        <tbody>
+          <tr>
+            <td class="name">Anissa Canton</td>
+            <td>Maandag 12 mei 2026</td>
+            <td>Week 12</td>
+            <td><span class="badge orange">Wacht op aftekening</span></td>
+            <td><button class="icon-btn">Aftekenen</button></td>
+          </tr>
 
-              <tr>
-                <td>Anissa Canton</td>
-                <td>Dinsdag 13 mei 2026</td>
-                <td>Week 12</td>
-                <td><span class="status-pill">Wacht op aftekening</span></td>
-                <td><button class="link-btn">Aftekenen →</button></td>
-              </tr>
-
-              <tr>
-                <td>Tom Janssens</td>
-                <td>Maandag 12 mei 2026</td>
-                <td>Week 12</td>
-                <td><span class="status-pill">Wacht op aftekening</span></td>
-                <td><button class="link-btn">Aftekenen →</button></td>
-              </tr>
-
-              <tr>
-                <td>Tom Janssens</td>
-                <td>Dinsdag 13 mei 2026</td>
-                <td>Week 12</td>
-                <td><span class="status-pill">Wacht op aftekening</span></td>
-                <td><button class="link-btn">Aftekenen →</button></td>
-              </tr>
-
-              <tr>
-                <td>Anissa Canton</td>
-                <td>Woensdag 14 mei 2026</td>
-                <td>Week 12</td>
-                <td><span class="status-pill">Wacht op aftekening</span></td>
-                <td><button class="link-btn">Aftekenen →</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-      </section>
+          <tr>
+            <td class="name">Tom Janssens</td>
+            <td>Dinsdag 13 mei 2026</td>
+            <td>Week 12</td>
+            <td><span class="badge orange">Wacht op aftekening</span></td>
+            <td><button class="icon-btn">Aftekenen</button></td>
+          </tr>
+        </tbody>
+      </table>
     </section>
   </main>
 </template>
 
-<script setup>
-</script>
-
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
 .mentor-page {
   min-height: 100vh;
-  background: #1f1f1f;
-  padding: 32px;
-  font-family: Arial, sans-serif;
-}
-
-.page-label {
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  margin-bottom: 22px;
-}
-
-.dashboard-shell {
-  min-height: 860px;
-  background: #f3f4f6;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  color: #111827;
 }
 
 .topbar {
-  height: 64px;
-  background: white;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  padding: 0 38px;
+  height: 72px;
+  background: rgba(255, 255, 255, 0.95);
   border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 64px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-weight: 800;
-  color: #111827;
+  color: #991b1b;
+}
+
+.logo-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #991b1b;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
 }
 
 nav {
   display: flex;
-  gap: 32px;
+  gap: 8px;
 }
 
 nav a {
-  font-size: 13px;
-  color: #6b7280;
   text-decoration: none;
-  padding: 23px 0;
+  color: #64748b;
+  font-size: 14px;
   font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 12px;
+  cursor: pointer;
 }
 
+nav a:hover,
 nav a.active {
-  color: #2563eb;
-  border-bottom: 2px solid #2563eb;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .profile {
-  justify-self: end;
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #111827;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  display: grid;
+  place-items: center;
   font-size: 13px;
 }
 
-.avatar,
+.logout-btn {
+  border: none;
+  background: #991b1b;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: #7f1d1d;
+}
+
+.hero {
+  margin: 40px 64px 28px;
+  padding: 42px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #991b1b, #dc2626);
+  color: white;
+  box-shadow: 0 18px 40px rgba(153, 27, 27, 0.22);
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.9;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hero h1 {
+  font-size: 38px;
+  margin: 0 0 8px;
+  font-weight: 800;
+}
+
+.hero p:last-child {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.card {
+  margin: 24px 64px;
+  background: white;
+  border-radius: 22px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
+}
+
+.card-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.card-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.student-grid {
+  padding: 28px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28px;
+}
+
+.student-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 24px;
+  background: #ffffff;
+}
+
+.student-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .student-avatar {
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-weight: 800;
 }
 
-.avatar {
-  width: 30px;
-  height: 30px;
-  background: #bbf7d0;
-  color: #059669;
-}
-
-.hero {
-  padding: 34px 48px 42px;
-}
-
-.hero h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
-  color: #111827;
-}
-
-.hero p,
-.content > p,
-.table-section p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.content {
-  padding: 0 48px 48px;
-}
-
-.content h2,
-.table-section h2 {
-  margin: 0 0 16px;
-  color: #111827;
-  font-size: 20px;
-}
-
-.student-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 54px;
-  margin-bottom: 22px;
-}
-
-.student-card {
-  background: white;
-  border-radius: 12px;
-  padding: 26px 32px 18px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-
-.student-top {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-}
-
-.student-avatar {
-  width: 54px;
-  height: 54px;
-}
-
-.student-avatar.blue {
+.blue {
   background: #dbeafe;
   color: #1d4ed8;
 }
 
-.student-avatar.orange {
+.orange-avatar {
   background: #fed7aa;
   color: #c2410c;
 }
 
 .student-card h3 {
   margin: 0;
-  font-size: 17px;
-  color: #111827;
+  font-size: 16px;
 }
 
 .student-card p {
   margin: 4px 0;
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.badge {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.green {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.orange-badge {
-  background: #ffedd5;
-  color: #9a3412;
+  color: #64748b;
+  font-size: 13px;
 }
 
 .meta {
-  margin-top: 24px !important;
-  color: #111827 !important;
-  font-size: 13px !important;
-}
-
-.progress-text {
-  margin-top: 10px !important;
+  margin-top: 22px !important;
+  color: #334155 !important;
+  font-weight: 500;
 }
 
 .progress {
-  height: 7px;
+  height: 8px;
   background: #e5e7eb;
   border-radius: 999px;
   overflow: hidden;
-  margin: 8px 0 16px;
+  margin: 8px 0 18px;
 }
 
 .progress-fill {
@@ -340,7 +386,7 @@ nav a.active {
 
 .green-fill {
   width: 80%;
-  background: #10b981;
+  background: #22c55e;
 }
 
 .orange-fill {
@@ -355,95 +401,100 @@ nav a.active {
 }
 
 .primary-btn,
-.outline-btn {
-  border-radius: 7px;
-  padding: 10px 24px;
-  font-size: 12px;
-  font-weight: 800;
+.secondary-btn,
+.icon-btn {
+  border: 1px solid #e2e8f0;
+  padding: 9px 15px;
+  border-radius: 12px;
+  font-weight: 600;
   cursor: pointer;
 }
 
 .primary-btn {
-  border: none;
-  background: #2563eb;
+  background: #991b1b;
   color: white;
+  border-color: #991b1b;
 }
 
-.outline-btn {
-  border: 1px solid #cbd5e1;
+.secondary-btn,
+.icon-btn {
   background: white;
-  color: #111827;
+  color: #334155;
 }
 
-.table-section {
-  margin-top: 18px;
-}
-
-.table-section h2 {
-  margin-bottom: 4px;
+.primary-btn:hover,
+.secondary-btn:hover,
+.icon-btn:hover {
+  background: #7f1d1d;
+  color: white;
+  border-color: #7f1d1d;
 }
 
 table {
   width: 100%;
-  margin-top: 22px;
   border-collapse: collapse;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 18px 40px;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 13px;
 }
 
 th {
+  background: #f8fafc;
+  color: #94a3b8;
+  text-align: left;
+  font-size: 12px;
   text-transform: uppercase;
-  color: #6b7280;
-  font-size: 11px;
-  background: #f9fafb;
+  letter-spacing: 0.7px;
+  padding: 16px 28px;
 }
 
 td {
-  color: #111827;
+  padding: 20px 28px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #334155;
 }
 
-.status-pill {
-  background: #fef3c7;
-  color: #92400e;
-  padding: 7px 14px;
+.name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.badge {
+  padding: 7px 13px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.link-btn {
-  border: none;
-  background: transparent;
-  color: #2563eb;
-  font-weight: 800;
-  cursor: pointer;
+.green {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.orange {
+  background: #fef3c7;
+  color: #b45309;
 }
 
 @media (max-width: 900px) {
-  .mentor-page {
-    padding: 0;
-  }
-
   .topbar {
-    grid-template-columns: 1fr auto;
+    padding: 0 20px;
   }
 
   nav {
     display: none;
   }
 
+  .hero,
+  .card {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+
+  .hero h1 {
+    font-size: 30px;
+  }
+
   .student-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
   }
 
   table {

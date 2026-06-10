@@ -1,5 +1,32 @@
+<script setup>
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+async function logout() {
+  const token = localStorage.getItem('token')
+
+  try {
+    await fetch('http://localhost:3000/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  } catch (err) {
+    console.log(err)
+  }
+
+  localStorage.removeItem('token')
+  localStorage.removeItem('role')
+  localStorage.removeItem('user')
+
+  router.push('/login')
+}
+</script>
+
 <template>
-  <main class="mentor-page">
+  <main class="docent-page">
     <header class="topbar">
       <div class="brand">
         <div class="logo-circle">SM</div>
@@ -14,22 +41,27 @@
       </nav>
 
       <div class="profile">
-        <span>Sven Janssens</span>
-        <div class="avatar">SJ</div>
+        <span>Jan De Vries</span>
+
+        <button class="logout-btn" @click="logout">
+          Uitloggen
+        </button>
+
+        <div class="avatar">JD</div>
       </div>
     </header>
 
     <section class="hero">
-      <p class="label">Mentor Dashboard</p>
-      <h1>Welkom terug, Sven</h1>
-      <p>Acme Corp • Je begeleidt 2 stagiairs</p>
+      <p class="label">Docent Dashboard</p>
+      <h1>Welkom terug, Jan</h1>
+      <p>Je volgt momenteel 2 studenten op</p>
     </section>
 
     <section class="card">
       <div class="card-header">
         <div>
-          <h2>Mijn stagiairs</h2>
-          <p>Overzicht van studenten die jij begeleidt tijdens hun stage</p>
+          <h2>Mijn studenten</h2>
+          <p>Overzicht van studenten die jij opvolgt tijdens hun stage</p>
         </div>
       </div>
 
@@ -37,6 +69,7 @@
         <article class="student-card">
           <div class="student-top">
             <div class="student-avatar blue">AC</div>
+
             <div>
               <h3>Anissa Canton</h3>
               <p>anissa.canton@student.ehb.be</p>
@@ -60,6 +93,7 @@
         <article class="student-card">
           <div class="student-top">
             <div class="student-avatar orange-avatar">TJ</div>
+
             <div>
               <h3>Tom Janssens</h3>
               <p>tom.janssens@student.ehb.be</p>
@@ -85,8 +119,8 @@
     <section class="card">
       <div class="card-header">
         <div>
-          <h2>Logboeken te tekenen</h2>
-          <p>5 logboeken wachten op jouw aftekening</p>
+          <h2>Te bekijken logboeken</h2>
+          <p>Logboeken die wachten op controle</p>
         </div>
       </div>
 
@@ -106,49 +140,22 @@
             <td class="name">Anissa Canton</td>
             <td>Maandag 12 mei 2026</td>
             <td>Week 12</td>
-            <td><span class="badge orange">Wacht op aftekening</span></td>
-            <td><button class="icon-btn">Aftekenen</button></td>
-          </tr>
-
-          <tr>
-            <td class="name">Anissa Canton</td>
-            <td>Dinsdag 13 mei 2026</td>
-            <td>Week 12</td>
-            <td><span class="badge orange">Wacht op aftekening</span></td>
-            <td><button class="icon-btn">Aftekenen</button></td>
-          </tr>
-
-          <tr>
-            <td class="name">Tom Janssens</td>
-            <td>Maandag 12 mei 2026</td>
-            <td>Week 12</td>
-            <td><span class="badge orange">Wacht op aftekening</span></td>
-            <td><button class="icon-btn">Aftekenen</button></td>
+            <td><span class="badge orange">Wacht op controle</span></td>
+            <td><button class="icon-btn">Bekijken</button></td>
           </tr>
 
           <tr>
             <td class="name">Tom Janssens</td>
             <td>Dinsdag 13 mei 2026</td>
             <td>Week 12</td>
-            <td><span class="badge orange">Wacht op aftekening</span></td>
-            <td><button class="icon-btn">Aftekenen</button></td>
-          </tr>
-
-          <tr>
-            <td class="name">Anissa Canton</td>
-            <td>Woensdag 14 mei 2026</td>
-            <td>Week 12</td>
-            <td><span class="badge orange">Wacht op aftekening</span></td>
-            <td><button class="icon-btn">Aftekenen</button></td>
+            <td><span class="badge orange">Wacht op controle</span></td>
+            <td><button class="icon-btn">Bekijken</button></td>
           </tr>
         </tbody>
       </table>
     </section>
   </main>
 </template>
-
-<script setup>
-</script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -158,7 +165,7 @@
   font-family: 'Inter', sans-serif;
 }
 
-.mentor-page {
+.docent-page {
   min-height: 100vh;
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   color: #111827;
@@ -238,6 +245,22 @@ nav a.active {
   font-size: 13px;
 }
 
+.logout-btn {
+  border: none;
+  background: #991b1b;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: #7f1d1d;
+}
+
 .hero {
   margin: 40px 64px 28px;
   padding: 42px;
@@ -304,12 +327,6 @@ nav a.active {
   border-radius: 18px;
   padding: 24px;
   background: #ffffff;
-  transition: 0.25s ease;
-}
-
-.student-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
 }
 
 .student-top {
@@ -352,10 +369,6 @@ nav a.active {
   margin-top: 22px !important;
   color: #334155 !important;
   font-weight: 500;
-}
-
-.progress-text {
-  margin-top: 12px !important;
 }
 
 .progress {
@@ -409,9 +422,9 @@ nav a.active {
   color: #334155;
 }
 
+.primary-btn:hover,
 .secondary-btn:hover,
-.icon-btn:hover,
-.primary-btn:hover {
+.icon-btn:hover {
   background: #7f1d1d;
   color: white;
   border-color: #7f1d1d;
@@ -437,17 +450,6 @@ td {
   border-top: 1px solid #f1f5f9;
   font-size: 14px;
   color: #334155;
-}
-
-tbody tr {
-  cursor: pointer;
-  transition: 0.25s ease;
-}
-
-tbody tr:hover {
-  background: #fafafa;
-  transform: scale(1.002);
-  box-shadow: inset 5px 0 0 #991b1b;
 }
 
 .name {
@@ -485,10 +487,6 @@ tbody tr:hover {
   .card {
     margin-left: 20px;
     margin-right: 20px;
-  }
-
-  .hero {
-    padding: 30px;
   }
 
   .hero h1 {
