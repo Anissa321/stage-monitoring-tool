@@ -7,7 +7,7 @@ const router = Router()
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max:  100,
   message: { 
     error: 'Te veel login pogingen, probeer over 15 minuten opnieuw' 
   },
@@ -15,7 +15,7 @@ const loginLimiter = rateLimit({
   legacyHeaders: false
 })
 
-router.post('/login', loginLimiter, login)
+router.post('/login', login)
 router.post('/logout', authMiddleware, logout)
 router.get('/me', authMiddleware, me)
 

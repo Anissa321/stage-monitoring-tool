@@ -7,15 +7,11 @@ export async function login(req, res) {
 
     // Input validatie
     if (!email || !password) {
-      return res.status(400).json({ 
-        error: 'Email en wachtwoord zijn verplicht' 
-      })
+      return res.status(400).json({ error: 'Email en wachtwoord zijn verplicht' })
     }
 
     if (typeof email !== 'string' || typeof password !== 'string') {
-      return res.status(400).json({ 
-        error: 'Email en wachtwoord moeten strings zijn' 
-      })
+      return res.status(400).json({ error: 'Email en wachtwoord moeten strings zijn' })
     }
 
     // Supabase authenticatie
@@ -28,7 +24,7 @@ export async function login(req, res) {
       return res.status(401).json({ error: 'Ongeldige login gegevens' })
     }
 
-    // Profiel ophalen uit profiles tabel
+    // Profile ophalen uit profiles tabel
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('id, email, voornaam, achternaam, rol')
@@ -36,11 +32,10 @@ export async function login(req, res) {
       .single()
 
     if (profileError || !profile) {
-      console.error('Profiel niet gevonden voor user:', data.user.id)
       return res.status(404).json({ error: 'Profiel niet gevonden' })
     }
 
-    // Login succesvol — stuur volledige user info + tokens terug
+    // Stuur user info + tokens terug
     res.json({
       user: profile,
       session: {
@@ -59,11 +54,11 @@ export async function login(req, res) {
 export async function logout(req, res) {
   try {
     const token = req.headers.authorization?.split(' ')[1]
-    
+
     if (token) {
       await supabaseAdmin.auth.admin.signOut(token)
     }
-    
+
     res.json({ message: 'Uitgelogd' })
   } catch (err) {
     console.error('Logout error:', err)
