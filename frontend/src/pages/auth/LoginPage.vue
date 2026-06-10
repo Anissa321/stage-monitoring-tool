@@ -125,31 +125,32 @@ async function handleLogin() {
     const data = await response.json()
 
     if (!response.ok) {
-      errors.value.general = data.message || 'Inloggen mislukt. Controleer je gegevens.'
+      errors.value.general = data.error || 'Inloggen mislukt. Controleer je gegevens.'
       return
     }
 
-    localStorage.setItem('token', data.token)
-    localStorage.setItem('role', data.role)
+    localStorage.setItem('token', data.session.access_token)
+    localStorage.setItem('role', data.user.rol)
+    localStorage.setItem('user', JSON.stringify(data.user))
 
-    switch (data.role) {
+    switch (data.user.rol) {
       case 'student':
-        router.push('/student/dashboard')
+        router.push('/student')
         break
       case 'docent':
-        router.push('/docent/dashboard')
+        router.push('/docent')
         break
       case 'mentor':
-        router.push('/mentor/dashboard')
+        router.push('/mentor')
         break
-      case 'commissie':
-        router.push('/commissie/dashboard')
+      case 'stagecommissie':
+        router.push('/commissie')
         break
-      case 'admin':
-        router.push('/admin/dashboard')
+      case 'administratie':
+        router.push('/admin')
         break
       default:
-        router.push('/')
+        router.push('/login')
     }
   } catch (err) {
     errors.value.general = 'Verbindingsfout. Probeer het later opnieuw.'
