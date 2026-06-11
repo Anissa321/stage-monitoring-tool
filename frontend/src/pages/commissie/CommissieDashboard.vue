@@ -3,22 +3,15 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const user = ref(null)
-const voorstellen = ref([])
+const data = ref(null)
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
-  const headers = { Authorization: `Bearer ${token}` }
-
   try {
-    const [dashRes, voorstelRes] = await Promise.all([
-      fetch('http://localhost:3000/api/dashboards/commissie', { headers }),
-      fetch('http://localhost:3000/api/stagecoorstellingen', { headers })
-    ])
-    const dashData = await dashRes.json()
-    const voorstelData = await voorstelRes.json()
-    user.value = dashData.user
-    voorstellen.value = voorstelData.voorstellen || []
+    const res = await fetch('http://localhost:3000/api/dashboards/commissie', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    data.value = await res.json()
   } catch (err) {
     console.error(err)
   }
@@ -40,28 +33,25 @@ async function logout() {
   router.push('/login')
 }
 
-function voornaam() { return user.value?.voornaam || 'Commissie' }
+function voornaam() { return data.value?.user?.voornaam || 'Commissie' }
 function initialen() {
-  if (!user.value) return 'C'
-  return (user.value.voornaam?.[0] || '') + (user.value.achternaam?.[0] || '')
+  const u = data.value?.user
+  if (!u) return 'C'
+  return (u.voornaam?.[0] || '') + (u.achternaam?.[0] || '')
 }
-
 function openstaand() {
-  return voorstellen.value.filter(v => v.status === 'ingediend')
+  return (data.value?.voorstellen || []).filter(v => v.status === 'ingediend')
 }
-
 function statusBadge(status) {
   if (status === 'ingediend') return 'orange'
   if (status === 'aanpassingen_vereist') return 'purple'
   return 'orange'
 }
-
 function statusLabel(status) {
   if (status === 'ingediend') return 'Wacht op beoordeling'
   if (status === 'aanpassingen_vereist') return 'Aanpassingen vereist'
   return status
 }
-
 function formatDatum(datum) {
   if (!datum) return ''
   return new Date(datum).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -99,7 +89,6 @@ function formatDatum(datum) {
           <p>{{ openstaand().length }} aanvragen wachten op jouw beoordeling</p>
         </div>
       </div>
-
       <table>
         <thead>
           <tr>

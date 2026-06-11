@@ -33,10 +33,7 @@ async function logout() {
   router.push('/login')
 }
 
-function voornaam() {
-  return data.value?.user?.voornaam || 'Student'
-}
-
+function voornaam() { return data.value?.user?.voornaam || 'Student' }
 function initialen() {
   const u = data.value?.user
   if (!u) return 'S'
@@ -69,15 +66,13 @@ function initialen() {
       <div class="underline"></div>
     </section>
 
-    <!-- Stage loopt al -->
     <section v-if="data?.stage" class="start-card">
       <div class="rocket">🎓</div>
       <h2>Je stage is bezig!</h2>
-      <p>{{ data.stage.bedrijfsnaam }} • {{ data.stage.startdatum }} — {{ data.stage.einddatum }}</p>
+      <p>{{ data.stage.company_name }} • {{ data.stage.start_date }} — {{ data.stage.end_date }}</p>
       <button class="primary-btn" @click="router.push('/student/logboek')">Ga naar logboek</button>
     </section>
 
-    <!-- Nog geen stage -->
     <section v-else class="start-card">
       <div class="rocket">🚀</div>
       <h2>Klaar om je stage te starten?</h2>

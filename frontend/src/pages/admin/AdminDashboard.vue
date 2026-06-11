@@ -3,22 +3,15 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const user = ref(null)
-const aantalCompetenties = ref(0)
+const data = ref(null)
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
-  const headers = { Authorization: `Bearer ${token}` }
-
   try {
-    const [dashRes, compRes] = await Promise.all([
-      fetch('http://localhost:3000/api/dashboards/administratie', { headers }),
-      fetch('http://localhost:3000/api/competenties', { headers })
-    ])
-    const dashData = await dashRes.json()
-    const compData = await compRes.json()
-    user.value = dashData.user
-    aantalCompetenties.value = compData.competenties?.length || 0
+    const res = await fetch('http://localhost:3000/api/dashboards/administratie', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    data.value = await res.json()
   } catch (err) {
     console.error(err)
   }
@@ -40,10 +33,11 @@ async function logout() {
   router.push('/login')
 }
 
-function voornaam() { return user.value?.voornaam || 'Admin' }
+function voornaam() { return data.value?.user?.voornaam || 'Admin' }
 function initialen() {
-  if (!user.value) return 'A'
-  return (user.value.voornaam?.[0] || '') + (user.value.achternaam?.[0] || '')
+  const u = data.value?.user
+  if (!u) return 'A'
+  return (u.voornaam?.[0] || '') + (u.achternaam?.[0] || '')
 }
 </script>
 
@@ -106,7 +100,7 @@ function initialen() {
         </div>
       </div>
       <div class="status-row">
-        <span>{{ aantalCompetenties }} actieve competenties</span>
+        <span>{{ data?.aantal_competenties || 0 }} actieve competenties</span>
         <span>Totaal gewicht 100%</span>
       </div>
     </section>
