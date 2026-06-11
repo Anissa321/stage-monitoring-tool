@@ -232,7 +232,7 @@ router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) =>
 // POST /api/logboeken — nieuw logboek aanmaken (student)
 router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
   try {
-    const { datum, week_number, tasks, reflection, learning_points, uren_gewerkt, competenties } = req.body
+    const { datum, week_number, tasks, reflection, learning_points, uren_gewerkt, status, competenties } = req.body
 
     if (!datum || !tasks) {
       return res.status(400).json({ error: 'Datum en taken zijn verplicht' })
@@ -248,13 +248,27 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
         reflection,
         learning_points,
         uren_gewerkt,
-        competenties,
-        status: 'concept'
+        status: status || 'concept'
       })
       .select()
       .single()
 
     if (error) return res.status(500).json({ error: 'Kon logboek niet aanmaken' })
+
+    // Sla competenties op in logbook_competencies
+    if (competenties && competenties.length > 0) {
+      const competentieRijen = competenties.map(naam => ({
+        logbook_id: data.id,
+        competence_name: naam,
+        selected: true
+      }))
+
+      const { error: cError } = await supabaseAdmin
+        .from('logbook_competencies')
+        .insert(competentieRijen)
+
+      if (cError) console.error('Competenties opslaan mislukt:', cError)
+    }
 
     res.status(201).json({ logboek: data })
   } catch (err) {
@@ -341,13 +355,35 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
 
     const { data, error } = await supabaseAdmin
       .from('logbooks')
-      .update({ datum, week_number, tasks, reflection, learning_points, uren_gewerkt, competenties, status })
+      .update({ datum, week_number, tasks, reflection, learning_points, uren_gewerkt, status })
       .eq('id', id)
       .eq('student_id', req.user.id)
       .select()
       .single()
 
     if (error) return res.status(500).json({ error: 'Kon logboek niet bewerken' })
+
+    // Competenties updaten: verwijder oude en voeg nieuwe in
+    if (competenties !== undefined) {
+      await supabaseAdmin
+        .from('logbook_competencies')
+        .delete()
+        .eq('logbook_id', id)
+
+      if (competenties.length > 0) {
+        const competentieRijen = competenties.map(naam => ({
+          logbook_id: parseInt(id),
+          competence_name: naam,
+          selected: true
+        }))
+
+        const { error: cError } = await supabaseAdmin
+          .from('logbook_competencies')
+          .insert(competentieRijen)
+
+        if (cError) console.error('Competenties updaten mislukt:', cError)
+      }
+    }
 
     res.json({ logboek: data })
   } catch (err) {
@@ -372,6 +408,11 @@ router.delete('/:id', authMiddleware, requireRole('student'), async (req, res) =
     if (bestaand.status === 'goedgekeurd') {
       return res.status(403).json({ error: 'Goedgekeurd logboek kan niet verwijderd worden' })
     }
+
+    await supabaseAdmin
+      .from('logbook_competencies')
+      .delete()
+      .eq('logbook_id', id)
 
     const { error } = await supabaseAdmin
       .from('logbooks')

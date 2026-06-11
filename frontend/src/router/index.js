@@ -22,10 +22,16 @@ const routes = [
     name: 'LoginPage',
     component: LoginPage
   },
+
+  // STUDENT
   {
-    path: '/student/logboek-invullen',
-    name: 'LogboekInvullen',
-    component: LogboekInvullen
+    path: '/student',
+    redirect: '/student/dashboard'
+  },
+  {
+    path: '/student/dashboard',
+    name: 'StudentDashboard',
+    component: StudentDashboard
   },
   {
     path: '/student/logboek',
@@ -33,24 +39,36 @@ const routes = [
     component: LogboekOverzicht
   },
   {
-    path: '/student',
-    name: 'StudentDashboard',
-    component: StudentDashboard
+    path: '/student/logboek-invullen',
+    name: 'LogboekInvullen',
+    component: LogboekInvullen
+  },
+
+  // DOCENT
+  {
+    path: '/docent',
+    redirect: '/docent/dashboard'
+  },
+  {
+    path: '/docent/dashboard',
+    name: 'DocentDashboard',
+    component: DocentDashboard
   },
   {
     path: '/docent/logboek',
     name: 'DocentLogboek',
     component: LogboekBekijken
   },
+
+  // MENTOR
   {
-    path: '/docent',
-    name: 'DocentDashboard',
-    component: DocentDashboard
+    path: '/mentor',
+    redirect: '/mentor/dashboard'
   },
   {
-    path: '/commissie',
-    name: 'CommissieDashboard',
-    component: CommissieDashboard
+    path: '/mentor/dashboard',
+    name: 'MentorDashboard',
+    component: MentorDashboard
   },
   {
     path: '/mentor/week/:studentId/:weekNummer',
@@ -62,13 +80,25 @@ const routes = [
     name: 'StudentDetailMentor',
     component: StudentDetailMentor
   },
+
+  // COMMISSIE
   {
-    path: '/mentor',
-    name: 'MentorDashboard',
-    component: MentorDashboard
+    path: '/commissie',
+    redirect: '/commissie/dashboard'
   },
   {
+    path: '/commissie/dashboard',
+    name: 'CommissieDashboard',
+    component: CommissieDashboard
+  },
+
+  // ADMIN
+  {
     path: '/admin',
+    redirect: '/admin/dashboard'
+  },
+  {
+    path: '/admin/dashboard',
     name: 'AdminDashboard',
     component: AdminDashboard
   }

@@ -18,15 +18,7 @@ onMounted(async () => {
     const data = await res.json()
     mentor.value = data.user
     studenten.value = data.studenten || []
-
-    const resLog = await fetch('http://localhost:3000/api/logboeken/mentor', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    const logData = await resLog.json()
-
-    logboekenTeTekenen.value = (logData.logboeken || []).filter(l =>
-      l.status === 'ingediend'
-    )
+    logboekenTeTekenen.value = data.logboeken_te_aftekenen || []
   } catch (err) {
     console.error('Dashboard error:', err)
   } finally {
@@ -89,7 +81,7 @@ async function logout() {
       <nav>
         <a class="active">Dashboard</a>
         <a>Stagiairs</a>
-        <a>Logboeken</a>
+        <a @click="router.push('/mentor/dashboard')">Logboeken</a>
         <a>Evaluaties</a>
       </nav>
 
@@ -139,6 +131,10 @@ async function logout() {
               <button class="secondary-btn">Evaluatie</button>
             </div>
           </article>
+
+          <p v-if="!studenten.length" style="padding: 28px; color: #64748b;">
+            Geen stagiairs gekoppeld.
+          </p>
         </div>
       </section>
 
@@ -150,11 +146,7 @@ async function logout() {
           </div>
         </div>
 
-        <div v-if="logboekenTeTekenen.length === 0" class="leeg">
-          Geen logboeken te tekenen.
-        </div>
-
-        <table v-else>
+        <table>
           <thead>
             <tr>
               <th>Student</th>
@@ -166,14 +158,14 @@ async function logout() {
           </thead>
           <tbody>
             <tr v-for="log in logboekenTeTekenen" :key="log.id">
-              <td class="name">
-                {{ studenten.find(s => s.id === log.student_id)?.voornaam }}
-                {{ studenten.find(s => s.id === log.student_id)?.achternaam }}
-              </td>
+              <td class="name">{{ log.student_naam }}</td>
               <td>{{ formatDatum(log.datum) }}</td>
               <td>Week {{ log.week_number }}</td>
               <td><span class="badge orange">Wacht op aftekening</span></td>
               <td><button class="icon-btn" @click="goToAftekenen(log)">Aftekenen</button></td>
+            </tr>
+            <tr v-if="!logboekenTeTekenen.length">
+              <td colspan="5" style="padding: 28px; color: #64748b;">Geen logboeken te tekenen.</td>
             </tr>
           </tbody>
         </table>
@@ -242,6 +234,7 @@ nav a {
   padding: 10px 18px;
   border-radius: 12px;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
 nav a:hover,
@@ -279,6 +272,7 @@ nav a.active {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
 .logout-btn:hover { background: #7f1d1d; }
@@ -287,12 +281,6 @@ nav a.active {
   text-align: center;
   padding: 60px;
   color: #64748b;
-}
-
-.leeg {
-  padding: 28px;
-  color: #64748b;
-  font-size: 14px;
 }
 
 .hero {
@@ -319,7 +307,7 @@ nav a.active {
   font-weight: 800;
 }
 
-.hero p:last-child {
+.hero p {
   margin: 0;
   opacity: 0.9;
 }
@@ -413,6 +401,7 @@ nav a.active {
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: 0.2s ease;
   font-size: 14px;
 }
 
