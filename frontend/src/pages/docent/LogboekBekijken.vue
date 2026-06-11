@@ -1,41 +1,88 @@
 <script setup>
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const logboeken = ref([])
+const geselecteerdLogboek = ref(null)
+const loading = ref(true)
+const error = ref('')
 
-const weekDagen = [
-  { dag: 'Maandag', datum: '5 mei', status: 'Ingevuld', type: 'done' },
-  { dag: 'Dinsdag', datum: '6 mei', status: 'Ingevuld', type: 'done' },
-  { dag: 'Woensdag', datum: '7 mei', status: 'Niet ingevuld', type: 'warning' },
-  { dag: 'Donderdag', datum: '8 mei', status: 'Ingevuld', type: 'done' },
-  { dag: 'Vrijdag', datum: '9 mei', status: 'Ingevuld', type: 'active' }
-]
-
-const competenties = [
-  {
-    naam: 'Communicatie',
-    actief: true,
-    tekst: 'Heeft klantmail beantwoord en mentor gebrieft over openstaande punten.'
-  },
-  {
-    naam: 'Probleemoplossing',
-    actief: false,
-    tekst: 'Niet toegepast vandaag.'
-  },
-  {
-    naam: 'Teamwork',
-    actief: true,
-    tekst: 'Sprint review meegeleid en collega geholpen met code review.'
-  },
-  {
-    naam: 'Vaktechnisch handelen',
-    actief: true,
-    tekst: 'API-integratie met externe service afgewerkt en getest in Postman.'
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch('http://localhost:3000/api/logboeken/docent', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      error.value = data.error || 'Kon logboeken niet ophalen'
+      return
+    }
+    logboeken.value = data.logboeken
+    if (logboeken.value.length > 0) {
+      geselecteerdLogboek.value = logboeken.value[0]
+    }
+  } catch (err) {
+    error.value = 'Verbindingsfout met server'
+  } finally {
+    loading.value = false
   }
-]
+})
+
+const weken = computed(() => {
+  const groepen = {}
+  logboeken.value.forEach(log => {
+    const week = log.week_number
+    if (!groepen[week]) groepen[week] = []
+    groepen[week].push(log)
+  })
+  return Object.entries(groepen)
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, 2)
+})
+
+function selecteerLogboek(logboek) {
+  geselecteerdLogboek.value = logboek
+}
+
+function statusKlasse(status) {
+  if (status === 'goedgekeurd' || status === 'ingediend') return 'done'
+  if (status === 'niet_ingevuld' || status === 'concept') return 'warning'
+  if (status === 'vrije_dag') return 'vrij'
+  return 'active'
+}
+
+function statusLabel(status) {
+  if (status === 'goedgekeurd') return '✓ Ingevuld'
+  if (status === 'ingediend') return '✓ Ingevuld'
+  if (status === 'niet_ingevuld') return '⚠ Niet ingevuld'
+  if (status === 'concept') return '⚠ Concept'
+  if (status === 'vrije_dag') return 'Vrije dag'
+  if (status === 'afgekeurd') return '✗ Afgekeurd'
+  return status
+}
+
+function formatDag(datum) {
+  if (!datum) return ''
+  const d = new Date(datum)
+  return d.toLocaleDateString('nl-BE', { weekday: 'long' })
+}
+
+function formatDatum(datum) {
+  if (!datum) return ''
+  const d = new Date(datum)
+  return `${d.getDate()} ${d.toLocaleDateString('nl-BE', { month: 'long' })}`
+}
+
+function formatVolledigDatum(datum) {
+  if (!datum) return ''
+  const d = new Date(datum)
+  return d.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
 
 function terug() {
-  router.push('/docent/student-detail')
+  router.push('/docent')
 }
 </script>
 
@@ -46,13 +93,11 @@ function terug() {
         <div class="logo-circle">SM</div>
         <span>Stage Monitor</span>
       </div>
-
       <nav>
-        <a>Dashboard</a>
+        <a @click="router.push('/docent')">Dashboard</a>
         <a class="active">Studenten</a>
         <a>Evaluaties</a>
       </nav>
-
       <div class="profile">
         <span>Jan</span>
         <div class="avatar">J</div>
@@ -60,86 +105,74 @@ function terug() {
     </header>
 
     <section class="content">
-      <button class="back-btn" @click="terug">
-        ← Terug naar studentdossier
-      </button>
+      <div v-if="loading" class="loading">Logboeken laden...</div>
+      <div v-else-if="error" class="error-msg">{{ error }}</div>
+      <div v-else>
 
-      <div class="title-block">
-        <h1>Logboek — Anissa Canton</h1>
-        <p>Acme Corp • Week 12 van 16</p>
-      </div>
+        <button class="back-btn" @click="terug">
+          ← Terug naar studentdossier
+        </button>
 
-      <section class="week-section">
-        <h2>Week 12 (huidige week)</h2>
-
-        <div class="week-grid">
-          <article
-            v-for="dag in weekDagen"
-            :key="dag.datum"
-            class="day-box"
-            :class="dag.type"
-          >
-            <span>{{ dag.dag }}</span>
-            <strong>{{ dag.datum }}</strong>
-
-            <p>
-              {{ dag.type === 'warning' ? '⚠' : '✓' }}
-              {{ dag.status }}
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section class="detail-card">
-        <h2>Logboek details — Vrijdag 9 mei 2026</h2>
-
-        <div class="block">
-          <span class="small-label">✎ Uitgevoerde taken</span>
-          <p>
-            Vandaag heb ik gewerkt aan de API integratie met onze externe payment provider.
-            Ik heb een bug opgelost in de checkout flow waardoor klanten met sommige
-            creditcards niet konden afrekenen. Daarnaast heb ik unit tests geschreven voor
-            de nieuwe authentication module.
-          </p>
+        <div class="title-block">
+          <h1>Logboek overzicht</h1>
+          <p>{{ logboeken.length }} logboeken gevonden</p>
         </div>
 
-        <div class="block">
-          <span class="small-label">⏱ Uren gewerkt</span>
-          <strong>8 uur</strong>
-        </div>
+        <section
+          v-for="[weekNr, logs] in weken"
+          :key="weekNr"
+          class="week-section"
+        >
+          <h2>Week {{ weekNr }}</h2>
+          <div class="week-grid">
+            <article
+              v-for="log in logs"
+              :key="log.id"
+              class="day-box"
+              :class="[statusKlasse(log.status), geselecteerdLogboek?.id === log.id ? 'selected' : '']"
+              @click="selecteerLogboek(log)"
+            >
+              <span>{{ formatDag(log.datum) }}</span>
+              <strong>{{ formatDatum(log.datum) }}</strong>
+              <p>{{ statusLabel(log.status) }}</p>
+            </article>
+          </div>
+        </section>
 
-        <div class="block">
-          <span class="small-label red">📌 Competenties toegepast vandaag</span>
+        <section v-if="geselecteerdLogboek" class="detail-card">
+          <h2>Logboek details — {{ formatVolledigDatum(geselecteerdLogboek.datum) }}</h2>
 
-          <div
-            v-for="competentie in competenties"
-            :key="competentie.naam"
-            class="competentie"
-          >
-            <input type="checkbox" :checked="competentie.actief" disabled />
+          <div class="block">
+            <span class="small-label">✎ Uitgevoerde taken</span>
+            <p>{{ geselecteerdLogboek.tasks || 'Niet ingevuld' }}</p>
+          </div>
 
-            <div>
-              <strong>{{ competentie.naam }}</strong>
-              <p>{{ competentie.tekst }}</p>
+          <div class="block">
+            <span class="small-label">⏱ Uren gewerkt</span>
+            <strong>{{ geselecteerdLogboek.uren_gewerkt || 0 }} uur</strong>
+          </div>
+
+          <div v-if="geselecteerdLogboek.competenties && geselecteerdLogboek.competenties.length" class="block">
+            <span class="small-label red">📌 Competenties toegepast vandaag</span>
+            <div v-for="comp in geselecteerdLogboek.competenties" :key="comp" class="competentie">
+              <input type="checkbox" checked disabled />
+              <div>
+                <strong>{{ comp }}</strong>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="block">
-          <span class="small-label yellow">💡 Leerpunten / Reflectie</span>
-          <p>
-            Het was leerzaam om met een echte payment provider te werken. Ik merk dat ik
-            beter begin te begrijpen hoe ik moet debuggen onder druk. Het team gaf positieve
-            feedback op mijn aanpak. Ik liep tegen rate limiting aan bij de externe API —
-            volgende keer ga ik vooraf de API documentatie beter doornemen om dit soort
-            beperkingen op tijd te identificeren.
+          <div class="block">
+            <span class="small-label yellow">💡 Leerpunten / Reflectie</span>
+            <p>{{ geselecteerdLogboek.reflection || 'Niet ingevuld' }}</p>
+          </div>
+
+          <p v-if="geselecteerdLogboek.submitted_at" class="submitted">
+            Ingediend op {{ formatVolledigDatum(geselecteerdLogboek.submitted_at) }}
           </p>
-        </div>
+        </section>
 
-        <p class="submitted">
-          Ingediend op vrijdag 9 mei 2026 om 17:24
-        </p>
-      </section>
+      </div>
     </section>
   </main>
 </template>
@@ -194,6 +227,7 @@ nav a {
   font-weight: 700;
   color: #64748b;
   text-decoration: none;
+  cursor: pointer;
 }
 
 nav a.active {
@@ -220,6 +254,18 @@ nav a.active {
   padding: 34px 56px 52px;
 }
 
+.loading {
+  text-align: center;
+  padding: 60px;
+  color: #64748b;
+}
+
+.error-msg {
+  text-align: center;
+  padding: 60px;
+  color: #991b1b;
+}
+
 .back-btn {
   border: none;
   background: transparent;
@@ -227,6 +273,8 @@ nav a.active {
   font-weight: 700;
   cursor: pointer;
   margin-bottom: 14px;
+  font-size: 14px;
+  padding: 0;
 }
 
 .back-btn:hover {
@@ -244,8 +292,13 @@ nav a.active {
   color: #64748b;
 }
 
+.week-section {
+  margin-bottom: 32px;
+}
+
 .week-section h2 {
   font-size: 18px;
+  font-weight: 700;
   margin-bottom: 16px;
 }
 
@@ -262,12 +315,23 @@ nav a.active {
   padding: 18px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.day-box:hover {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+}
+
+.day-box.selected {
+  border: 2px solid #991b1b;
 }
 
 .day-box span {
   color: #64748b;
   font-size: 12px;
   font-weight: 700;
+  display: block;
 }
 
 .day-box strong {
@@ -295,13 +359,14 @@ nav a.active {
   color: #92400e;
 }
 
-.day-box.active {
-  border: 2px solid #991b1b;
-}
-
 .day-box.active p {
   background: #fee2e2;
   color: #991b1b;
+}
+
+.day-box.vrij p {
+  background: #e0f2fe;
+  color: #075985;
 }
 
 .detail-card {
@@ -315,6 +380,7 @@ nav a.active {
 .detail-card h2 {
   margin: 0 0 24px;
   font-size: 20px;
+  font-weight: 800;
 }
 
 .block {
@@ -363,12 +429,6 @@ nav a.active {
   font-size: 14px;
 }
 
-.competentie p {
-  font-size: 13px;
-  color: #64748b;
-  margin-top: 4px;
-}
-
 .submitted {
   margin-top: 38px;
   color: #64748b;
@@ -380,7 +440,6 @@ nav a.active {
   .week-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
   nav {
     display: none;
   }
@@ -390,7 +449,6 @@ nav a.active {
   .content {
     padding: 24px 20px;
   }
-
   .week-grid {
     grid-template-columns: 1fr;
   }
