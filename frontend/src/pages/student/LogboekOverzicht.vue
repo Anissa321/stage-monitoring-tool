@@ -1,31 +1,84 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-
 const logboeken = ref([])
 
 function gaNaarInvullen() {
   router.push('/student/logboek-invullen')
 }
 
+function formatDatum(datum) {
+  return new Date(datum).toLocaleDateString('nl-BE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  })
+}
+
+function statusClass(status) {
+  if (status === 'goedgekeurd') return 'approved'
+  if (status === 'ingediend') return 'submitted'
+  if (status === 'concept') return 'draft'
+  if (status === 'niet_ingevuld') return 'empty'
+  if (status === 'vrije_dag') return 'free'
+  return 'draft'
+}
+
+function statusLabel(status) {
+  if (status === 'goedgekeurd') return 'Goedgekeurd'
+  if (status === 'ingediend') return 'Ingediend'
+  if (status === 'concept') return 'Concept'
+  if (status === 'niet_ingevuld') return 'Nog niet ingevuld'
+  if (status === 'vrije_dag') return 'Vrije dag'
+  return status
+}
+
+const logboekenPerWeek = computed(() => {
+  const groepen = {}
+
+  logboeken.value.forEach((logboek) => {
+    const week = logboek.week_number
+
+    if (!groepen[week]) {
+      groepen[week] = []
+    }
+
+    groepen[week].push(logboek)
+  })
+
+  return Object.keys(groepen)
+    .sort((a, b) => Number(b) - Number(a))
+    .map((week) => ({
+      week,
+      logboeken: groepen[week].sort(
+        (a, b) => new Date(a.datum) - new Date(b.datum)
+      )
+    }))
+})
+
+function korteCompetentie(competentie) {
+  if (competentie === 'Communicatie') return 'Comm.'
+  if (competentie === 'Probleemoplossing') return 'Prob.'
+  if (competentie === 'Teamwork') return 'Team.'
+  if (competentie === 'Vaktechnisch handelen') return 'Vakt.'
+  return competentie
+}
+
 onMounted(async () => {
   try {
     const token = localStorage.getItem('token')
 
-    const res = await fetch(
-      'http://localhost:3000/api/logboeken/mijn',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+    const res = await fetch('http://localhost:3000/api/logboeken/mijn', {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    )
+    })
 
     const data = await res.json()
 
-    logboeken.value = data.logboeken
+    logboeken.value = data.logboeken || []
   } catch (err) {
     console.error(err)
   }
@@ -35,7 +88,6 @@ onMounted(async () => {
 <template>
   <main class="logboek-page">
     <section class="hero">
-     
       <p class="label">Stage Logboek</p>
       <h1>Mijn Logboek</h1>
       <p class="subtitle">Overzicht van je ingediende logboeken</p>
@@ -51,34 +103,62 @@ onMounted(async () => {
 
     <section class="week-section">
       <div class="section-header">
-        <h2>Week 13 (huidige week)</h2>
+        <h2>Logboeken per week</h2>
 
         <button class="new-btn" @click="gaNaarInvullen">
           + Logboek invullen
         </button>
       </div>
 
-      <div class="cards">
-  <article
-    v-for="logboek in logboeken"
-    :key="logboek.id"
-    class="day-card approved"
-  >
-    <h3>{{ logboek.datum }}</h3>
+      <section
+        v-for="weekGroep in logboekenPerWeek"
+        :key="weekGroep.week"
+        class="week-block"
+      >
+        <div class="week-title">
+          <h2>
+            Week {{ weekGroep.week }}
+            <span v-if="Number(weekGroep.week) === 13">(huidige week)</span>
+          </h2>
+        </div>
 
-    <span class="status green">
-      {{ logboek.status }}
-    </span>
+        <div class="cards">
+          <article
+            v-for="logboek in weekGroep.logboeken"
+            :key="logboek.id"
+            class="day-card"
+            :class="statusClass(logboek.status)"
+          >
+            <h3>{{ formatDatum(logboek.datum) }}</h3>
 
-    <p>{{ logboek.uren_gewerkt }} uur gewerkt</p>
+            <span class="status">
+              {{ statusLabel(logboek.status) }}
+            </span>
 
-    <p v-if="logboek.tasks" class="tasks">
-      {{ logboek.tasks }}
-    </p>
+            <p class="hours">{{ logboek.uren_gewerkt }} uur gewerkt</p>
 
-    <p>Week {{ logboek.week_number }}</p>
-  </article>
-</div>
+            <div
+              v-if="logboek.competenties && logboek.competenties.length"
+              class="tags"
+            >
+              <span
+                v-for="competentie in logboek.competenties"
+                :key="competentie"
+              >
+                {{ korteCompetentie(competentie) }}
+              </span>
+            </div>
+
+            <button
+              v-if="logboek.status === 'niet_ingevuld'"
+              class="fill-card-btn"
+              @click="gaNaarInvullen"
+            >
+              + Logboek invullen
+            </button>
+          </article>
+        </div>
+      </section>
     </section>
 
     <section class="feedback-card">
@@ -108,7 +188,7 @@ onMounted(async () => {
   background: white;
   border-radius: 24px;
   padding: 32px;
-  box-shadow: 0 10px 25px rgba(0,0,0,.05);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
 .label {
@@ -160,11 +240,12 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
 }
 
 .section-header h2 {
   color: #0f172a;
+  margin: 0;
 }
 
 .new-btn {
@@ -181,6 +262,26 @@ onMounted(async () => {
   background: #7f1d1d;
 }
 
+.week-block {
+  margin-bottom: 42px;
+}
+
+.week-title {
+  margin-bottom: 18px;
+}
+
+.week-title h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 24px;
+}
+
+.week-title h2 span {
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .cards {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -191,25 +292,14 @@ onMounted(async () => {
   background: white;
   border-radius: 18px;
   padding: 18px;
-  min-height: 210px;
-  box-shadow: 0 8px 20px rgba(0,0,0,.04);
-}
-
-.approved {
-  border-top: 5px solid #16a34a;
-}
-
-.waiting {
-  border-top: 5px solid #f59e0b;
-}
-
-.empty {
-  border-top: 5px solid #991b1b;
+  min-height: 180px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
 }
 
 .day-card h3 {
   font-size: 15px;
   margin-bottom: 12px;
+  text-transform: capitalize;
 }
 
 .status {
@@ -217,34 +307,58 @@ onMounted(async () => {
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 12px;
+  font-weight: 700;
+}
+
+.hours {
+  margin-top: 18px;
+  color: #0f172a;
   font-weight: 600;
 }
 
-.green {
+.day-card.approved {
+  border-top: 5px solid #16a34a;
+}
+
+.day-card.submitted {
+  border-top: 5px solid #f59e0b;
+}
+
+.day-card.draft {
+  border-top: 5px solid #64748b;
+}
+
+.day-card.empty {
+  border-top: 5px solid #991b1b;
+}
+
+.day-card.free {
+  border-top: 5px solid #3b82f6;
+}
+
+.day-card.approved .status {
   background: #dcfce7;
   color: #166534;
 }
 
-.orange {
+.day-card.submitted .status {
   background: #fef3c7;
   color: #92400e;
 }
 
-.gray {
+.day-card.draft .status {
   background: #e2e8f0;
   color: #475569;
 }
 
-.blue {
+.day-card.empty .status {
   background: #fee2e2;
   color: #991b1b;
 }
 
-.tasks {
-  margin-top: 12px;
-  color: #475569;
-  font-size: 13px;
-  line-height: 1.5;
+.day-card.free .status {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .tags {
@@ -260,6 +374,7 @@ onMounted(async () => {
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
+  font-weight: 700;
 }
 
 .fill-card-btn {

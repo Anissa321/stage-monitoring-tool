@@ -5,42 +5,84 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const form = ref({
+  datum: new Date().toISOString().split('T')[0],
+  week_number: 24,
   taken: '',
   uren: 8,
   reflectie: '',
-  competenties: ['Communicatie', 'Teamwork', 'Vaktechnisch handelen']
+  leerpunten: '',
+  competenties: []
 })
 
+const isLoading = ref(false)
+const error = ref('')
+
 const competenties = [
-  {
-    naam: 'Communicatie',
-    tekst: 'Heb klantmail beantwoord en mentor geïnformeerd over openstaande punten.'
-  },
-  {
-    naam: 'Probleemoplossing',
-    tekst: ''
-  },
-  {
-    naam: 'Teamwork',
-    tekst: 'Sprint review meegeleid en collega geholpen met code review.'
-  },
-  {
-    naam: 'Vaktechnisch handelen',
-    tekst: 'API-integratie met externe service afgewerkt en getest in Postman.'
-  }
+  { naam: 'Communicatie' },
+  { naam: 'Probleemoplossing' },
+  { naam: 'Teamwork' },
+  { naam: 'Vaktechnisch handelen' }
 ]
 
 function terug() {
   router.push('/student/logboek')
 }
 
+async function verstuurLogboek(status) {
+  error.value = ''
+  isLoading.value = true
+
+  try {
+    const token = localStorage.getItem('token')
+
+    const res = await fetch('http://localhost:3000/api/logboeken', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        datum: form.value.datum,
+        week_number: form.value.week_number,
+        tasks: form.value.taken,
+        reflection: form.value.reflectie,
+        learning_points: form.value.leerpunten,
+        uren_gewerkt: Number(form.value.uren),
+        status,
+        competenties: form.value.competenties
+      })
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      error.value = data.error || 'Logboek kon niet opgeslagen worden'
+      return
+    }
+
+    router.push('/student/logboek')
+  } catch (err) {
+    console.error(err)
+    error.value = 'Verbindingsfout met backend'
+  } finally {
+    isLoading.value = false
+  }
+}
+
 function opslaanConcept() {
-  alert('Opgeslagen als concept')
+  verstuurLogboek('concept')
 }
 
 function indienen() {
-  alert('Logboek ingediend')
-  router.push('/student/logboek')
+  verstuurLogboek('ingediend')
+}
+function formatTitelDatum(datum) {
+  return new Date(datum).toLocaleDateString('nl-BE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })
 }
 </script>
 
@@ -71,9 +113,12 @@ function indienen() {
       </button>
 
       <div class="title-block">
-        <h1>Logboek - Vrijdag 9 mei 2026</h1>
-        <p>Week 13 van 20</p>
+        <h1>Logboek - {{ formatTitelDatum(form.datum) }}</h1>
+<p>Week {{ form.week_number }}</p>
       </div>
+      <p v-if="error" class="error-message">
+  {{ error }}
+</p>
 
       <section class="card">
         <label class="section-label"> Uitgevoerde taken</label>
@@ -126,13 +171,21 @@ function indienen() {
       </section>
 
       <div class="actions">
-        <button class="draft-btn" @click="opslaanConcept">
-          Opslaan als concept
-        </button>
+        <button
+  class="draft-btn"
+  :disabled="isLoading"
+  @click="opslaanConcept"
+>
+  Opslaan als concept
+</button>
 
-        <button class="submit-btn" @click="indienen">
-          Indienen →
-        </button>
+<button
+  class="submit-btn"
+  :disabled="isLoading"
+  @click="indienen"
+>
+  {{ isLoading ? 'Bezig...' : 'Indienen →' }}
+</button>
       </div>
     </section>
   </main>
@@ -372,6 +425,20 @@ input:focus {
 
 .submit-btn:hover {
   background: #7f1d1d;
+}
+.error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 @media (max-width: 800px) {
