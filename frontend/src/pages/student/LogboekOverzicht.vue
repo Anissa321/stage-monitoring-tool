@@ -1,3 +1,12 @@
+<script setup>
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+function gaNaarInvullen() {
+  router.push('/student/logboek-invullen')
+}
+</script>
 <template>
   <main class="logboek-page">
     <section class="hero">
@@ -18,12 +27,15 @@
 
     <section class="week-section">
       <div class="section-header">
-        <h2>Week 13 (huidige week)</h2>
+  <h2>Week 13 (huidige week)</h2>
 
-        <button class="new-btn">
-          + Logboek invullen
-        </button>
-      </div>
+  <button
+    class="new-btn"
+    @click="gaNaarInvullen"
+  >
+    + Logboek invullen
+  </button>
+</div>
 
       <div class="cards">
         <article class="day-card approved">

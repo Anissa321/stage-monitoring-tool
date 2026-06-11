@@ -7,6 +7,7 @@ import CommissieDashboard from '../pages/commissie/CommissieDashboard.vue'
 import MentorDashboard from '../pages/mentor/MentorDashboard.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
 import LogboekOverzicht from '../pages/student/LogboekOverzicht.vue'
+import LogboekInvullen from '../pages/student/LogboekInvullen.vue'
 const routes = [
   {
     path: '/',
@@ -46,6 +47,11 @@ const routes = [
   path: '/student/logboek',
   name: 'LogboekOverzicht',
   component: LogboekOverzicht
+},
+{
+  path: '/student/logboek-invullen',
+  name: 'LogboekInvullen',
+  component: LogboekInvullen
 }
 ]
 
