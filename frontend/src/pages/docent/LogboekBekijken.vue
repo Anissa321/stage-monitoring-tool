@@ -38,7 +38,7 @@ const weken = computed(() => {
     groepen[week].push(log)
   })
   return Object.entries(groepen)
-    .sort((a, b) => b[1].length - a[1].length)
+    .sort((a, b) => b[0] - a[0])
     .slice(0, 2)
 })
 
@@ -152,14 +152,23 @@ function terug() {
             <strong>{{ geselecteerdLogboek.uren_gewerkt || 0 }} uur</strong>
           </div>
 
-          <div v-if="geselecteerdLogboek.competenties && geselecteerdLogboek.competenties.length" class="block">
+          <div class="block">
             <span class="small-label red">📌 Competenties toegepast vandaag</span>
-            <div v-for="comp in geselecteerdLogboek.competenties" :key="comp" class="competentie">
-              <input type="checkbox" checked disabled />
-              <div>
-                <strong>{{ comp }}</strong>
+            <div
+              v-if="geselecteerdLogboek.competenties && geselecteerdLogboek.competenties.length"
+            >
+              <div
+                v-for="comp in geselecteerdLogboek.competenties"
+                :key="comp.competence_name"
+                class="competentie"
+              >
+                <input type="checkbox" :checked="comp.selected" disabled />
+                <div>
+                  <strong>{{ comp.competence_name }}</strong>
+                </div>
               </div>
             </div>
+            <p v-else class="geen-data">Geen competenties ingevuld</p>
           </div>
 
           <div class="block">
@@ -414,19 +423,29 @@ nav a.active {
   font-size: 18px;
 }
 
+.geen-data {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 14px;
+}
+
 .competentie {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+  align-items: flex-start;
 }
 
 .competentie input {
   margin-top: 3px;
   accent-color: #991b1b;
+  width: 16px;
+  height: 16px;
 }
 
 .competentie strong {
   font-size: 14px;
+  display: block;
 }
 
 .submitted {

@@ -40,13 +40,56 @@ router.get('/mentor', authMiddleware, requireRole('mentor'), async (req, res) =>
       .from('logbooks')
       .select('id, student_id, datum, week_number, tasks, reflection, learning_points, uren_gewerkt, status, submitted_at')
       .in('student_id', studentIds)
-      .order('datum', { ascending: false })
+      .order('datum', { ascending: true })
 
     if (error) return res.status(500).json({ error: 'Kon logboeken niet ophalen' })
 
     res.json({ logboeken: data })
   } catch (err) {
     console.error('Mentor logboeken error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
+// GET /api/logboeken/docent — logboeken van gekoppelde studenten
+router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) => {
+  try {
+    const { data: koppelingen, error: kError } = await supabaseAdmin
+      .from('docent_studenten')
+      .select('student_id')
+      .eq('docent_id', req.user.id)
+
+    if (kError) return res.status(500).json({ error: 'Kon studenten niet ophalen' })
+
+    const studentIds = koppelingen.map(k => k.student_id)
+    if (studentIds.length === 0) return res.json({ logboeken: [] })
+
+    const { data, error } = await supabaseAdmin
+      .from('logbooks')
+      .select('id, student_id, datum, week_number, tasks, reflection, learning_points, uren_gewerkt, status, submitted_at')
+      .in('student_id', studentIds)
+      .order('datum', { ascending: true })
+
+    if (error) return res.status(500).json({ error: 'Kon logboeken niet ophalen' })
+
+    // Haal competenties op voor elk logboek
+    const logboekIds = data.map(l => l.id)
+    const { data: competenties } = await supabaseAdmin
+      .from('logbook_competencies')
+      .select('logbook_id, competence_name, selected')
+      .in('logbook_id', logboekIds)
+
+    // Voeg competenties toe aan elk logboek
+    const logboekenMetCompetenties = data.map(log => ({
+      ...log,
+      competenties: competenties
+        ? competenties.filter(c => c.logbook_id === log.id)
+        : []
+    }))
+
+    res.json({ logboeken: logboekenMetCompetenties })
+  } catch (err) {
+    console.error('Docent logboeken error:', err)
     res.status(500).json({ error: 'Server fout' })
   }
 })
@@ -81,33 +124,6 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
     res.status(201).json({ logboek: data })
   } catch (err) {
     console.error('Logboek aanmaken error:', err)
-    res.status(500).json({ error: 'Server fout' })
-  }
-})
-// GET /api/logboeken/docent — logboeken van gekoppelde studenten
-router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) => {
-  try {
-    const { data: koppelingen, error: kError } = await supabaseAdmin
-      .from('docent_studenten')
-      .select('student_id')
-      .eq('docent_id', req.user.id)
-
-    if (kError) return res.status(500).json({ error: 'Kon studenten niet ophalen' })
-
-    const studentIds = koppelingen.map(k => k.student_id)
-    if (studentIds.length === 0) return res.json({ logboeken: [] })
-
-    const { data, error } = await supabaseAdmin
-      .from('logbooks')
-      .select('id, student_id, datum, week_number, tasks, reflection, learning_points, uren_gewerkt, status, submitted_at')
-      .in('student_id', studentIds)
-      .order('datum', { ascending: false })
-
-    if (error) return res.status(500).json({ error: 'Kon logboeken niet ophalen' })
-
-    res.json({ logboeken: data })
-  } catch (err) {
-    console.error('Docent logboeken error:', err)
     res.status(500).json({ error: 'Server fout' })
   }
 })
