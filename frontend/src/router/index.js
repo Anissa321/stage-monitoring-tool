@@ -7,10 +7,8 @@ import CommissieDashboard from '../pages/commissie/CommissieDashboard.vue'
 import MentorDashboard from '../pages/mentor/MentorDashboard.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
 import LogboekAftekenen from '../pages/mentor/LogboekAftekenen.vue'
-
 import LogboekOverzicht from '../pages/student/LogboekOverzicht.vue'
 import LogboekInvullen from '../pages/student/LogboekInvullen.vue'
-
 import LogboekBekijken from '../pages/docent/LogboekBekijken.vue'
 
 const routes = [
@@ -23,60 +21,81 @@ const routes = [
     name: 'LoginPage',
     component: LoginPage
   },
+
+  // STUDENT
   {
     path: '/student',
+    redirect: '/student/dashboard'
+  },
+  {
+    path: '/student/dashboard',
     name: 'StudentDashboard',
     component: StudentDashboard
   },
   {
-
-  path: '/student/logboek-invullen',
-  name: 'LogboekInvullen',
-  component: LogboekInvullen
+    path: '/student/logboek',
+    name: 'LogboekOverzicht',
+    component: LogboekOverzicht
   },
- {
-  path: '/docent/logboek',
-  name: 'DocentLogboek',
-  component: LogboekBekijken
-  },
-    {
-  path: '/docent/logboek',
-  name: 'DocentLogboek',
-  component: LogboekBekijken
+  {
+    path: '/student/logboek-invullen',
+    name: 'LogboekInvullen',
+    component: LogboekInvullen
   },
 
+  // DOCENT
   {
     path: '/docent',
+    redirect: '/docent/dashboard'
+  },
+  {
+    path: '/docent/dashboard',
     name: 'DocentDashboard',
     component: DocentDashboard
   },
-
   {
-    path: '/commissie',
-    name: 'CommissieDashboard',
-    component: CommissieDashboard
+    path: '/docent/logboek',
+    name: 'DocentLogboek',
+    component: LogboekBekijken
+  },
+
+  // MENTOR
+  {
+    path: '/mentor',
+    redirect: '/mentor/dashboard'
+  },
+  {
+    path: '/mentor/dashboard',
+    name: 'MentorDashboard',
+    component: MentorDashboard
   },
   {
     path: '/mentor/logboek',
     name: 'MentorLogboek',
     component: LogboekAftekenen
   },
+
+  // COMMISSIE
   {
-    path: '/mentor',
-    name: 'MentorDashboard',
-    component: MentorDashboard
+    path: '/commissie',
+    redirect: '/commissie/dashboard'
   },
   {
+    path: '/commissie/dashboard',
+    name: 'CommissieDashboard',
+    component: CommissieDashboard
+  },
+
+  // ADMIN
+  {
     path: '/admin',
+    redirect: '/admin/dashboard'
+  },
+  {
+    path: '/admin/dashboard',
     name: 'AdminDashboard',
     component: AdminDashboard
   },
-  {
-  path: '/student/logboek',
-  name: 'LogboekOverzicht',
-  component: LogboekOverzicht
-},
-
 ]
 
 const router = createRouter({

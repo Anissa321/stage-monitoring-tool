@@ -24,6 +24,7 @@ async function logout() {
   router.push('/login')
 }
 </script>
+
 <template>
   <main class="student-page">
     <header class="topbar">
@@ -33,21 +34,17 @@ async function logout() {
       </div>
 
       <nav>
-        <a class="active">Dashboard</a>
-        <a>Logboek</a>
-        <a>Documenten</a>
-        <a>Evaluatie</a>
+        <a class="active" @click="router.push('/student/dashboard')">Dashboard</a>
+        <a @click="router.push('/student/logboek')">Logboek</a>
+        <a @click="router.push('/student/documenten')">Documenten</a>
+        <a @click="router.push('/student/evaluatie')">Evaluatie</a>
       </nav>
 
       <div class="profile">
-  <span>Anissa</span>
-
-  <button class="logout-btn" @click="logout">
-    Uitloggen
-  </button>
-
-  <div class="avatar">A</div>
-</div>
+        <span>Anissa</span>
+        <button class="logout-btn" @click="logout">Uitloggen</button>
+        <div class="avatar">A</div>
+      </div>
     </header>
 
     <section class="welcome">
@@ -191,6 +188,7 @@ nav a.active {
   place-items: center;
   font-size: 13px;
 }
+
 .logout-btn {
   border: none;
   background: #991b1b;
@@ -206,6 +204,7 @@ nav a.active {
 .logout-btn:hover {
   background: #7f1d1d;
 }
+
 .welcome {
   margin: 40px 64px 24px;
 }
