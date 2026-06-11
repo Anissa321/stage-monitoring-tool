@@ -5,7 +5,6 @@ import dotenv from 'dotenv'
 import authRoutes from './routes/auth.routes.js'
 import docentRoutes from './routes/docent.routes.js'
 import dashboardRoutes from './routes/dashboards.routes.js'
-import logboekenDocentRoutes from './routes/logboeken-docent.routes.js'
 import logboekenRoutes from './routes/logboeken.routes.js'
 dotenv.config()
 
@@ -34,7 +33,6 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/docent', docentRoutes)
 app.use('/api/dashboards', dashboardRoutes)
-app.use('/api/logboeken/docent', logboekenDocentRoutes)
 app.use('/api/logboeken', logboekenRoutes)
 // 404 handler — altijd na alle routes
 app.use((req, res) => {
