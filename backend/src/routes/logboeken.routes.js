@@ -18,14 +18,12 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
 
     const logboekIds = data.map(l => l.id)
 
-    // Haal competenties op
     const { data: competenties } = await supabaseAdmin
       .from('logbook_competencies')
       .select('logbook_id, competence_name, selected')
       .in('logbook_id', logboekIds)
       .eq('selected', true)
 
-    // Haal week reviews op (week_status + mentor info)
     const weekNummers = [...new Set(data.map(l => l.week_number))]
     const { data: reviews } = await supabaseAdmin
       .from('logbook_reviews')
@@ -34,7 +32,6 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
       .in('week_number', weekNummers)
       .order('reviewed_at', { ascending: false })
 
-    // Haal mentor namen op
     let mentorNamen = {}
     if (reviews && reviews.length > 0) {
       const mentorIds = [...new Set(reviews.filter(r => r.mentor_id).map(r => r.mentor_id))]
@@ -51,7 +48,6 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
       }
     }
 
-    // Bouw week info map
     const weekInfo = {}
     if (reviews) {
       reviews.forEach(r => {
@@ -64,7 +60,6 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
       })
     }
 
-    // Voeg alles samen
     const logboekenMetData = data.map(log => ({
       ...log,
       competenties: competenties
@@ -84,7 +79,6 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
 // GET /api/logboeken/nieuw-info — info voor nieuw logboek (student)
 router.get('/nieuw-info', authMiddleware, requireRole('student'), async (req, res) => {
   try {
-    // Haal stage op van student
     const { data: stage } = await supabaseAdmin
       .from('stages')
       .select('id, startdatum, einddatum')
@@ -100,12 +94,8 @@ router.get('/nieuw-info', authMiddleware, requireRole('student'), async (req, re
     if (stage) {
       const start = new Date(stage.startdatum)
       const eind = new Date(stage.einddatum)
-
-      // Bereken totaal weken
       const msPerWeek = 7 * 24 * 60 * 60 * 1000
       totaal_weken = Math.ceil((eind - start) / msPerWeek)
-
-      // Bereken huidige weeknummer
       week_number = Math.ceil((vandaag - start) / msPerWeek)
       if (week_number < 1) week_number = 1
       if (week_number > totaal_weken) week_number = totaal_weken
@@ -190,7 +180,7 @@ router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) =>
 // POST /api/logboeken — nieuw logboek aanmaken (student)
 router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
   try {
-    const { datum, week_number, tasks, reflection, learning_points, uren_gewerkt, competenties } = req.body
+    const { datum, week_number, tasks, reflection, learning_points, uren_gewerkt, status, competenties } = req.body
 
     if (!datum || !tasks) {
       return res.status(400).json({ error: 'Datum en taken zijn verplicht' })
@@ -206,13 +196,27 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
         reflection,
         learning_points,
         uren_gewerkt,
-        competenties,
-        status: 'concept'
+        status: status || 'concept'
       })
       .select()
       .single()
 
     if (error) return res.status(500).json({ error: 'Kon logboek niet aanmaken' })
+
+    // Sla competenties op in logbook_competencies
+    if (competenties && competenties.length > 0) {
+      const competentieRijen = competenties.map(naam => ({
+        logbook_id: data.id,
+        competence_name: naam,
+        selected: true
+      }))
+
+      const { error: cError } = await supabaseAdmin
+        .from('logbook_competencies')
+        .insert(competentieRijen)
+
+      if (cError) console.error('Competenties opslaan mislukt:', cError)
+    }
 
     res.status(201).json({ logboek: data })
   } catch (err) {
@@ -299,13 +303,35 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
 
     const { data, error } = await supabaseAdmin
       .from('logbooks')
-      .update({ datum, week_number, tasks, reflection, learning_points, uren_gewerkt, competenties, status })
+      .update({ datum, week_number, tasks, reflection, learning_points, uren_gewerkt, status })
       .eq('id', id)
       .eq('student_id', req.user.id)
       .select()
       .single()
 
     if (error) return res.status(500).json({ error: 'Kon logboek niet bewerken' })
+
+    // Competenties updaten: verwijder oude en voeg nieuwe in
+    if (competenties !== undefined) {
+      await supabaseAdmin
+        .from('logbook_competencies')
+        .delete()
+        .eq('logbook_id', id)
+
+      if (competenties.length > 0) {
+        const competentieRijen = competenties.map(naam => ({
+          logbook_id: parseInt(id),
+          competence_name: naam,
+          selected: true
+        }))
+
+        const { error: cError } = await supabaseAdmin
+          .from('logbook_competencies')
+          .insert(competentieRijen)
+
+        if (cError) console.error('Competenties updaten mislukt:', cError)
+      }
+    }
 
     res.json({ logboek: data })
   } catch (err) {
@@ -330,6 +356,11 @@ router.delete('/:id', authMiddleware, requireRole('student'), async (req, res) =
     if (bestaand.status === 'goedgekeurd') {
       return res.status(403).json({ error: 'Goedgekeurd logboek kan niet verwijderd worden' })
     }
+
+    await supabaseAdmin
+      .from('logbook_competencies')
+      .delete()
+      .eq('logbook_id', id)
 
     const { error } = await supabaseAdmin
       .from('logbooks')
