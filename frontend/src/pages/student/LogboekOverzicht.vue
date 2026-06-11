@@ -1,69 +1,41 @@
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const logboeken = [
-  {
-    id: 1,
-    dag: 'Maandag 5 mei',
-    status: 'Goedgekeurd',
-    uren: 8,
-    type: 'approved',
-    statusClass: 'green',
-    taken: 'API koppeling getest en dashboard verbeterd.',
-    competenties: ['Communicatie', 'Teamwork']
-  },
-  {
-    id: 2,
-    dag: 'Dinsdag 6 mei',
-    status: 'Goedgekeurd',
-    uren: 8,
-    type: 'approved',
-    statusClass: 'green',
-    taken: 'Router guards getest en loginflow nagekeken.',
-    competenties: ['Probleemoplossing']
-  },
-  {
-    id: 3,
-    dag: 'Woensdag 7 mei',
-    status: 'In behandeling',
-    uren: 8,
-    type: 'waiting',
-    statusClass: 'orange',
-    taken: 'Logout functie gebouwd en getest.',
-    competenties: ['Vaktechnisch']
-  },
-  {
-    id: 4,
-    dag: 'Donderdag 8 mei',
-    status: 'Nog niet ingevuld',
-    uren: 0,
-    type: 'empty',
-    statusClass: 'gray',
-    taken: '',
-    competenties: []
-  },
-  {
-    id: 5,
-    dag: 'Vrijdag 9 mei',
-    status: 'Vandaag',
-    uren: 0,
-    type: 'empty',
-    statusClass: 'blue',
-    taken: '',
-    competenties: []
-  }
-]
+const logboeken = ref([])
 
 function gaNaarInvullen() {
   router.push('/student/logboek-invullen')
 }
+
+onMounted(async () => {
+  try {
+    const token = localStorage.getItem('token')
+
+    const res = await fetch(
+      'http://localhost:3000/api/logboeken/mijn',
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    )
+
+    const data = await res.json()
+
+    logboeken.value = data.logboeken
+  } catch (err) {
+    console.error(err)
+  }
+})
 </script>
 
 <template>
   <main class="logboek-page">
     <section class="hero">
+     
       <p class="label">Stage Logboek</p>
       <h1>Mijn Logboek</h1>
       <p class="subtitle">Overzicht van je ingediende logboeken</p>
@@ -87,42 +59,26 @@ function gaNaarInvullen() {
       </div>
 
       <div class="cards">
-        <article
-          v-for="logboek in logboeken"
-          :key="logboek.id"
-          class="day-card"
-          :class="logboek.type"
-        >
-          <h3>{{ logboek.dag }}</h3>
+  <article
+    v-for="logboek in logboeken"
+    :key="logboek.id"
+    class="day-card approved"
+  >
+    <h3>{{ logboek.datum }}</h3>
 
-          <span class="status" :class="logboek.statusClass">
-            {{ logboek.status }}
-          </span>
+    <span class="status green">
+      {{ logboek.status }}
+    </span>
 
-          <p>{{ logboek.uren }} uur gewerkt</p>
+    <p>{{ logboek.uren_gewerkt }} uur gewerkt</p>
 
-          <p v-if="logboek.taken" class="tasks">
-            {{ logboek.taken }}
-          </p>
+    <p v-if="logboek.tasks" class="tasks">
+      {{ logboek.tasks }}
+    </p>
 
-          <button
-            v-else
-            class="fill-card-btn"
-            @click="gaNaarInvullen"
-          >
-            Invullen
-          </button>
-
-          <div v-if="logboek.competenties.length" class="tags">
-            <span
-              v-for="competentie in logboek.competenties"
-              :key="competentie"
-            >
-              {{ competentie }}
-            </span>
-          </div>
-        </article>
-      </div>
+    <p>Week {{ logboek.week_number }}</p>
+  </article>
+</div>
     </section>
 
     <section class="feedback-card">
