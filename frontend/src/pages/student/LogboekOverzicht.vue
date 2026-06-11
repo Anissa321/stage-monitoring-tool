@@ -125,7 +125,7 @@ function gaNaarInvullen() {
 }
 
 .label {
-  color: #2563eb;
+ color: #991b1b;
   font-weight: 700;
   text-transform: uppercase;
   font-size: 12px;
@@ -162,7 +162,8 @@ function gaNaarInvullen() {
 .progress-fill {
   width: 80%;
   height: 100%;
-  background: #10b981;
+ 
+  background: #991b1b;
 }
 
 .week-section {
@@ -182,12 +183,15 @@ function gaNaarInvullen() {
 
 .new-btn {
   border: none;
-  background: #2563eb;
+  background: #991b1b;
   color: white;
   padding: 12px 20px;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
+}
+.new-btn:hover {
+  background: #7f1d1d;
 }
 
 .cards {
@@ -257,8 +261,8 @@ function gaNaarInvullen() {
 }
 
 .tags span {
-  background: #eff6ff;
-  color: #2563eb;
+ background: #fee2e2;
+  color: #991b1b;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
@@ -266,15 +270,15 @@ function gaNaarInvullen() {
 
 .feedback-card {
   margin-top: 32px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
   border-radius: 20px;
   padding: 24px;
 }
 
 .feedback-card h3 {
   margin-bottom: 12px;
-  color: #1d4ed8;
+ color: #991b1b;
 }
 
 .feedback-card p {
