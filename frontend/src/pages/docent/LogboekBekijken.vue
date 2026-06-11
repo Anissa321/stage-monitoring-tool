@@ -7,19 +7,28 @@ const logboeken = ref([])
 const geselecteerdLogboek = ref(null)
 const loading = ref(true)
 const error = ref('')
+const user = ref(null)
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/logboeken/docent', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    const data = await res.json()
-    if (!res.ok) {
+    const [logRes, dashRes] = await Promise.all([
+      fetch('http://localhost:3000/api/logboeken/docent', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }),
+      fetch('http://localhost:3000/api/dashboards/docent', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+    ])
+    const data = await logRes.json()
+    const dashData = await dashRes.json()
+
+    if (!logRes.ok) {
       error.value = data.error || 'Kon logboeken niet ophalen'
       return
     }
     logboeken.value = data.logboeken
+    user.value = dashData.user
     if (logboeken.value.length > 0) {
       geselecteerdLogboek.value = logboeken.value[0]
     }
@@ -65,8 +74,7 @@ function statusLabel(status) {
 
 function formatDag(datum) {
   if (!datum) return ''
-  const d = new Date(datum)
-  return d.toLocaleDateString('nl-BE', { weekday: 'long' })
+  return new Date(datum).toLocaleDateString('nl-BE', { weekday: 'long' })
 }
 
 function formatDatum(datum) {
@@ -77,12 +85,29 @@ function formatDatum(datum) {
 
 function formatVolledigDatum(datum) {
   if (!datum) return ''
-  const d = new Date(datum)
-  return d.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(datum).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-function terug() {
-  router.push('/docent')
+function voornaam() { return user.value?.voornaam || 'Docent' }
+function initialen() {
+  if (!user.value) return 'D'
+  return (user.value.voornaam?.[0] || '') + (user.value.achternaam?.[0] || '')
+}
+
+async function logout() {
+  const token = localStorage.getItem('token')
+  try {
+    await fetch('http://localhost:3000/api/auth/logout', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  } catch (err) {
+    console.log(err)
+  }
+  localStorage.removeItem('token')
+  localStorage.removeItem('role')
+  localStorage.removeItem('user')
+  router.push('/login')
 }
 </script>
 
@@ -94,13 +119,15 @@ function terug() {
         <span>Stage Monitor</span>
       </div>
       <nav>
-        <a @click="router.push('/docent')">Dashboard</a>
-        <a class="active">Studenten</a>
+        <a @click="router.push('/docent/dashboard')">Dashboard</a>
+        <a>Stagiairs</a>
+        <a class="active" @click="router.push('/docent/logboek')">Logboeken</a>
         <a>Evaluaties</a>
       </nav>
       <div class="profile">
-        <span>Jan</span>
-        <div class="avatar">J</div>
+        <span>{{ voornaam() }}</span>
+        <button class="logout-btn" @click="logout">Uitloggen</button>
+        <div class="avatar">{{ initialen() }}</div>
       </div>
     </header>
 
@@ -108,21 +135,14 @@ function terug() {
       <div v-if="loading" class="loading">Logboeken laden...</div>
       <div v-else-if="error" class="error-msg">{{ error }}</div>
       <div v-else>
-
-        <button class="back-btn" @click="terug">
-          ← Terug naar studentdossier
-        </button>
+        <button class="back-btn" @click="router.push('/docent/dashboard')">← Terug naar studentdossier</button>
 
         <div class="title-block">
           <h1>Logboek overzicht</h1>
           <p>{{ logboeken.length }} logboeken gevonden</p>
         </div>
 
-        <section
-          v-for="[weekNr, logs] in weken"
-          :key="weekNr"
-          class="week-section"
-        >
+        <section v-for="[weekNr, logs] in weken" :key="weekNr" class="week-section">
           <h2>Week {{ weekNr }}</h2>
           <div class="week-grid">
             <article
@@ -154,14 +174,8 @@ function terug() {
 
           <div class="block">
             <span class="small-label red">📌 Competenties toegepast vandaag</span>
-            <div
-              v-if="geselecteerdLogboek.competenties && geselecteerdLogboek.competenties.length"
-            >
-              <div
-                v-for="comp in geselecteerdLogboek.competenties"
-                :key="comp.competence_name"
-                class="competentie"
-              >
+            <div v-if="geselecteerdLogboek.competenties && geselecteerdLogboek.competenties.length">
+              <div v-for="comp in geselecteerdLogboek.competenties" :key="comp.competence_name" class="competentie">
                 <input type="checkbox" :checked="comp.selected" disabled />
                 <div>
                   <strong>{{ comp.competence_name }}</strong>
@@ -180,296 +194,90 @@ function terug() {
             Ingediend op {{ formatVolledigDatum(geselecteerdLogboek.submitted_at) }}
           </p>
         </section>
-
       </div>
     </section>
   </main>
 </template>
 
 <style scoped>
-* {
-  box-sizing: border-box;
-  font-family: Inter, sans-serif;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-.page {
-  min-height: 100vh;
-  background: #f1f5f9;
-  color: #0f172a;
-}
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
-.topbar {
-  height: 64px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 44px;
-}
+.page { min-height: 100vh; background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%); color: #0f172a; }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 800;
-}
+.topbar { height: 72px; background: rgba(255,255,255,0.95); border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; padding: 0 64px; position: sticky; top: 0; z-index: 10; backdrop-filter: blur(10px); }
 
-.logo-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  background: #991b1b;
-  color: white;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-}
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 800; color: #991b1b; }
 
-nav {
-  display: flex;
-  gap: 24px;
-}
+.logo-circle { width: 38px; height: 38px; border-radius: 12px; background: #991b1b; color: white; display: grid; place-items: center; font-size: 13px; }
 
-nav a {
-  font-size: 13px;
-  font-weight: 700;
-  color: #64748b;
-  text-decoration: none;
-  cursor: pointer;
-}
+nav { display: flex; gap: 8px; }
 
-nav a.active {
-  color: #991b1b;
-}
+nav a { text-decoration: none; color: #64748b; font-size: 14px; font-weight: 600; padding: 10px 18px; border-radius: 12px; cursor: pointer; transition: 0.2s ease; }
 
-.profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-}
+nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 
-.avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  display: grid;
-  place-items: center;
-}
+.profile { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; color: #334155; }
 
-.content {
-  padding: 34px 56px 52px;
-}
+.avatar { width: 38px; height: 38px; border-radius: 50%; background: #f1f5f9; border: 1px solid #e2e8f0; display: grid; place-items: center; font-size: 13px; }
 
-.loading {
-  text-align: center;
-  padding: 60px;
-  color: #64748b;
-}
+.logout-btn { border: none; background: #991b1b; color: white; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s ease; }
+.logout-btn:hover { background: #7f1d1d; }
 
-.error-msg {
-  text-align: center;
-  padding: 60px;
-  color: #991b1b;
-}
+.content { padding: 40px 64px 52px; }
 
-.back-btn {
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-weight: 700;
-  cursor: pointer;
-  margin-bottom: 14px;
-  font-size: 14px;
-  padding: 0;
-}
+.loading { text-align: center; padding: 60px; color: #64748b; }
+.error-msg { text-align: center; padding: 60px; color: #991b1b; }
 
-.back-btn:hover {
-  color: #991b1b;
-}
+.back-btn { border: none; background: transparent; color: #64748b; font-weight: 700; cursor: pointer; margin-bottom: 14px; font-size: 14px; padding: 0; }
+.back-btn:hover { color: #991b1b; }
 
-.title-block h1 {
-  margin: 0;
-  font-size: 30px;
-  font-weight: 800;
-}
+.title-block h1 { margin: 0; font-size: 30px; font-weight: 800; }
+.title-block p { margin: 6px 0 30px; color: #64748b; }
 
-.title-block p {
-  margin: 6px 0 30px;
-  color: #64748b;
-}
+.week-section { margin-bottom: 32px; }
+.week-section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
 
-.week-section {
-  margin-bottom: 32px;
-}
+.week-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; margin-bottom: 30px; }
 
-.week-section h2 {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 16px;
-}
+.day-box { background: white; border-radius: 14px; padding: 18px; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(15,23,42,0.04); cursor: pointer; transition: box-shadow 0.2s; }
+.day-box:hover { box-shadow: 0 12px 28px rgba(15,23,42,0.1); }
+.day-box.selected { border: 2px solid #991b1b; }
+.day-box span { color: #64748b; font-size: 12px; font-weight: 700; display: block; }
+.day-box strong { display: block; margin: 8px 0; font-size: 18px; }
+.day-box p { display: inline-block; margin: 0; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+.day-box.done p { background: #dcfce7; color: #166534; }
+.day-box.warning p { background: #fef3c7; color: #92400e; }
+.day-box.active p { background: #fee2e2; color: #991b1b; }
+.day-box.vrij p { background: #e0f2fe; color: #075985; }
 
-.week-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 18px;
-  margin-bottom: 30px;
-}
+.detail-card { background: white; border-radius: 18px; padding: 30px; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(15,23,42,0.04); }
+.detail-card h2 { margin: 0 0 24px; font-size: 20px; font-weight: 800; }
 
-.day-box {
-  background: white;
-  border-radius: 14px;
-  padding: 18px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
-  cursor: pointer;
-  transition: box-shadow 0.2s;
-}
+.block { margin-bottom: 26px; }
+.small-label { display: block; color: #64748b; text-transform: uppercase; font-size: 11px; font-weight: 800; margin-bottom: 10px; }
+.small-label.red { color: #991b1b; }
+.small-label.yellow { color: #b45309; }
+.block p { color: #334155; line-height: 1.6; margin: 0; }
+.block strong { font-size: 18px; }
 
-.day-box:hover {
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
-}
+.geen-data { color: #94a3b8; font-style: italic; font-size: 14px; }
 
-.day-box.selected {
-  border: 2px solid #991b1b;
-}
+.competentie { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
+.competentie input { margin-top: 3px; accent-color: #991b1b; width: 16px; height: 16px; }
+.competentie strong { font-size: 14px; display: block; }
 
-.day-box span {
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 700;
-  display: block;
-}
-
-.day-box strong {
-  display: block;
-  margin: 8px 0;
-  font-size: 18px;
-}
-
-.day-box p {
-  display: inline-block;
-  margin: 0;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.day-box.done p {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.day-box.warning p {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.day-box.active p {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.day-box.vrij p {
-  background: #e0f2fe;
-  color: #075985;
-}
-
-.detail-card {
-  background: white;
-  border-radius: 18px;
-  padding: 30px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
-}
-
-.detail-card h2 {
-  margin: 0 0 24px;
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.block {
-  margin-bottom: 26px;
-}
-
-.small-label {
-  display: block;
-  color: #64748b;
-  text-transform: uppercase;
-  font-size: 11px;
-  font-weight: 800;
-  margin-bottom: 10px;
-}
-
-.small-label.red {
-  color: #991b1b;
-}
-
-.small-label.yellow {
-  color: #b45309;
-}
-
-.block p {
-  color: #334155;
-  line-height: 1.6;
-  margin: 0;
-}
-
-.block strong {
-  font-size: 18px;
-}
-
-.geen-data {
-  color: #94a3b8;
-  font-style: italic;
-  font-size: 14px;
-}
-
-.competentie {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  align-items: flex-start;
-}
-
-.competentie input {
-  margin-top: 3px;
-  accent-color: #991b1b;
-  width: 16px;
-  height: 16px;
-}
-
-.competentie strong {
-  font-size: 14px;
-  display: block;
-}
-
-.submitted {
-  margin-top: 38px;
-  color: #64748b;
-  font-style: italic;
-  font-size: 13px;
-}
+.submitted { margin-top: 38px; color: #64748b; font-style: italic; font-size: 13px; }
 
 @media (max-width: 1000px) {
-  .week-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  nav {
-    display: none;
-  }
+  .week-grid { grid-template-columns: repeat(2, 1fr); }
+  .topbar { padding: 0 20px; }
+  nav { display: none; }
+  .content { padding: 24px 20px; }
 }
 
 @media (max-width: 700px) {
-  .content {
-    padding: 24px 20px;
-  }
-  .week-grid {
-    grid-template-columns: 1fr;
-  }
+  .week-grid { grid-template-columns: 1fr; }
 }
 </style>
