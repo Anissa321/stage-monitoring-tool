@@ -4,6 +4,8 @@ import helmet from 'helmet'
 import dotenv from 'dotenv'
 import authRoutes from './routes/auth.routes.js'
 import docentRoutes from './routes/docent.routes.js'
+import dashboardRoutes from './routes/dashboards.routes.js'
+
 dotenv.config()
 
 const app = express()
@@ -30,6 +32,7 @@ app.get('/health', (req, res) => {
 // Auth routes
 app.use('/api/auth', authRoutes)
 app.use('/api/docent', docentRoutes)
+app.use('/api/dashboards', dashboardRoutes)
 
 // 404 handler — altijd na alle routes
 app.use((req, res) => {
