@@ -18,14 +18,12 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
 
     const logboekIds = data.map(l => l.id)
 
-    // Haal competenties op
     const { data: competenties } = await supabaseAdmin
       .from('logbook_competencies')
       .select('logbook_id, competence_name, selected')
       .in('logbook_id', logboekIds)
       .eq('selected', true)
 
-    // Haal week reviews op (week_status + mentor info)
     const weekNummers = [...new Set(data.map(l => l.week_number))]
     const { data: reviews } = await supabaseAdmin
       .from('logbook_reviews')
@@ -34,7 +32,6 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
       .in('week_number', weekNummers)
       .order('reviewed_at', { ascending: false })
 
-    // Haal mentor namen op
     let mentorNamen = {}
     if (reviews && reviews.length > 0) {
       const mentorIds = [...new Set(reviews.filter(r => r.mentor_id).map(r => r.mentor_id))]
@@ -51,7 +48,6 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
       }
     }
 
-    // Bouw week info map
     const weekInfo = {}
     if (reviews) {
       reviews.forEach(r => {
@@ -64,7 +60,6 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
       })
     }
 
-    // Voeg alles samen
     const logboekenMetData = data.map(log => ({
       ...log,
       competenties: competenties
@@ -84,7 +79,6 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
 // GET /api/logboeken/nieuw-info — info voor nieuw logboek (student)
 router.get('/nieuw-info', authMiddleware, requireRole('student'), async (req, res) => {
   try {
-    // Haal stage op van student
     const { data: stage } = await supabaseAdmin
       .from('stages')
       .select('id, startdatum, einddatum')
@@ -100,12 +94,8 @@ router.get('/nieuw-info', authMiddleware, requireRole('student'), async (req, re
     if (stage) {
       const start = new Date(stage.startdatum)
       const eind = new Date(stage.einddatum)
-
-      // Bereken totaal weken
       const msPerWeek = 7 * 24 * 60 * 60 * 1000
       totaal_weken = Math.ceil((eind - start) / msPerWeek)
-
-      // Bereken huidige weeknummer
       week_number = Math.ceil((vandaag - start) / msPerWeek)
       if (week_number < 1) week_number = 1
       if (week_number > totaal_weken) week_number = totaal_weken
@@ -142,6 +132,58 @@ router.get('/mentor', authMiddleware, requireRole('mentor'), async (req, res) =>
     res.json({ logboeken: data })
   } catch (err) {
     console.error('Mentor logboeken error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
+// GET /api/logboeken/mentor/week/:studentId/:weekNummer
+router.get('/mentor/week/:studentId/:weekNummer', authMiddleware, requireRole('mentor'), async (req, res) => {
+  try {
+    const { studentId, weekNummer } = req.params
+
+    const { data: koppelingen } = await supabaseAdmin
+      .from('mentor_studenten')
+      .select('student_id')
+      .eq('mentor_id', req.user.id)
+
+    const studentIds = koppelingen.map(k => k.student_id)
+    if (!studentIds.includes(studentId)) {
+      return res.status(403).json({ error: 'Student niet gekoppeld' })
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('logbooks')
+      .select('id, datum, week_number, tasks, reflection, learning_points, uren_gewerkt, status, submitted_at')
+      .eq('student_id', studentId)
+      .eq('week_number', weekNummer)
+      .order('datum', { ascending: true })
+
+    if (error) return res.status(500).json({ error: 'Kon logboeken niet ophalen' })
+
+    const logboekIds = data.map(l => l.id)
+    const { data: competenties } = await supabaseAdmin
+      .from('logbook_competencies')
+      .select('logbook_id, competence_name, selected')
+      .in('logbook_id', logboekIds)
+      .eq('selected', true)
+
+    const logboekenMetCompetenties = data.map(log => ({
+      ...log,
+      competenties: competenties
+        ? competenties.filter(c => c.logbook_id === log.id).map(c => c.competence_name)
+        : []
+    }))
+
+    // Haal student profiel op
+    const { data: student } = await supabaseAdmin
+      .from('profiles')
+      .select('voornaam, achternaam')
+      .eq('id', studentId)
+      .single()
+
+    res.json({ logboeken: logboekenMetCompetenties, student })
+  } catch (err) {
+    console.error('Mentor week error:', err)
     res.status(500).json({ error: 'Server fout' })
   }
 })

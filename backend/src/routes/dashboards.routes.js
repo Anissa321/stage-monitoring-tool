@@ -8,14 +8,12 @@ const router = Router()
 // GET /api/dashboards/student
 router.get('/student', authMiddleware, requireRole('student'), async (req, res) => {
   try {
-    // Stage info
     const { data: stage } = await supabaseAdmin
       .from('stages')
       .select('id, bedrijfsnaam, startdatum, einddatum, status')
       .eq('student_id', req.user.id)
       .single()
 
-    // Mentor info
     let mentor = null
     const { data: mentorKoppeling } = await supabaseAdmin
       .from('mentor_studenten')
@@ -35,9 +33,8 @@ router.get('/student', authMiddleware, requireRole('student'), async (req, res) 
       }
     }
 
-    // Logboeken deze week (ma-vr)
     const nu = new Date()
-    const dag = nu.getDay() // 0=zo, 1=ma, ..., 5=vr, 6=za
+    const dag = nu.getDay()
     const diffMaandag = dag === 0 ? -6 : 1 - dag
     const maandag = new Date(nu)
     maandag.setDate(nu.getDate() + diffMaandag)
@@ -55,7 +52,6 @@ router.get('/student', authMiddleware, requireRole('student'), async (req, res) 
       .lte('datum', vrijdagStr)
       .order('datum', { ascending: true })
 
-    // Recente logboeken (laatste 5)
     const { data: recenteLogboeken } = await supabaseAdmin
       .from('logbooks')
       .select('id, datum, status, tasks')
@@ -63,7 +59,6 @@ router.get('/student', authMiddleware, requireRole('student'), async (req, res) 
       .order('datum', { ascending: false })
       .limit(5)
 
-    // Week voortgang
     const totaalDezeWeek = logboekenDezeWeek?.length || 0
     const ingevuldDezeWeek = logboekenDezeWeek?.filter(l =>
       ['goedgekeurd', 'ingediend', 'concept'].includes(l.status)
@@ -152,6 +147,46 @@ router.get('/mentor', authMiddleware, requireRole('mentor'), async (req, res) =>
     })
   } catch (err) {
     console.error('Mentor dashboard error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
+// GET /api/dashboards/mentor/student/:studentId
+router.get('/mentor/student/:studentId', authMiddleware, requireRole('mentor'), async (req, res) => {
+  try {
+    const { studentId } = req.params
+
+    const { data: koppeling } = await supabaseAdmin
+      .from('mentor_studenten')
+      .select('student_id')
+      .eq('mentor_id', req.user.id)
+      .eq('student_id', studentId)
+      .single()
+
+    if (!koppeling) return res.status(403).json({ error: 'Student niet gevonden' })
+
+    const { data: student } = await supabaseAdmin
+      .from('profiles')
+      .select('id, voornaam, achternaam, email')
+      .eq('id', studentId)
+      .single()
+
+    const { data: stage } = await supabaseAdmin
+      .from('stages')
+      .select('id, bedrijfsnaam, startdatum, einddatum, status')
+      .eq('student_id', studentId)
+      .single()
+
+    const { data: logboeken } = await supabaseAdmin
+      .from('logbooks')
+      .select('id, datum, status, tasks, week_number')
+      .eq('student_id', studentId)
+      .order('datum', { ascending: false })
+      .limit(5)
+
+    res.json({ student, stage: stage || null, logboeken: logboeken || [] })
+  } catch (err) {
+    console.error('Mentor student detail error:', err)
     res.status(500).json({ error: 'Server fout' })
   }
 })

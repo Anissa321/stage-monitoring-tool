@@ -1,32 +1,79 @@
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const mentor = ref(null)
+const studenten = ref([])
+const logboekenTeTekenen = ref([])
+const loading = ref(true)
 
-function goToLogbook() {
-  router.push('/mentor/logboek')
-}
-
-
-
-async function logout() {
+onMounted(async () => {
   const token = localStorage.getItem('token')
 
   try {
+    const res = await fetch('http://localhost:3000/api/dashboards/mentor', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const data = await res.json()
+    mentor.value = data.user
+    studenten.value = data.studenten || []
+
+    const resLog = await fetch('http://localhost:3000/api/logboeken/mentor', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const logData = await resLog.json()
+
+    logboekenTeTekenen.value = (logData.logboeken || []).filter(l =>
+      l.status === 'ingediend'
+    )
+  } catch (err) {
+    console.error('Dashboard error:', err)
+  } finally {
+    loading.value = false
+  }
+})
+
+function initialen(voornaam, achternaam) {
+  return `${voornaam?.[0] || ''}${achternaam?.[0] || ''}`
+}
+
+function formatDatum(datum) {
+  if (!datum) return ''
+  const d = new Date(datum)
+  return d.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function goToStudentDetail(studentId) {
+  router.push(`/mentor/student/${studentId}`)
+}
+
+function goToEersteLogboek(studentId) {
+  const eersteIngediend = logboekenTeTekenen.value.find(l => l.student_id === studentId)
+  if (eersteIngediend) {
+    router.push(`/mentor/week/${studentId}/${eersteIngediend.week_number}`)
+  } else {
+    alert('Geen logboeken te tekenen voor deze student.')
+  }
+}
+
+function goToAftekenen(log) {
+  router.push(`/mentor/week/${log.student_id}/${log.week_number}`)
+}
+
+async function logout() {
+  const token = localStorage.getItem('token')
+  try {
     await fetch('http://localhost:3000/api/auth/logout', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` }
     })
   } catch (err) {
     console.log(err)
   }
-
   localStorage.removeItem('token')
   localStorage.removeItem('role')
   localStorage.removeItem('user')
-
   router.push('/login')
 }
 </script>
@@ -47,123 +94,91 @@ async function logout() {
       </nav>
 
       <div class="profile">
-        <span>Peter Mentor</span>
-
-        <button class="logout-btn" @click="logout">
-          Uitloggen
-        </button>
-
-        <div class="avatar">PM</div>
+        <span>{{ mentor?.voornaam }} {{ mentor?.achternaam }}</span>
+        <button class="logout-btn" @click="logout">Uitloggen</button>
+        <div class="avatar">{{ initialen(mentor?.voornaam, mentor?.achternaam) }}</div>
       </div>
     </header>
 
-    <section class="hero">
-      <p class="label">Mentor Dashboard</p>
-      <h1>Welkom terug, Peter</h1>
-      <p>Acme Corp • Je begeleidt 2 stagiairs</p>
-    </section>
+    <div v-if="loading" class="loading">Laden...</div>
 
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <h2>Mijn stagiairs</h2>
-          <p>Overzicht van studenten die jij begeleidt tijdens hun stage</p>
+    <div v-else>
+      <section class="hero">
+        <p class="label">Mentor Dashboard</p>
+        <h1>Welkom terug, {{ mentor?.voornaam }}</h1>
+        <p>Je begeleidt {{ studenten.length }} stagiair(s)</p>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2>Mijn stagiairs</h2>
+            <p>Overzicht van studenten die jij begeleidt tijdens hun stage</p>
+          </div>
         </div>
-      </div>
 
-      <div class="student-grid">
-        <article class="student-card">
-          <div class="student-top">
-            <div class="student-avatar blue">AC</div>
-
-            <div>
-              <h3>Anissa Canton</h3>
-              <p>anissa.canton@student.ehb.be</p>
-              <span class="badge green">Op schema</span>
+        <div class="student-grid">
+          <article v-for="student in studenten" :key="student.id" class="student-card">
+            <div class="card-clickable" @click="goToStudentDetail(student.id)">
+              <div class="student-top">
+                <div class="student-avatar blue">
+                  {{ initialen(student.voornaam, student.achternaam) }}
+                </div>
+                <div>
+                  <h3>{{ student.voornaam }} {{ student.achternaam }}</h3>
+                  <p>{{ student.email }}</p>
+                  <span class="badge green">Op schema</span>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <p class="meta">Stage: Acme Corp • Week 12 / 16</p>
-          <p class="progress-text">Logboeken: 52 / 65</p>
-
-          <div class="progress">
-            <div class="progress-fill green-fill"></div>
-          </div>
-
-          <div class="card-actions">
-            <button class="primary-btn" @click="goToLogbook">
-             Bekijk logboeken
-            </button>
-            <button class="secondary-btn">Evaluatie</button>
-          </div>
-        </article>
-
-        <article class="student-card">
-          <div class="student-top">
-            <div class="student-avatar orange-avatar">TJ</div>
-
-            <div>
-              <h3>Tom Janssens</h3>
-              <p>tom.janssens@student.ehb.be</p>
-              <span class="badge orange">Logboek mist</span>
+            <div class="card-actions">
+              <button class="primary-btn" @click="goToEersteLogboek(student.id)">
+                Bekijk logboeken
+              </button>
+              <button class="secondary-btn">Evaluatie</button>
             </div>
-          </div>
-
-          <p class="meta">Stage: TechBV • Week 12 / 16</p>
-          <p class="progress-text">Logboeken: 48 / 65</p>
-
-          <div class="progress">
-            <div class="progress-fill orange-fill"></div>
-          </div>
-
-          <div class="card-actions">
-            <button class="primary-btn" @click="goToLogbook">
-             Bekijk logboeken
-            </button>
-            <button class="secondary-btn">Evaluatie</button>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <h2>Logboeken te tekenen</h2>
-          <p>5 logboeken wachten op jouw aftekening</p>
+          </article>
         </div>
-      </div>
+      </section>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Student</th>
-            <th>Datum</th>
-            <th>Week</th>
-            <th>Status</th>
-            <th>Actie</th>
-          </tr>
-        </thead>
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2>Logboeken te tekenen</h2>
+            <p>{{ logboekenTeTekenen.length }} logboeken wachten op jouw aftekening</p>
+          </div>
+        </div>
 
-        <tbody>
-          <tr>
-            <td class="name">Anissa Canton</td>
-            <td>Maandag 12 mei 2026</td>
-            <td>Week 12</td>
-            <td><span class="badge orange">Wacht op aftekening</span></td>
-            <td><button class="icon-btn">Aftekenen</button></td>
-          </tr>
+        <div v-if="logboekenTeTekenen.length === 0" class="leeg">
+          Geen logboeken te tekenen.
+        </div>
 
-          <tr>
-            <td class="name">Tom Janssens</td>
-            <td>Dinsdag 13 mei 2026</td>
-            <td>Week 12</td>
-            <td><span class="badge orange">Wacht op aftekening</span></td>
-            <td><button class="icon-btn">Aftekenen</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+        <table v-else>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Datum</th>
+              <th>Week</th>
+              <th>Status</th>
+              <th>Actie</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="log in logboekenTeTekenen" :key="log.id">
+              <td class="name">
+                {{ studenten.find(s => s.id === log.student_id)?.voornaam }}
+                {{ studenten.find(s => s.id === log.student_id)?.achternaam }}
+              </td>
+              <td>{{ formatDatum(log.datum) }}</td>
+              <td>Week {{ log.week_number }}</td>
+              <td><span class="badge orange">Wacht op aftekening</span></td>
+              <td><button class="icon-btn" @click="goToAftekenen(log)">Aftekenen</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
   </main>
 </template>
 
@@ -264,11 +279,20 @@ nav a.active {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s ease;
 }
 
-.logout-btn:hover {
-  background: #7f1d1d;
+.logout-btn:hover { background: #7f1d1d; }
+
+.loading {
+  text-align: center;
+  padding: 60px;
+  color: #64748b;
+}
+
+.leeg {
+  padding: 28px;
+  color: #64748b;
+  font-size: 14px;
 }
 
 .hero {
@@ -337,12 +361,24 @@ nav a.active {
   border-radius: 18px;
   padding: 24px;
   background: #ffffff;
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.student-card:hover {
+  box-shadow: 0 12px 32px rgba(153, 27, 27, 0.12);
+  border-color: #991b1b;
+  transform: translateY(-2px);
+}
+
+.card-clickable {
+  cursor: pointer;
 }
 
 .student-top {
   display: flex;
   align-items: center;
   gap: 16px;
+  margin-bottom: 20px;
 }
 
 .student-avatar {
@@ -352,6 +388,7 @@ nav a.active {
   display: grid;
   place-items: center;
   font-weight: 800;
+  font-size: 16px;
 }
 
 .blue {
@@ -359,50 +396,8 @@ nav a.active {
   color: #1d4ed8;
 }
 
-.orange-avatar {
-  background: #fed7aa;
-  color: #c2410c;
-}
-
-.student-card h3 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.student-card p {
-  margin: 4px 0;
-  color: #64748b;
-  font-size: 13px;
-}
-
-.meta {
-  margin-top: 22px !important;
-  color: #334155 !important;
-  font-weight: 500;
-}
-
-.progress {
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 999px;
-  overflow: hidden;
-  margin: 8px 0 18px;
-}
-
-.progress-fill {
-  height: 100%;
-  border-radius: 999px;
-}
-
-.green-fill {
-  width: 80%;
-  background: #22c55e;
-}
-
-.orange-fill {
-  width: 74%;
-  background: #f59e0b;
-}
+.student-card h3 { margin: 0; font-size: 16px; }
+.student-card p { margin: 4px 0; color: #64748b; font-size: 13px; }
 
 .card-actions {
   display: flex;
@@ -418,6 +413,7 @@ nav a.active {
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
+  font-size: 14px;
 }
 
 .primary-btn {
@@ -426,19 +422,19 @@ nav a.active {
   border-color: #991b1b;
 }
 
-.secondary-btn,
-.icon-btn {
+.secondary-btn {
   background: white;
   color: #334155;
 }
 
-.primary-btn:hover,
-.secondary-btn:hover,
-.icon-btn:hover {
-  background: #7f1d1d;
-  color: white;
-  border-color: #7f1d1d;
+.icon-btn {
+  background: white;
+  color: #991b1b;
+  border-color: #991b1b;
 }
+
+.primary-btn:hover { background: #7f1d1d; border-color: #7f1d1d; }
+.icon-btn:hover { background: #991b1b; color: white; }
 
 table {
   width: 100%;
@@ -474,42 +470,15 @@ td {
   font-weight: 700;
 }
 
-.green {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.orange {
-  background: #fef3c7;
-  color: #b45309;
-}
+.green { background: #dcfce7; color: #15803d; }
+.orange { background: #fef3c7; color: #b45309; }
 
 @media (max-width: 900px) {
-  .topbar {
-    padding: 0 20px;
-  }
-
-  nav {
-    display: none;
-  }
-
-  .hero,
-  .card {
-    margin-left: 20px;
-    margin-right: 20px;
-  }
-
-  .hero h1 {
-    font-size: 30px;
-  }
-
-  .student-grid {
-    grid-template-columns: 1fr;
-  }
-
-  table {
-    display: block;
-    overflow-x: auto;
-  }
+  .topbar { padding: 0 20px; }
+  nav { display: none; }
+  .hero, .card { margin-left: 20px; margin-right: 20px; }
+  .hero h1 { font-size: 30px; }
+  .student-grid { grid-template-columns: 1fr; }
+  table { display: block; overflow-x: auto; }
 }
 </style>

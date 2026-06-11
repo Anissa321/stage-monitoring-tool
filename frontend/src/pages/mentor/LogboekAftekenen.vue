@@ -1,108 +1,127 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 
-const feedback = ref(
-  'Sterke week, Anissa. Je technische werk loopt goed en je klantcommunicatie wordt zelfstandiger. Probeer volgende week iets sneller te documenteren tijdens het bouwen.'
-)
+const studentId = route.params.studentId
+const weekNummer = route.params.weekNummer
+const loading = ref(true)
+const error = ref('')
+const succes = ref('')
+const feedback = ref('')
+
+const logboeken = ref([])
+const student = ref(null)
+const mentor = ref(null)
 
 const checklist = ref({
   takenCorrect: false,
   competentiesCorrect: false,
   urenCorrect: false,
-  feedbackIngevuld: true
+  feedbackIngevuld: false
 })
 
-const logbook = ref({
-  student: {
-    voornaam: 'Anissa',
-    achternaam: 'Canton'
-  },
-  mentor: {
-    voornaam: 'Sven',
-    achternaam: 'Janssens'
-  },
-  company: 'Acme Corp',
-  week: 12,
-  period: 'Periode 5',
-  date: '9 mei 2026',
-  status: 'Wacht op weekgoedkeuring',
-  summary: {
-    totalHours: '31 uur',
-    submittedDays: '4 / 5',
-    competencies: '7 gebruikt',
-    reviewStatus: 'Wacht op aftekening'
-  },
-  days: [
-    {
-      id: 1,
-      day: 'Maandag 29 april',
-      hours: '8 uur',
-      status: 'Ingediend',
-      task: 'API-koppeling getest, mentor gebrieft over tijdslijn.',
-      competencies: ['Comm.', 'Vakt.', 'Team.']
-    },
-    {
-      id: 2,
-      day: 'Dinsdag 30 april',
-      hours: '8 uur',
-      status: 'Ingediend',
-      task: 'Documentatie bijgewerkt en team-stand-up bijgewoond.',
-      competencies: ['Vakt.', 'Prob.']
-    },
-    {
-      id: 3,
-      day: 'Woensdag 1 mei',
-      hours: 'Feestdag',
-      status: 'Feestdag',
-      task: 'Dag van de Arbeid',
-      competencies: []
-    },
-    {
-      id: 4,
-      day: 'Donderdag 2 mei',
-      hours: '8 uur',
-      status: 'Ingediend',
-      task: 'Feature deployment naar staging en testen uitgevoerd.',
-      competencies: ['Comm.', 'Team.']
-    },
-    {
-      id: 5,
-      day: 'Vrijdag 3 mei',
-      hours: '7 uur',
-      status: 'Ingediend',
-      task: 'Code refactoring afgerond en pull request ingediend.',
-      competencies: ['Vakt.', 'Prob.']
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+
+  try {
+    const resMe = await fetch('http://localhost:3000/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const meData = await resMe.json()
+    mentor.value = meData.user
+
+    const res = await fetch(`http://localhost:3000/api/logboeken/mentor/week/${studentId}/${weekNummer}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      error.value = data.error || 'Kon logboeken niet ophalen'
+      return
     }
-  ]
+
+    logboeken.value = data.logboeken
+    student.value = data.student
+  } catch (err) {
+    error.value = 'Verbindingsfout met server'
+  } finally {
+    loading.value = false
+  }
 })
+
+function initialen(voornaam, achternaam) {
+  return `${voornaam?.[0] || ''}${achternaam?.[0] || ''}`
+}
+
+function formatDag(datum) {
+  if (!datum) return ''
+  const d = new Date(datum)
+  return d.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function statusKlasse(status) {
+  if (status === 'goedgekeurd' || status === 'ingediend') return 'badge green'
+  if (status === 'niet_ingevuld' || status === 'concept') return 'badge warning'
+  if (status === 'vrije_dag') return 'badge gray'
+  return 'badge warning'
+}
+
+function statusLabel(status) {
+  if (status === 'goedgekeurd') return '✓ Goedgekeurd'
+  if (status === 'ingediend') return '✓ Ingediend'
+  if (status === 'niet_ingevuld') return '⚠ Niet ingevuld'
+  if (status === 'concept') return '✎ Concept'
+  if (status === 'vrije_dag') return 'Feestdag'
+  return status
+}
+
+function totaalUren() {
+  return logboeken.value.reduce((sum, l) => sum + (l.uren_gewerkt || 0), 0)
+}
+
+function aantalIngediend() {
+  return logboeken.value.filter(l => ['ingediend', 'goedgekeurd'].includes(l.status)).length
+}
+
+async function aftekenen(week_status) {
+  if (!feedback.value) {
+    error.value = 'Vul eerst feedback in'
+    return
+  }
+
+  const token = localStorage.getItem('token')
+
+  try {
+    // Teken alle ingediende logboeken af
+    const ingediend = logboeken.value.filter(l => l.status === 'ingediend')
+
+    for (const log of ingediend) {
+      await fetch(`http://localhost:3000/api/logboeken/${log.id}/aftekenen`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          feedback: feedback.value,
+          week_feedback: feedback.value,
+          week_status
+        })
+      })
+    }
+
+    succes.value = week_status === 'goedgekeurd' ? 'Week goedgekeurd!' : 'Week afgekeurd!'
+    setTimeout(() => router.push('/mentor'), 1500)
+  } catch (err) {
+    error.value = 'Verbindingsfout met server'
+  }
+}
 
 function goBack() {
   router.push('/mentor')
-}
-
-function approveWeek() {
-  const payload = {
-    decision: 'goedgekeurd',
-    feedback: feedback.value,
-    checklist: checklist.value
-  }
-
-  console.log('Later naar backend sturen:', payload)
-  alert('Week goedgekeurd. Backend-koppeling volgt wanneer Artin zijn endpoint klaar is.')
-}
-
-function rejectWeek() {
-  const payload = {
-    decision: 'afgekeurd',
-    feedback: feedback.value,
-    checklist: checklist.value
-  }
-
-  console.log('Later naar backend sturen:', payload)
-  alert('Week afgekeurd. Backend-koppeling volgt wanneer Artin zijn endpoint klaar is.')
 }
 </script>
 
@@ -113,154 +132,122 @@ function rejectWeek() {
         <div class="logo-circle">SM</div>
         <span>Stage Monitor</span>
       </div>
-
       <nav>
         <a @click="goBack">Dashboard</a>
         <a class="active">Stagiairs</a>
-        <a>Logboeken</a>
         <a>Evaluaties</a>
       </nav>
-
       <div class="profile">
-        <span>{{ logbook.mentor.voornaam }} {{ logbook.mentor.achternaam }}</span>
-        <div class="avatar">SJ</div>
+        <span>{{ mentor?.voornaam }} {{ mentor?.achternaam }}</span>
+        <div class="avatar">{{ initialen(mentor?.voornaam, mentor?.achternaam) }}</div>
       </div>
     </header>
 
-    <section class="page-header">
-      <button class="back-btn" @click="goBack">
-        ← Terug naar studentdossier
-      </button>
+    <div v-if="loading" class="loading">Laden...</div>
+    <div v-else-if="error && !logboeken.length" class="error-msg">{{ error }}</div>
 
-      <div class="title-row">
-        <div>
-          <h1>
-            Week {{ logbook.week }} aftekenen —
-            {{ logbook.student.voornaam }} {{ logbook.student.achternaam }}
-          </h1>
-
-          <p>
-            {{ logbook.company }} • {{ logbook.period }} • {{ logbook.date }}
-          </p>
-        </div>
-
-        <span class="status-pill warning">
-          ⏳ {{ logbook.status }}
-        </span>
-      </div>
-    </section>
-
-    <section class="summary-card">
-      <div class="summary-item">
-        <span>Totaal uren</span>
-        <strong>{{ logbook.summary.totalHours }}</strong>
-      </div>
-
-      <div class="summary-item">
-        <span>Ingediende dagen</span>
-        <strong>{{ logbook.summary.submittedDays }}</strong>
-      </div>
-
-      <div class="summary-item">
-        <span>Competenties</span>
-        <strong>{{ logbook.summary.competencies }}</strong>
-      </div>
-
-      <div class="summary-item">
-        <span>Status</span>
-        <strong>{{ logbook.summary.reviewStatus }}</strong>
-      </div>
-    </section>
-
-    <section class="days-list">
-      <article
-        v-for="day in logbook.days"
-        :key="day.id"
-        class="day-card"
-      >
-        <div class="day-meta">
-          <h3>{{ day.day }}</h3>
-          <p>⏱ {{ day.hours }}</p>
-
-          <span
-            class="status-pill"
-            :class="day.status === 'Feestdag' ? 'neutral' : 'success'"
-          >
-            {{ day.status }}
-          </span>
-        </div>
-
-        <div class="day-task">
-          <span>Wat heeft ze gedaan</span>
-          <p>“{{ day.task }}”</p>
-        </div>
-
-        <div class="competencies">
-          <span>Competenties</span>
-
-          <div class="tags">
-            <small
-              v-for="competence in day.competencies"
-              :key="competence"
-              class="tag"
-            >
-              {{ competence }}
-            </small>
-
-            <small v-if="day.competencies.length === 0" class="empty-tag">
-              Geen competenties
-            </small>
+    <div v-else>
+      <section class="page-header">
+        <button class="back-btn" @click="goBack">← Terug naar studentdossier</button>
+        <div class="title-row">
+          <div>
+            <h1>Week {{ weekNummer }} aftekenen — {{ student?.voornaam }} {{ student?.achternaam }}</h1>
+            <p>Week {{ weekNummer }}</p>
           </div>
+          <span class="status-pill warning">⏳ Wacht op weekgoedkeuring</span>
         </div>
-      </article>
-    </section>
+      </section>
 
-    <section class="feedback-section">
-      <h2>Wekelijkse feedback voor {{ logbook.student.voornaam }}</h2>
-      <p>Algemene reflectie over de hele week, attitude en verbeterpunten.</p>
+      <!-- Samenvatting -->
+      <section class="summary-card">
+        <div class="summary-item">
+          <span>Totaal uren</span>
+          <strong>{{ totaalUren() }} uur</strong>
+        </div>
+        <div class="summary-item">
+          <span>Ingediende dagen</span>
+          <strong>{{ aantalIngediend() }} / {{ logboeken.length }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Week</span>
+          <strong>Week {{ weekNummer }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Status</span>
+          <strong>Wacht op aftekening</strong>
+        </div>
+      </section>
 
-      <textarea v-model="feedback"></textarea>
+      <!-- Dagen -->
+      <section class="days-list">
+        <article v-for="log in logboeken" :key="log.id" class="day-card">
+          <div class="day-meta">
+            <h3>{{ formatDag(log.datum) }}</h3>
+            <p>⏱ {{ log.status === 'vrije_dag' ? 'Feestdag' : log.uren_gewerkt + ' uur' }}</p>
+            <span :class="statusKlasse(log.status)">{{ statusLabel(log.status) }}</span>
+          </div>
 
-      <div class="mentor-checklist">
-        <h3>Controle door mentor</h3>
+          <div class="day-task">
+            <span>Wat heeft {{ student?.voornaam }} gedaan</span>
+            <p>"{{ log.tasks || 'Niet ingevuld' }}"</p>
+          </div>
 
-        <label>
-          <input v-model="checklist.takenCorrect" type="checkbox">
-          Werkzaamheden komen overeen met uitgevoerde taken
-        </label>
+          <div class="competencies">
+            <span>Competenties</span>
+            <div class="tags">
+              <small
+                v-if="log.competenties && log.competenties.length"
+                v-for="comp in log.competenties"
+                :key="comp"
+                class="tag"
+              >
+                {{ comp }}
+              </small>
+              <small v-else class="empty-tag">Geen competenties</small>
+            </div>
+          </div>
+        </article>
+      </section>
 
-        <label>
-          <input v-model="checklist.competentiesCorrect" type="checkbox">
-          Competenties zijn correct aangeduid
-        </label>
+      <!-- Feedback -->
+      <section class="feedback-section">
+        <h2>Wekelijkse feedback voor {{ student?.voornaam }}</h2>
+        <p>Algemene reflectie over de hele week, attitude en verbeterpunten.</p>
+        <textarea v-model="feedback" placeholder="Schrijf hier je feedback..."></textarea>
 
-        <label>
-          <input v-model="checklist.urenCorrect" type="checkbox">
-          Student heeft voldoende uren gepresteerd
-        </label>
+        <div v-if="error" class="error-msg">{{ error }}</div>
+        <div v-if="succes" class="succes-msg">{{ succes }}</div>
 
-        <label>
-          <input v-model="checklist.feedbackIngevuld" type="checkbox">
-          Feedback werd ingevuld
-        </label>
-      </div>
-    </section>
+        <div class="mentor-checklist">
+          <h3>Controle door mentor</h3>
+          <label>
+            <input v-model="checklist.takenCorrect" type="checkbox">
+            Werkzaamheden komen overeen met uitgevoerde taken
+          </label>
+          <label>
+            <input v-model="checklist.competentiesCorrect" type="checkbox">
+            Competenties zijn correct aangeduid
+          </label>
+          <label>
+            <input v-model="checklist.urenCorrect" type="checkbox">
+            Student heeft voldoende uren gepresteerd
+          </label>
+          <label>
+            <input v-model="checklist.feedbackIngevuld" type="checkbox">
+            Feedback werd ingevuld
+          </label>
+        </div>
+      </section>
 
-    <section class="actions">
-      <button class="cancel-btn" @click="goBack">
-        Annuleren
-      </button>
-
-      <div class="action-buttons">
-        <button class="reject-btn" @click="rejectWeek">
-          × Week afkeuren
-        </button>
-
-        <button class="approve-btn" @click="approveWeek">
-          ✓ Week goedkeuren
-        </button>
-      </div>
-    </section>
+      <!-- Acties -->
+      <section class="actions">
+        <button class="cancel-btn" @click="goBack">Annuleren</button>
+        <div class="action-buttons">
+          <button class="reject-btn" @click="aftekenen('afgekeurd')">× Week afkeuren</button>
+          <button class="approve-btn" @click="aftekenen('goedgekeurd')">✓ Week goedkeuren</button>
+        </div>
+      </section>
+    </div>
   </main>
 </template>
 
@@ -351,6 +338,25 @@ nav a.active {
   font-size: 13px;
 }
 
+.loading {
+  text-align: center;
+  padding: 60px;
+  color: #64748b;
+}
+
+.error-msg {
+  color: #991b1b;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.succes-msg {
+  color: #15803d;
+  margin: 10px 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .page-header {
   padding: 30px 64px 20px;
 }
@@ -362,11 +368,11 @@ nav a.active {
   font-weight: 600;
   cursor: pointer;
   margin-bottom: 14px;
+  font-size: 14px;
+  padding: 0;
 }
 
-.back-btn:hover {
-  color: #991b1b;
-}
+.back-btn:hover { color: #991b1b; }
 
 .title-row {
   display: flex;
@@ -377,7 +383,7 @@ nav a.active {
 
 .title-row h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 800;
 }
 
@@ -416,27 +422,13 @@ nav a.active {
 .status-pill {
   display: inline-flex;
   align-items: center;
-  width: fit-content;
   border-radius: 999px;
   padding: 7px 13px;
   font-size: 12px;
   font-weight: 700;
 }
 
-.warning {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.success {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.neutral {
-  background: #f1f5f9;
-  color: #64748b;
-}
+.warning { background: #fef3c7; color: #92400e; }
 
 .days-list {
   padding: 8px 64px 20px;
@@ -450,9 +442,8 @@ nav a.active {
   border: 1px solid #e5e7eb;
   border-radius: 16px;
   padding: 22px;
-  min-height: 120px;
   display: grid;
-  grid-template-columns: 170px 1fr 320px;
+  grid-template-columns: 200px 1fr 320px;
   gap: 28px;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
 }
@@ -460,7 +451,7 @@ nav a.active {
 .day-meta h3 {
   margin: 0 0 6px;
   font-size: 14px;
-  color: #111827;
+  font-weight: 700;
 }
 
 .day-meta p {
@@ -492,33 +483,35 @@ nav a.active {
   flex-wrap: wrap;
 }
 
-.tag,
+.tag {
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
 .empty-tag {
   border-radius: 999px;
   padding: 5px 12px;
   font-weight: 700;
   font-size: 12px;
-}
-
-.tag {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-.tag:nth-child(2) {
-  background: #f3e8ff;
-  color: #7e22ce;
-}
-
-.tag:nth-child(3) {
-  background: #fce7f3;
-  color: #be185d;
-}
-
-.empty-tag {
   background: #f1f5f9;
   color: #64748b;
 }
+
+.badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge.green { background: #dcfce7; color: #15803d; }
+.badge.warning { background: #fef3c7; color: #92400e; }
+.badge.gray { background: #f1f5f9; color: #64748b; }
 
 .feedback-section {
   margin: 10px 64px 26px;
@@ -527,6 +520,7 @@ nav a.active {
 .feedback-section h2 {
   margin: 0 0 6px;
   font-size: 18px;
+  font-weight: 700;
 }
 
 .feedback-section p {
@@ -544,6 +538,7 @@ textarea {
   color: #334155;
   line-height: 1.5;
   background: white;
+  font-size: 14px;
 }
 
 textarea:focus {
@@ -563,6 +558,7 @@ textarea:focus {
 .mentor-checklist h3 {
   margin-top: 0;
   margin-bottom: 16px;
+  font-size: 15px;
 }
 
 .mentor-checklist label {
@@ -594,7 +590,7 @@ textarea:focus {
   padding: 12px 20px;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.2s ease;
+  font-size: 14px;
 }
 
 .cancel-btn {
@@ -603,9 +599,7 @@ textarea:focus {
   color: #334155;
 }
 
-.cancel-btn:hover {
-  background: #f8fafc;
-}
+.cancel-btn:hover { background: #f8fafc; }
 
 .reject-btn {
   border: 1px solid #ef4444;
@@ -613,9 +607,7 @@ textarea:focus {
   color: #dc2626;
 }
 
-.reject-btn:hover {
-  background: #fee2e2;
-}
+.reject-btn:hover { background: #fee2e2; }
 
 .approve-btn {
   border: none;
@@ -623,51 +615,25 @@ textarea:focus {
   color: white;
 }
 
-.approve-btn:hover {
-  background: #059669;
-}
+.approve-btn:hover { background: #059669; }
 
 @media (max-width: 900px) {
-  .topbar {
-    padding: 0 20px;
-  }
-
-  nav {
-    display: none;
-  }
-
-  .page-header,
-  .days-list,
-  .feedback-section,
-  .actions {
+  .topbar { padding: 0 20px; }
+  nav { display: none; }
+  .page-header, .days-list, .feedback-section, .actions {
     padding-left: 20px;
     padding-right: 20px;
     margin-left: 0;
     margin-right: 0;
   }
-
   .summary-card {
     margin-left: 20px;
     margin-right: 20px;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
-
-  .title-row {
-    flex-direction: column;
-  }
-
-  .day-card {
-    grid-template-columns: 1fr;
-  }
-
-  .actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-  }
+  .title-row { flex-direction: column; }
+  .day-card { grid-template-columns: 1fr; }
+  .actions { flex-direction: column; align-items: stretch; gap: 14px; }
+  .action-buttons { flex-direction: column; }
 }
 </style>
