@@ -56,10 +56,10 @@ function formatDatum(datum) {
         <span>Stage Monitor</span>
       </div>
       <nav>
-        <a class="active">Dashboard</a>
-        <a>Stagiairs</a>
-        <a>Logboeken</a>
-        <a>Evaluaties</a>
+        <a class="active" @click="router.push('/docent/dashboard')">Dashboard</a>
+        <a @click="router.push('/docent/studenten')">Stagiairs</a>
+        <a @click="router.push('/docent/logboek')">Logboeken</a>
+        <a @click="router.push('/docent/evaluaties')">Evaluaties</a>
       </nav>
       <div class="profile">
         <span>{{ voornaam() }}</span>
@@ -91,7 +91,7 @@ function formatDatum(datum) {
             </div>
           </div>
           <div class="card-actions">
-            <button class="primary-btn">Bekijk logboeken</button>
+            <button class="primary-btn" @click="router.push('/docent/logboek')">Bekijk logboeken</button>
             <button class="secondary-btn">Evaluatie</button>
           </div>
         </article>
@@ -122,7 +122,7 @@ function formatDatum(datum) {
             <td>{{ formatDatum(logboek.datum) }}</td>
             <td>Week {{ logboek.week_number }}</td>
             <td><span class="badge orange">Wacht op controle</span></td>
-            <td><button class="icon-btn">Bekijken</button></td>
+            <td><button class="icon-btn" @click="router.push('/docent/logboek')">Bekijken</button></td>
           </tr>
           <tr v-if="!data?.logboeken_te_controleren?.length">
             <td colspan="5" style="padding: 28px; color: #64748b;">Geen logboeken te controleren.</td>
