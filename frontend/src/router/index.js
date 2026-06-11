@@ -6,7 +6,7 @@ import DocentDashboard from '../pages/docent/DocentDashboard.vue'
 import CommissieDashboard from '../pages/commissie/CommissieDashboard.vue'
 import MentorDashboard from '../pages/mentor/MentorDashboard.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
-
+import LogboekOverzicht from '../pages/student/LogboekOverzicht.vue'
 const routes = [
   {
     path: '/',
@@ -41,7 +41,12 @@ const routes = [
     path: '/admin',
     name: 'AdminDashboard',
     component: AdminDashboard
-  }
+  },
+  {
+  path: '/student/logboek',
+  name: 'LogboekOverzicht',
+  component: LogboekOverzicht
+}
 ]
 
 const router = createRouter({
