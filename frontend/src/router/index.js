@@ -7,8 +7,12 @@ import CommissieDashboard from '../pages/commissie/CommissieDashboard.vue'
 import MentorDashboard from '../pages/mentor/MentorDashboard.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
 import LogboekAftekenen from '../pages/mentor/LogboekAftekenen.vue'
+
 import LogboekOverzicht from '../pages/student/LogboekOverzicht.vue'
 import LogboekInvullen from '../pages/student/LogboekInvullen.vue'
+
+import LogboekBekijken from '../pages/docent/LogboekBekijken.vue'
+
 const routes = [
   {
     path: '/',
@@ -25,15 +29,28 @@ const routes = [
     component: StudentDashboard
   },
   {
+
   path: '/student/logboek-invullen',
   name: 'LogboekInvullen',
   component: LogboekInvullen
-},
+  },
+ {
+  path: '/docent/logboek',
+  name: 'DocentLogboek',
+  component: LogboekBekijken
+  },
+    {
+  path: '/docent/logboek',
+  name: 'DocentLogboek',
+  component: LogboekBekijken
+  },
+
   {
     path: '/docent',
     name: 'DocentDashboard',
     component: DocentDashboard
   },
+
   {
     path: '/commissie',
     name: 'CommissieDashboard',
