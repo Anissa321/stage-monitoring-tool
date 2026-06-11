@@ -46,6 +46,14 @@ function formatDatum(datum) {
   if (!datum) return ''
   return new Date(datum).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
+
+function goToStudentDetail(studentId) {
+  router.push(`/mentor/student/${studentId}`)
+}
+
+function goToAftekenen(logboek) {
+  router.push(`/mentor/week/${logboek.student_id}/${logboek.week_number}`)
+}
 </script>
 
 <template>
@@ -57,8 +65,8 @@ function formatDatum(datum) {
       </div>
       <nav>
         <a class="active">Dashboard</a>
-        <a>Stagiairs</a>
-        <a>Logboeken</a>
+        <a @click="router.push('/mentor/stagiairs')">Stagiairs</a>
+        <a @click="router.push('/mentor/dashboard')">Logboeken</a>
         <a>Evaluaties</a>
       </nav>
       <div class="profile">
@@ -82,7 +90,12 @@ function formatDatum(datum) {
         </div>
       </div>
       <div class="student-grid">
-        <article v-for="student in data?.studenten || []" :key="student.id" class="student-card">
+        <article
+          v-for="student in data?.studenten || []"
+          :key="student.id"
+          class="student-card"
+          @click="goToStudentDetail(student.id)"
+        >
           <div class="student-top">
             <div class="student-avatar blue">{{ initiaalStudent(student) }}</div>
             <div>
@@ -90,8 +103,10 @@ function formatDatum(datum) {
               <p>{{ student.email }}</p>
             </div>
           </div>
-          <div class="card-actions">
-            <button class="primary-btn" @click="router.push(`/mentor/student/${student.id}`)">Bekijk logboeken</button>
+          <div class="card-actions" @click.stop>
+            <button class="primary-btn" @click="goToAftekenen({ student_id: student.id, week_number: data?.logboeken_te_aftekenen?.find(l => l.student_id === student.id)?.week_number || 13 })">
+              Bekijk logboeken
+            </button>
             <button class="secondary-btn">Evaluatie</button>
           </div>
         </article>
@@ -122,7 +137,7 @@ function formatDatum(datum) {
             <td>{{ formatDatum(logboek.datum) }}</td>
             <td>Week {{ logboek.week_number }}</td>
             <td><span class="badge orange">Wacht op aftekening</span></td>
-            <td><button class="icon-btn" @click="router.push(`/mentor/student/${logboek.student_id}`)">Aftekenen</button></td>
+            <td><button class="icon-btn" @click="goToAftekenen(logboek)">Aftekenen</button></td>
           </tr>
           <tr v-if="!data?.logboeken_te_aftekenen?.length">
             <td colspan="5" style="padding: 28px; color: #64748b;">Geen logboeken te aftekenen.</td>
@@ -156,7 +171,19 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .card-header h2 { margin: 0; font-size: 18px; }
 .card-header p { margin: 6px 0 0; color: #64748b; font-size: 14px; }
 .student-grid { padding: 28px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; }
-.student-card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 24px; background: #ffffff; }
+.student-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 24px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+}
+.student-card:hover {
+  box-shadow: 0 12px 32px rgba(153, 27, 27, 0.12);
+  border-color: #991b1b;
+  transform: translateY(-2px);
+}
 .student-top { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
 .student-avatar { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; }
 .blue { background: #dbeafe; color: #1d4ed8; }

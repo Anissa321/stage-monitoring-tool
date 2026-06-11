@@ -5,6 +5,7 @@ import StudentDashboard from '../pages/student/StudentDashboard.vue'
 import DocentDashboard from '../pages/docent/DocentDashboard.vue'
 import CommissieDashboard from '../pages/commissie/CommissieDashboard.vue'
 import MentorDashboard from '../pages/mentor/MentorDashboard.vue'
+import MentorStagiairs from '../pages/mentor/MentorStagiairs.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
 import LogboekAftekenen from '../pages/mentor/LogboekAftekenen.vue'
 import LogboekOverzicht from '../pages/student/LogboekOverzicht.vue'
@@ -69,6 +70,11 @@ const routes = [
     path: '/mentor/dashboard',
     name: 'MentorDashboard',
     component: MentorDashboard
+  },
+  {
+    path: '/mentor/stagiairs',
+    name: 'MentorStagiairs',
+    component: MentorStagiairs
   },
   {
     path: '/mentor/week/:studentId/:weekNummer',
