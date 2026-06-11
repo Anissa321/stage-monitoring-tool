@@ -3,18 +3,70 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+const logboeken = [
+  {
+    id: 1,
+    dag: 'Maandag 5 mei',
+    status: 'Goedgekeurd',
+    uren: 8,
+    type: 'approved',
+    statusClass: 'green',
+    taken: 'API koppeling getest en dashboard verbeterd.',
+    competenties: ['Communicatie', 'Teamwork']
+  },
+  {
+    id: 2,
+    dag: 'Dinsdag 6 mei',
+    status: 'Goedgekeurd',
+    uren: 8,
+    type: 'approved',
+    statusClass: 'green',
+    taken: 'Router guards getest en loginflow nagekeken.',
+    competenties: ['Probleemoplossing']
+  },
+  {
+    id: 3,
+    dag: 'Woensdag 7 mei',
+    status: 'In behandeling',
+    uren: 8,
+    type: 'waiting',
+    statusClass: 'orange',
+    taken: 'Logout functie gebouwd en getest.',
+    competenties: ['Vaktechnisch']
+  },
+  {
+    id: 4,
+    dag: 'Donderdag 8 mei',
+    status: 'Nog niet ingevuld',
+    uren: 0,
+    type: 'empty',
+    statusClass: 'gray',
+    taken: '',
+    competenties: []
+  },
+  {
+    id: 5,
+    dag: 'Vrijdag 9 mei',
+    status: 'Vandaag',
+    uren: 0,
+    type: 'empty',
+    statusClass: 'blue',
+    taken: '',
+    competenties: []
+  }
+]
+
 function gaNaarInvullen() {
   router.push('/student/logboek-invullen')
 }
 </script>
+
 <template>
   <main class="logboek-page">
     <section class="hero">
       <p class="label">Stage Logboek</p>
       <h1>Mijn Logboek</h1>
-      <p class="subtitle">
-        Overzicht van je ingediende logboeken
-      </p>
+      <p class="subtitle">Overzicht van je ingediende logboeken</p>
 
       <div class="progress-wrapper">
         <span>Uren deze week: 32 / 40 uur</span>
@@ -27,69 +79,48 @@ function gaNaarInvullen() {
 
     <section class="week-section">
       <div class="section-header">
-  <h2>Week 13 (huidige week)</h2>
+        <h2>Week 13 (huidige week)</h2>
 
-  <button
-    class="new-btn"
-    @click="gaNaarInvullen"
-  >
-    + Logboek invullen
-  </button>
-</div>
+        <button class="new-btn" @click="gaNaarInvullen">
+          + Logboek invullen
+        </button>
+      </div>
 
       <div class="cards">
-        <article class="day-card approved">
-          <h3>Maandag 5 mei</h3>
-          <span class="status green">Goedgekeurd</span>
+        <article
+          v-for="logboek in logboeken"
+          :key="logboek.id"
+          class="day-card"
+          :class="logboek.type"
+        >
+          <h3>{{ logboek.dag }}</h3>
 
-          <p>8 uur gewerkt</p>
-
-          <div class="tags">
-            <span>Communicatie</span>
-            <span>Teamwork</span>
-          </div>
-        </article>
-
-        <article class="day-card approved">
-          <h3>Dinsdag 6 mei</h3>
-          <span class="status green">Goedgekeurd</span>
-
-          <p>8 uur gewerkt</p>
-
-          <div class="tags">
-            <span>Probleemoplossing</span>
-          </div>
-        </article>
-
-        <article class="day-card waiting">
-          <h3>Woensdag 7 mei</h3>
-          <span class="status orange">In behandeling</span>
-
-          <p>8 uur gewerkt</p>
-
-          <div class="tags">
-            <span>Vaktechnisch</span>
-          </div>
-        </article>
-
-        <article class="day-card empty">
-          <h3>Donderdag 8 mei</h3>
-
-          <span class="status gray">
-            Nog niet ingevuld
+          <span class="status" :class="logboek.statusClass">
+            {{ logboek.status }}
           </span>
 
-          <p>Geen logboek</p>
-        </article>
+          <p>{{ logboek.uren }} uur gewerkt</p>
 
-        <article class="day-card empty">
-          <h3>Vrijdag 9 mei</h3>
+          <p v-if="logboek.taken" class="tasks">
+            {{ logboek.taken }}
+          </p>
 
-          <span class="status blue">
-            Vandaag
-          </span>
+          <button
+            v-else
+            class="fill-card-btn"
+            @click="gaNaarInvullen"
+          >
+            Invullen
+          </button>
 
-          <p>Klik om in te vullen</p>
+          <div v-if="logboek.competenties.length" class="tags">
+            <span
+              v-for="competentie in logboek.competenties"
+              :key="competentie"
+            >
+              {{ competentie }}
+            </span>
+          </div>
         </article>
       </div>
     </section>
@@ -98,8 +129,8 @@ function gaNaarInvullen() {
       <h3>Wekelijkse Feedback</h3>
 
       <p>
-        Sterk werk, Anissa. Je technische kennis groeit
-        zichtbaar en je communicatie verloopt steeds beter.
+        Sterk werk, Anissa. Je technische kennis groeit zichtbaar en je
+        communicatie verloopt steeds beter.
       </p>
     </section>
   </main>
@@ -125,7 +156,7 @@ function gaNaarInvullen() {
 }
 
 .label {
- color: #991b1b;
+  color: #991b1b;
   font-weight: 700;
   text-transform: uppercase;
   font-size: 12px;
@@ -162,7 +193,6 @@ function gaNaarInvullen() {
 .progress-fill {
   width: 80%;
   height: 100%;
- 
   background: #991b1b;
 }
 
@@ -190,6 +220,7 @@ function gaNaarInvullen() {
   font-weight: 600;
   cursor: pointer;
 }
+
 .new-btn:hover {
   background: #7f1d1d;
 }
@@ -204,12 +235,12 @@ function gaNaarInvullen() {
   background: white;
   border-radius: 18px;
   padding: 18px;
-  min-height: 180px;
+  min-height: 210px;
   box-shadow: 0 8px 20px rgba(0,0,0,.04);
 }
 
 .approved {
-  border-top: 5px solid #10b981;
+  border-top: 5px solid #16a34a;
 }
 
 .waiting {
@@ -217,7 +248,7 @@ function gaNaarInvullen() {
 }
 
 .empty {
-  border-top: 5px solid #94a3b8;
+  border-top: 5px solid #991b1b;
 }
 
 .day-card h3 {
@@ -249,8 +280,15 @@ function gaNaarInvullen() {
 }
 
 .blue {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.tasks {
+  margin-top: 12px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .tags {
@@ -261,11 +299,26 @@ function gaNaarInvullen() {
 }
 
 .tags span {
- background: #fee2e2;
+  background: #fee2e2;
   color: #991b1b;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
+}
+
+.fill-card-btn {
+  margin-top: 18px;
+  border: none;
+  background: #991b1b;
+  color: white;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fill-card-btn:hover {
+  background: #7f1d1d;
 }
 
 .feedback-card {
@@ -278,7 +331,7 @@ function gaNaarInvullen() {
 
 .feedback-card h3 {
   margin-bottom: 12px;
- color: #991b1b;
+  color: #991b1b;
 }
 
 .feedback-card p {
