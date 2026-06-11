@@ -9,6 +9,7 @@ import AdminDashboard from '../pages/admin/AdminDashboard.vue'
 import LogboekOverzicht from '../pages/student/LogboekOverzicht.vue'
 import LogboekInvullen from '../pages/student/LogboekInvullen.vue'
 import DocentStudentDetail from '../pages/docent/DocentStudentDetail.vue'
+import DocentLogboekBekijken from '../pages/docent/LogboekBekijken.vue'
 const routes = [
   {
     path: '/',
@@ -58,6 +59,11 @@ const routes = [
   path: '/docent/student-detail',
   name: 'DocentStudentDetail',
   component: DocentStudentDetail
+},
+{
+  path: '/docent/logboek-bekijken/:id',
+  name: 'DocentLogboekBekijken',
+  component: DocentLogboekBekijken
 }
 ]
 
