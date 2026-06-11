@@ -20,3 +20,4 @@ router.post('/logout', authMiddleware, logout)
 router.get('/me', authMiddleware, me)
 
 export default router
+
