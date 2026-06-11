@@ -8,14 +8,12 @@ const router = Router()
 // GET /api/dashboards/student
 router.get('/student', authMiddleware, requireRole('student'), async (req, res) => {
   try {
-    // Stage info
     const { data: stage } = await supabaseAdmin
       .from('stages')
-      .select('id, bedrijfsnaam, startdatum, einddatum, status')
+      .select('id, company_name, start_date, end_date, status')
       .eq('student_id', req.user.id)
       .single()
 
-    // Mentor info
     let mentor = null
     const { data: mentorKoppeling } = await supabaseAdmin
       .from('mentor_studenten')
@@ -29,21 +27,16 @@ router.get('/student', authMiddleware, requireRole('student'), async (req, res) 
         .select('voornaam, achternaam')
         .eq('id', mentorKoppeling.mentor_id)
         .single()
-
-      if (mentorProfiel) {
-        mentor = `${mentorProfiel.voornaam} ${mentorProfiel.achternaam}`
-      }
+      if (mentorProfiel) mentor = `${mentorProfiel.voornaam} ${mentorProfiel.achternaam}`
     }
 
-    // Logboeken deze week (ma-vr)
     const nu = new Date()
-    const dag = nu.getDay() // 0=zo, 1=ma, ..., 5=vr, 6=za
+    const dag = nu.getDay()
     const diffMaandag = dag === 0 ? -6 : 1 - dag
     const maandag = new Date(nu)
     maandag.setDate(nu.getDate() + diffMaandag)
     const vrijdag = new Date(maandag)
     vrijdag.setDate(maandag.getDate() + 4)
-
     const maandagStr = maandag.toISOString().split('T')[0]
     const vrijdagStr = vrijdag.toISOString().split('T')[0]
 
@@ -55,7 +48,6 @@ router.get('/student', authMiddleware, requireRole('student'), async (req, res) 
       .lte('datum', vrijdagStr)
       .order('datum', { ascending: true })
 
-    // Recente logboeken (laatste 5)
     const { data: recenteLogboeken } = await supabaseAdmin
       .from('logbooks')
       .select('id, datum, status, tasks')
@@ -63,7 +55,6 @@ router.get('/student', authMiddleware, requireRole('student'), async (req, res) 
       .order('datum', { ascending: false })
       .limit(5)
 
-    // Week voortgang
     const totaalDezeWeek = logboekenDezeWeek?.length || 0
     const ingevuldDezeWeek = logboekenDezeWeek?.filter(l =>
       ['goedgekeurd', 'ingediend', 'concept'].includes(l.status)
@@ -88,7 +79,7 @@ router.get('/student', authMiddleware, requireRole('student'), async (req, res) 
   }
 })
 
-// GET /api/dashboards/docent (US-04)
+// GET /api/dashboards/docent
 router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) => {
   try {
     const { data: koppelingen, error: kError } = await supabaseAdmin
@@ -106,15 +97,37 @@ router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) =>
         .from('profiles')
         .select('id, voornaam, achternaam, email')
         .in('id', studentIds)
-
       if (sError) return res.status(500).json({ error: 'Kon studenten niet ophalen' })
       studenten = data || []
     }
 
+    // Logboeken die wachten op controle
+    let logboekenTeControlen = []
+    if (studentIds.length > 0) {
+      const { data: logboeken } = await supabaseAdmin
+        .from('logbooks')
+        .select('id, student_id, datum, week_number, status')
+        .in('student_id', studentIds)
+        .eq('status', 'ingediend')
+        .order('datum', { ascending: false })
+        .limit(10)
+
+      if (logboeken && logboeken.length > 0) {
+        const profielMap = {}
+        studenten.forEach(s => { profielMap[s.id] = s })
+        logboekenTeControlen = logboeken.map(l => ({
+          ...l,
+          student_naam: profielMap[l.student_id]
+            ? `${profielMap[l.student_id].voornaam} ${profielMap[l.student_id].achternaam}`
+            : 'Onbekend'
+        }))
+      }
+    }
+
     res.json({
-      message: 'Welkom op het docent dashboard',
       user: req.user,
-      studenten
+      studenten,
+      logboeken_te_controleren: logboekenTeControlen
     })
   } catch (err) {
     console.error('Docent dashboard error:', err)
@@ -122,7 +135,7 @@ router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) =>
   }
 })
 
-// GET /api/dashboards/mentor (US-07)
+// GET /api/dashboards/mentor
 router.get('/mentor', authMiddleware, requireRole('mentor'), async (req, res) => {
   try {
     const { data: koppelingen, error: kError } = await supabaseAdmin
@@ -140,15 +153,37 @@ router.get('/mentor', authMiddleware, requireRole('mentor'), async (req, res) =>
         .from('profiles')
         .select('id, voornaam, achternaam, email')
         .in('id', studentIds)
-
       if (sError) return res.status(500).json({ error: 'Kon studenten niet ophalen' })
       studenten = data || []
     }
 
+    // Logboeken te aftekenen
+    let logboekenTeAftekenen = []
+    if (studentIds.length > 0) {
+      const { data: logboeken } = await supabaseAdmin
+        .from('logbooks')
+        .select('id, student_id, datum, week_number, status')
+        .in('student_id', studentIds)
+        .eq('status', 'ingediend')
+        .order('datum', { ascending: false })
+        .limit(10)
+
+      if (logboeken && logboeken.length > 0) {
+        const profielMap = {}
+        studenten.forEach(s => { profielMap[s.id] = s })
+        logboekenTeAftekenen = logboeken.map(l => ({
+          ...l,
+          student_naam: profielMap[l.student_id]
+            ? `${profielMap[l.student_id].voornaam} ${profielMap[l.student_id].achternaam}`
+            : 'Onbekend'
+        }))
+      }
+    }
+
     res.json({
-      message: 'Welkom op het mentor dashboard',
       user: req.user,
-      studenten
+      studenten,
+      logboeken_te_aftekenen: logboekenTeAftekenen
     })
   } catch (err) {
     console.error('Mentor dashboard error:', err)
@@ -156,20 +191,43 @@ router.get('/mentor', authMiddleware, requireRole('mentor'), async (req, res) =>
   }
 })
 
-// GET /api/dashboards/commissie (US-10)
-router.get('/commissie', authMiddleware, requireRole('stagecommissie'), (req, res) => {
-  res.json({
-    message: 'Welkom op het stagecommissie dashboard',
-    user: req.user
-  })
+// GET /api/dashboards/commissie
+router.get('/commissie', authMiddleware, requireRole('stagecommissie'), async (req, res) => {
+  try {
+    const { data: voorstellen } = await supabaseAdmin
+      .from('stagecoorstellingen')
+      .select('id, student_id, bedrijfsnaam, bedrijf_adres, mentor_naam, mentor_mail, startdatum, einddatum, status, indieningsdatum')
+      .order('indieningsdatum', { ascending: false })
+
+    res.json({
+      user: req.user,
+      voorstellen: voorstellen || []
+    })
+  } catch (err) {
+    console.error('Commissie dashboard error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
 })
 
-// GET /api/dashboards/administratie (US-12)
-router.get('/administratie', authMiddleware, requireRole('administratie'), (req, res) => {
-  res.json({
-    message: 'Welkom op het administratie dashboard',
-    user: req.user
-  })
+// GET /api/dashboards/administratie
+router.get('/administratie', authMiddleware, requireRole('administratie'), async (req, res) => {
+  try {
+    const { data: competenties } = await supabaseAdmin
+      .from('logbook_competencies')
+      .select('competence_name')
+
+    // Unieke competentienamen
+    const uniek = [...new Set((competenties || []).map(c => c.competence_name))]
+
+    res.json({
+      user: req.user,
+      aantal_competenties: uniek.length,
+      competenties: uniek
+    })
+  } catch (err) {
+    console.error('Admin dashboard error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
 })
 
 export default router
