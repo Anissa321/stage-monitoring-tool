@@ -6,10 +6,8 @@ import DocentDashboard from '../pages/docent/DocentDashboard.vue'
 import CommissieDashboard from '../pages/commissie/CommissieDashboard.vue'
 import MentorDashboard from '../pages/mentor/MentorDashboard.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
-import LogboekOverzicht from '../pages/student/LogboekOverzicht.vue'
-import LogboekInvullen from '../pages/student/LogboekInvullen.vue'
-import DocentStudentDetail from '../pages/docent/DocentStudentDetail.vue'
-import DocentLogboekBekijken from '../pages/docent/LogboekBekijken.vue'
+import LogboekAftekenen from '../pages/mentor/LogboekAftekenen.vue'
+
 const routes = [
   {
     path: '/',
@@ -36,6 +34,11 @@ const routes = [
     component: CommissieDashboard
   },
   {
+    path: '/mentor/logboek',
+    name: 'MentorLogboek',
+    component: LogboekAftekenen
+  },
+  {
     path: '/mentor',
     name: 'MentorDashboard',
     component: MentorDashboard
@@ -44,27 +47,7 @@ const routes = [
     path: '/admin',
     name: 'AdminDashboard',
     component: AdminDashboard
-  },
-  {
-  path: '/student/logboek',
-  name: 'LogboekOverzicht',
-  component: LogboekOverzicht
-},
-{
-  path: '/student/logboek-invullen',
-  name: 'LogboekInvullen',
-  component: LogboekInvullen
-},
-{
-  path: '/docent/student-detail',
-  name: 'DocentStudentDetail',
-  component: DocentStudentDetail
-},
-{
-  path: '/docent/logboek-bekijken/:id',
-  name: 'DocentLogboekBekijken',
-  component: DocentLogboekBekijken
-}
+  }
 ]
 
 const router = createRouter({

@@ -3,6 +3,12 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+function goToLogbook() {
+  router.push('/mentor/logboek')
+}
+
+
+
 async function logout() {
   const token = localStorage.getItem('token')
 
@@ -85,7 +91,9 @@ async function logout() {
           </div>
 
           <div class="card-actions">
-            <button class="primary-btn">Bekijk logboeken</button>
+            <button class="primary-btn" @click="goToLogbook">
+             Bekijk logboeken
+            </button>
             <button class="secondary-btn">Evaluatie</button>
           </div>
         </article>
@@ -109,7 +117,9 @@ async function logout() {
           </div>
 
           <div class="card-actions">
-            <button class="primary-btn">Bekijk logboeken</button>
+            <button class="primary-btn" @click="goToLogbook">
+             Bekijk logboeken
+            </button>
             <button class="secondary-btn">Evaluatie</button>
           </div>
         </article>
