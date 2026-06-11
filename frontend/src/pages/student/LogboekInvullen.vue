@@ -5,19 +5,29 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const form = ref({
-  datum: '2026-05-09',
-  uren: 8,
   taken: '',
+  uren: 8,
   reflectie: '',
-  leerpunten: '',
-  competenties: []
+  competenties: ['Communicatie', 'Teamwork', 'Vaktechnisch handelen']
 })
 
 const competenties = [
-  'Communicatie',
-  'Probleemoplossing',
-  'Teamwork',
-  'Vaktechnisch handelen'
+  {
+    naam: 'Communicatie',
+    tekst: 'Heb klantmail beantwoord en mentor geïnformeerd over openstaande punten.'
+  },
+  {
+    naam: 'Probleemoplossing',
+    tekst: ''
+  },
+  {
+    naam: 'Teamwork',
+    tekst: 'Sprint review meegeleid en collega geholpen met code review.'
+  },
+  {
+    naam: 'Vaktechnisch handelen',
+    tekst: 'API-integratie met externe service afgewerkt en getest in Postman.'
+  }
 ]
 
 function terug() {
@@ -25,7 +35,7 @@ function terug() {
 }
 
 function opslaanConcept() {
-  alert('Logboek opgeslagen als concept')
+  alert('Opgeslagen als concept')
 }
 
 function indienen() {
@@ -35,78 +45,84 @@ function indienen() {
 </script>
 
 <template>
-  <main class="logboek-page">
-    <button class="back-btn" @click="terug">
-      ← Terug naar logboek
-    </button>
-
-    <section class="hero">
-      <p class="label">Stage Logboek</p>
-      <h1>Logboek invullen</h1>
-      <p class="subtitle">
-        Vrijdag 9 mei 2026 • Week 13
-      </p>
-    </section>
-
-    <section class="form-card">
-      <div class="form-header">
-        <h2>Dagelijkse activiteiten</h2>
-        <span>Concept</span>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-circle">SM</div>
+        <span>Stage Monitor</span>
       </div>
 
-      <div class="field-row">
-        <div class="field">
-          <label>Datum</label>
-          <input v-model="form.datum" type="date" />
-        </div>
+      <nav>
+        <a>Dashboard</a>
+        <a class="active">Logboek</a>
+        <a>Documenten</a>
+        <a>Evaluatie</a>
+      </nav>
 
-        <div class="field small">
-          <label>Uren gewerkt</label>
-          <input v-model="form.uren" type="number" min="0" max="24" />
-        </div>
+      <div class="profile">
+        <span>Anissa</span>
+        <div class="avatar">A</div>
+      </div>
+    </header>
+
+    <section class="content">
+      <button class="back-btn" @click="terug">
+        ← Terug naar logboek overzicht
+      </button>
+
+      <div class="title-block">
+        <h1>Logboek - Vrijdag 9 mei 2026</h1>
+        <p>Week 13 van 20</p>
       </div>
 
-      <div class="field">
-        <label>Uitgevoerde taken</label>
+      <section class="card">
+        <label class="section-label"> Uitgevoerde taken</label>
+
         <textarea
           v-model="form.taken"
-          placeholder="Beschrijf welke taken je vandaag hebt uitgevoerd..."
+          placeholder="Beschrijf wat je vandaag gedaan hebt..."
         ></textarea>
-      </div>
+      </section>
 
-      <div class="field">
-        <label>Reflectie</label>
-        <textarea
-          v-model="form.reflectie"
-          placeholder="Hoe verliep je dag? Wat ging goed of minder goed?"
-        ></textarea>
-      </div>
+      <section class="small-section">
+        <label>⏱ Uren gewerkt vandaag</label>
+        <div class="hours-row">
+          <input v-model="form.uren" type="number" min="0" max="24" />
+          <span>uur</span>
+        </div>
+      </section>
 
-      <div class="field">
-        <label>Leerpunten</label>
-        <textarea
-          v-model="form.leerpunten"
-          placeholder="Wat heb je vandaag geleerd?"
-        ></textarea>
-      </div>
+      <section class="competence-section">
+        <h2>📌 Competenties toegepast vandaag</h2>
+        <p>Vink aan welke competenties je vandaag hebt toegepast en beschrijf wat je deed.</p>
 
-      <section class="competentie-card">
-        <h3>Competenties toegepast vandaag</h3>
-
-        <div class="competentie-grid">
-          <label
-            v-for="competentie in competenties"
-            :key="competentie"
-            class="competentie-option"
-          >
+        <div
+          v-for="competentie in competenties"
+          :key="competentie.naam"
+          class="competence-item"
+        >
+          <label class="check-row">
             <input
               v-model="form.competenties"
               type="checkbox"
-              :value="competentie"
+              :value="competentie.naam"
             />
-            <span>{{ competentie }}</span>
+            <strong>{{ competentie.naam }}</strong>
           </label>
+
+          <textarea
+            :placeholder="competentie.tekst || 'Beschrijf kort hoe je deze competentie gebruikte...'"
+          ></textarea>
         </div>
+      </section>
+
+      <section class="card">
+        <label class="section-label">💡 Leerpunten / Reflectie</label>
+
+        <textarea
+          v-model="form.reflectie"
+          placeholder="Wat heb je vandaag bijgeleerd?"
+        ></textarea>
       </section>
 
       <div class="actions">
@@ -115,7 +131,7 @@ function indienen() {
         </button>
 
         <button class="submit-btn" @click="indienen">
-          Indienen
+          Indienen →
         </button>
       </div>
     </section>
@@ -128,11 +144,80 @@ function indienen() {
   font-family: Inter, sans-serif;
 }
 
-.logboek-page {
+.page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-  padding: 40px;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.topbar {
+  height: 64px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 44px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
   color: #111827;
+}
+
+.logo-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #991b1b;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+}
+
+nav {
+  display: flex;
+  gap: 24px;
+}
+
+nav a {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  text-decoration: none;
+}
+
+nav a.active {
+  color: #991b1b;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  display: grid;
+  place-items: center;
+}
+
+.content {
+  padding: 34px 56px 48px;
 }
 
 .back-btn {
@@ -141,159 +226,135 @@ function indienen() {
   color: #64748b;
   font-weight: 700;
   cursor: pointer;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .back-btn:hover {
   color: #991b1b;
 }
 
-.hero {
-  background: linear-gradient(135deg, #991b1b, #dc2626);
-  color: white;
-  border-radius: 24px;
-  padding: 36px;
-  box-shadow: 0 18px 40px rgba(153, 27, 27, 0.22);
-  margin-bottom: 28px;
-}
-
-.label {
-  font-size: 13px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin: 0 0 10px;
-  opacity: 0.9;
-}
-
-.hero h1 {
+.title-block h1 {
   margin: 0;
-  font-size: 38px;
+  font-size: 26px;
   font-weight: 800;
 }
 
-.subtitle {
-  margin-top: 10px;
-  opacity: 0.9;
+.title-block p {
+  margin: 6px 0 24px;
+  color: #64748b;
 }
 
-.form-card {
+.card {
   background: white;
-  border-radius: 22px;
-  border: 1px solid #e5e7eb;
-  padding: 30px;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
-}
-
-.form-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.form-header h2 {
-  margin: 0;
-  font-size: 20px;
-}
-
-.form-header span {
-  background: #fee2e2;
-  color: #991b1b;
-  padding: 7px 13px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 12px;
-}
-
-.field-row {
-  display: flex;
-  gap: 18px;
-}
-
-.field {
+  border-radius: 14px;
+  padding: 18px;
   margin-bottom: 22px;
-  width: 100%;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
-.field.small {
-  max-width: 180px;
-}
-
-label {
+.section-label {
   display: block;
-  margin-bottom: 8px;
-  font-weight: 700;
-  color: #334155;
+  font-weight: 800;
+  margin-bottom: 12px;
 }
 
-input,
 textarea {
   width: 100%;
+  min-height: 92px;
   border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  padding: 13px 14px;
-  font-size: 14px;
-  outline: none;
-}
-
-textarea {
-  min-height: 110px;
+  border-radius: 10px;
+  padding: 13px;
   resize: vertical;
-}
-
-input:focus,
-textarea:focus {
-  border-color: #991b1b;
-  box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.12);
-}
-
-.competentie-card {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 18px;
-  padding: 22px;
-  margin-top: 8px;
-}
-
-.competentie-card h3 {
-  margin: 0 0 16px;
-  color: #991b1b;
-}
-
-.competentie-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.competentie-option {
+  outline: none;
+  font-size: 14px;
   background: white;
-  border: 1px solid #fecaca;
-  border-radius: 14px;
-  padding: 14px;
+}
+
+textarea:focus,
+input:focus {
+  border-color: #991b1b;
+  box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.1);
+}
+
+.small-section {
+  margin: 18px 0 28px;
+}
+
+.small-section label {
+  font-weight: 800;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.hours-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  cursor: pointer;
 }
 
-.competentie-option input {
-  width: auto;
+.hours-row input {
+  width: 72px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  padding: 10px;
+}
+
+.hours-row span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.competence-section {
+  margin: 28px 0;
+}
+
+.competence-section h2 {
+  font-size: 16px;
+  margin: 0 0 6px;
+  color: #991b1b;
+}
+
+.competence-section p {
+  margin: 0 0 18px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.competence-item {
+  margin-bottom: 16px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.check-row input {
+  accent-color: #991b1b;
+}
+
+.competence-item textarea {
+  margin-left: 28px;
+  width: calc(100% - 28px);
+  background: white;
+  min-height: 70px;
 }
 
 .actions {
-  margin-top: 28px;
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  margin-top: 36px;
 }
 
 .draft-btn,
 .submit-btn {
-  border-radius: 12px;
-  padding: 12px 20px;
-  font-weight: 700;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -314,18 +375,21 @@ textarea:focus {
 }
 
 @media (max-width: 800px) {
-  .logboek-page {
-    padding: 20px;
+  .topbar {
+    padding: 0 20px;
   }
 
-  .field-row,
-  .competentie-grid {
-    grid-template-columns: 1fr;
-    display: grid;
+  nav {
+    display: none;
   }
 
-  .field.small {
-    max-width: 100%;
+  .content {
+    padding: 24px 20px;
+  }
+
+  .competence-item textarea {
+    margin-left: 0;
+    width: 100%;
   }
 }
 </style>
