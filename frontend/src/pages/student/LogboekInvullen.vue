@@ -1,8 +1,12 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
+
+const logboekId = route.query.id || null
+const readonly = ref(false)
 
 const form = ref({
   datum: new Date().toISOString().split('T')[0],
@@ -11,7 +15,13 @@ const form = ref({
   uren: 8,
   reflectie: '',
   leerpunten: '',
-  competenties: []
+  competenties: [],
+  competentieDescriptions: {
+    'Communicatie': '',
+    'Probleemoplossing': '',
+    'Teamwork': '',
+    'Vaktechnisch handelen': ''
+  }
 })
 
 const isLoading = ref(false)
@@ -44,13 +54,54 @@ async function logout() {
   router.push('/login')
 }
 
+onMounted(async () => {
+  if (logboekId) {
+    const token = localStorage.getItem('token')
+    const res = await fetch('http://localhost:3000/api/logboeken/mijn', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    const logboek = data.logboeken?.find(l => l.id == logboekId)
+
+    if (logboek) {
+      form.value.datum = logboek.datum
+      form.value.week_number = logboek.week_number
+      form.value.taken = logboek.tasks || ''
+      form.value.uren = logboek.uren_gewerkt || 8
+      form.value.reflectie = logboek.reflection || ''
+      form.value.leerpunten = logboek.learning_points || ''
+
+      if (logboek.competenties && logboek.competenties.length > 0) {
+        form.value.competenties = logboek.competenties.map(c =>
+          typeof c === 'string' ? c : c.naam
+        )
+        logboek.competenties.forEach(c => {
+          if (typeof c === 'object' && c.naam) {
+            form.value.competentieDescriptions[c.naam] = c.description || ''
+          }
+        })
+      }
+
+      if (logboek.status === 'ingediend' || logboek.status === 'goedgekeurd') {
+        readonly.value = true
+      }
+    }
+  }
+})
+
 async function verstuurLogboek(status) {
+  if (readonly.value) return
   error.value = ''
   isLoading.value = true
   try {
     const token = localStorage.getItem('token')
-    const res = await fetch('http://localhost:3000/api/logboeken', {
-      method: 'POST',
+    const url = logboekId
+      ? `http://localhost:3000/api/logboeken/${logboekId}`
+      : 'http://localhost:3000/api/logboeken'
+    const method = logboekId ? 'PUT' : 'POST'
+
+    const res = await fetch(url, {
+      method,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
@@ -63,7 +114,10 @@ async function verstuurLogboek(status) {
         learning_points: form.value.leerpunten,
         uren_gewerkt: Number(form.value.uren),
         status,
-        competenties: form.value.competenties
+        competenties: form.value.competenties.map(naam => ({
+          naam,
+          description: form.value.competentieDescriptions[naam] || ''
+        }))
       })
     })
     const data = await res.json()
@@ -123,17 +177,21 @@ function formatTitelDatum(datum) {
         <p>Week {{ form.week_number }}</p>
       </div>
 
+      <div v-if="readonly" class="readonly-banner">
+        🔒 Dit logboek is al ingediend of goedgekeurd en kan niet meer aangepast worden.
+      </div>
+
       <p v-if="error" class="error-message">{{ error }}</p>
 
       <section class="card">
         <label class="section-label">Uitgevoerde taken</label>
-        <textarea v-model="form.taken" placeholder="Beschrijf wat je vandaag gedaan hebt..."></textarea>
+        <textarea v-model="form.taken" placeholder="Beschrijf wat je vandaag gedaan hebt..." :disabled="readonly"></textarea>
       </section>
 
       <section class="small-section">
         <label>⏱ Uren gewerkt vandaag</label>
         <div class="hours-row">
-          <input v-model="form.uren" type="number" min="0" max="24" />
+          <input v-model="form.uren" type="number" min="0" max="24" :disabled="readonly" />
           <span>uur</span>
         </div>
       </section>
@@ -141,21 +199,25 @@ function formatTitelDatum(datum) {
       <section class="competence-section">
         <h2>📌 Competenties toegepast vandaag</h2>
         <p>Vink aan welke competenties je vandaag hebt toegepast en beschrijf wat je deed.</p>
-        <div v-for="competentie in competenties" :key="competentie.naam" class="competence-item">
+        <div v-for="comp in competenties" :key="comp.naam" class="competence-item">
           <label class="check-row">
-            <input v-model="form.competenties" type="checkbox" :value="competentie.naam" />
-            <strong>{{ competentie.naam }}</strong>
+            <input v-model="form.competenties" type="checkbox" :value="comp.naam" :disabled="readonly" />
+            <strong>{{ comp.naam }}</strong>
           </label>
-          <textarea :placeholder="'Beschrijf kort hoe je deze competentie gebruikte...'"></textarea>
+          <textarea
+            v-model="form.competentieDescriptions[comp.naam]"
+            :placeholder="'Beschrijf kort hoe je deze competentie gebruikte...'"
+            :disabled="readonly"
+          ></textarea>
         </div>
       </section>
 
       <section class="card">
         <label class="section-label">💡 Leerpunten / Reflectie</label>
-        <textarea v-model="form.reflectie" placeholder="Wat heb je vandaag bijgeleerd?"></textarea>
+        <textarea v-model="form.reflectie" placeholder="Wat heb je vandaag bijgeleerd?" :disabled="readonly"></textarea>
       </section>
 
-      <div class="actions">
+      <div v-if="!readonly" class="actions">
         <button class="draft-btn" :disabled="isLoading" @click="opslaanConcept">Opslaan als concept</button>
         <button class="submit-btn" :disabled="isLoading" @click="indienen">
           {{ isLoading ? 'Bezig...' : 'Indienen →' }}
@@ -287,6 +349,16 @@ nav a.active {
 .title-block h1 { margin: 0; font-size: 26px; font-weight: 800; }
 .title-block p { margin: 6px 0 24px; color: #64748b; }
 
+.readonly-banner {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
 .card {
   background: white;
   border-radius: 14px;
@@ -309,7 +381,13 @@ textarea {
   background: white;
 }
 
-textarea:focus, input:focus {
+textarea:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+textarea:focus:not(:disabled), input:focus:not(:disabled) {
   border-color: #991b1b;
   box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.1);
 }
@@ -324,6 +402,12 @@ textarea:focus, input:focus {
   border: 1px solid #cbd5e1;
   border-radius: 9px;
   padding: 10px;
+}
+
+.hours-row input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
 }
 
 .hours-row span { color: #64748b; font-size: 13px; }
