@@ -43,5 +43,59 @@ function rejectProposal() {
       <p>Ingediend door Anissa Canton op 10 jan 2026</p>
       <span class="badge orange">● Wacht op beoordeling</span>
     </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Studentgegevens</h2>
+
+        <div class="student-box">
+          <div class="avatar big">AC</div>
+
+          <div>
+            <h3>Anissa Canton</h3>
+            <p>anissa.canton@student.ehb.be</p>
+            <p>Toegepaste Informatica • 3e jaar</p>
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div>
+            <span>Docent</span>
+            <strong>Jan De Vries</strong>
+          </div>
+          <div>
+            <span>Student nr</span>
+            <strong>s12345678</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Bedrijfsinformatie</h2>
+
+        <div class="info-grid">
+          <div>
+            <span>Bedrijf</span>
+            <strong>Acme Corp</strong>
+          </div>
+
+          <div>
+            <span>Adres</span>
+            <strong>Brusselsesteenweg 12, 1000 Brussel</strong>
+          </div>
+
+          <div>
+            <span>Mentor</span>
+            <strong>Sven Janssens</strong>
+            <p>sven.janssens@acmecorp.be</p>
+          </div>
+          <div>
+            <span>Sector</span>
+            <strong>IT / Software ontwikkeling</strong>
+          </div>
+        </div>
+      </article>
+    </section>
+
  </main>
 </template>
