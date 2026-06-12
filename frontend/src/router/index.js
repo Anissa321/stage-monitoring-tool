@@ -15,7 +15,7 @@ import StudentDetailMentor from '../pages/mentor/StudentDetailMentor.vue'
 import StagevoorstelIndienen from '../pages/student/StagevoorstelIndienen.vue'
 import StagevoorstelDetail from '../pages/student/StagevoorstelDetail.vue'
 import StagevoorstelBeoordelen from '../pages/commissie/StagevoorstelBeoordelen.vue'
-
+import AdminCompetencies from '../pages/admin/AdminCompetencies.vue'
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'LoginPage', component: LoginPage },
@@ -47,7 +47,8 @@ const routes = [
 
   // ADMIN
   { path: '/admin', redirect: '/admin/dashboard' },
-  { path: '/admin/dashboard', name: 'AdminDashboard', component: AdminDashboard }
+  { path: '/admin/dashboard', name: 'AdminDashboard', component: AdminDashboard },
+  { path: '/admin/competenties', name: 'AdminCompetencies', component: AdminCompetencies }
 ]
 
 const router = createRouter({
