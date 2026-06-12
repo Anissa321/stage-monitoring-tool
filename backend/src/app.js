@@ -5,6 +5,7 @@ import dotenv from 'dotenv'
 import authRoutes from './routes/auth.routes.js'
 import dashboardRoutes from './routes/dashboards.routes.js'
 import logboekenRoutes from './routes/logboeken.routes.js'
+import stagevoostelRoutes from './routes/stagevoostellen.routes.js'
 dotenv.config()
 
 const app = express()
@@ -32,6 +33,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/dashboards', dashboardRoutes)
 app.use('/api/logboeken', logboekenRoutes)
+app.use('/api/stagevoostellen', stagevoostelRoutes)
 // 404 handler — altijd na alle routes
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint niet gevonden' })
