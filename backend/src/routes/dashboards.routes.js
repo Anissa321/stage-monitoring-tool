@@ -14,6 +14,18 @@ router.get('/student', authMiddleware, requireRole('student'), async (req, res) 
       .eq('student_id', req.user.id)
       .single()
 
+    let stagevoorstel = null
+    if (!stage) {
+      const { data: voorstel } = await supabaseAdmin
+        .from('stagevoorstellen')
+        .select('*')
+        .eq('student_id', req.user.id)
+        .order('indieningsdatum', { ascending: false })
+        .limit(1)
+        .single()
+      stagevoorstel = voorstel || null
+    }
+
     let mentor = null
     const { data: mentorKoppeling } = await supabaseAdmin
       .from('mentor_studenten')
@@ -63,6 +75,7 @@ router.get('/student', authMiddleware, requireRole('student'), async (req, res) 
     res.json({
       user: req.user,
       stage: stage || null,
+      stagevoorstel,
       mentor,
       logboeken_deze_week: logboekenDezeWeek || [],
       recente_logboeken: recenteLogboeken || [],
