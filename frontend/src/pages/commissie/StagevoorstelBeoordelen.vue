@@ -338,53 +338,78 @@ strong {
 </style>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
 .commissie-page {
   min-height: 100vh;
-  background: #f3f4f6;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   color: #111827;
-  font-family: Inter, Arial, sans-serif;
 }
 
 .topbar {
   height: 72px;
-  background: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 64px;
+  background: rgba(255,255,255,0.95);
   border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 64px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar strong {
+  color: #991b1b;
+  font-weight: 800;
 }
 
 nav {
   display: flex;
-  gap: 28px;
+  gap: 8px;
 }
 
 nav a {
-  font-weight: 600;
+  text-decoration: none;
   color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 12px;
   cursor: pointer;
 }
 
-nav .active {
-  color: #2563eb;
+nav a:hover,
+nav a.active {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .profile {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
 }
 
 .avatar {
-  background: #ede9fe;
-  color: #6d28d9;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   display: grid;
   place-items: center;
   font-weight: 800;
-  width: 36px;
-  height: 36px;
+  font-size: 13px;
+  color: #991b1b;
 }
 
 .big {
@@ -395,20 +420,32 @@ nav .active {
 }
 
 .page-header {
-  padding: 36px 64px 20px;
+  margin: 40px 64px 28px;
+  padding: 42px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #991b1b, #dc2626);
+  color: white;
+  box-shadow: 0 18px 40px rgba(153,27,27,0.22);
 }
 
 .back-btn {
   border: none;
   background: transparent;
-  color: #64748b;
+  color: white;
   font-weight: 600;
   cursor: pointer;
+  opacity: 0.9;
 }
 
 h1 {
-  font-size: 30px;
-  margin-bottom: 6px;
+  font-size: 38px;
+  margin: 18px 0 8px;
+  font-weight: 800;
+}
+
+.page-header p {
+  margin: 0 0 14px;
+  opacity: 0.9;
 }
 
 .badge {
@@ -425,7 +462,7 @@ h1 {
 }
 
 .grid {
-  padding: 0 64px;
+  margin: 24px 64px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
@@ -433,13 +470,15 @@ h1 {
 
 .card {
   background: white;
-  border-radius: 14px;
-  padding: 26px;
+  border-radius: 22px;
+  padding: 28px;
   margin-bottom: 24px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 14px 30px rgba(15,23,42,0.05);
 }
 
 .wide {
-  margin: 0 64px 24px;
+  margin: 24px 64px;
 }
 
 .student-box {
@@ -489,6 +528,7 @@ strong {
   border-radius: 12px;
   font-weight: 800;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
 .approve {
@@ -498,14 +538,37 @@ strong {
 }
 
 .changes {
-  background: #f3e8ff;
-  border: 2px solid #8b5cf6;
-  color: #6d28d9;
+  background: #fef3c7;
+  border: 2px solid #f59e0b;
+  color: #b45309;
 }
 
 .reject {
   background: #fee2e2;
   border: 2px solid #ef4444;
   color: #dc2626;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    padding: 0 20px;
+  }
+
+  nav {
+    display: none;
+  }
+
+  .page-header,
+  .grid,
+  .wide {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+
+  .grid,
+  .decision-grid,
+  .three {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
