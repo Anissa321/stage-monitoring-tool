@@ -20,7 +20,7 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
 
     const { data: competenties } = await supabaseAdmin
       .from('logbook_competencies')
-      .select('logbook_id, competence_name, selected')
+      .select('logbook_id, competence_name, selected, description')
       .in('logbook_id', logboekIds)
       .eq('selected', true)
 
@@ -63,7 +63,10 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
     const logboekenMetData = data.map(log => ({
       ...log,
       competenties: competenties
-        ? competenties.filter(c => c.logbook_id === log.id).map(c => c.competence_name)
+        ? competenties.filter(c => c.logbook_id === log.id).map(c => ({
+            naam: c.competence_name,
+            description: c.description || ''
+          }))
         : [],
       week_status: weekInfo[log.week_number]?.week_status || 'wacht_op_weekgoedkeuring',
       mentor_naam: weekInfo[log.week_number]?.mentor_naam || null
@@ -163,18 +166,20 @@ router.get('/mentor/week/:studentId/:weekNummer', authMiddleware, requireRole('m
     const logboekIds = data.map(l => l.id)
     const { data: competenties } = await supabaseAdmin
       .from('logbook_competencies')
-      .select('logbook_id, competence_name, selected')
+      .select('logbook_id, competence_name, selected, description')
       .in('logbook_id', logboekIds)
       .eq('selected', true)
 
     const logboekenMetCompetenties = data.map(log => ({
       ...log,
       competenties: competenties
-        ? competenties.filter(c => c.logbook_id === log.id).map(c => c.competence_name)
+        ? competenties.filter(c => c.logbook_id === log.id).map(c => ({
+            naam: c.competence_name,
+            description: c.description || ''
+          }))
         : []
     }))
 
-    // Haal student profiel op
     const { data: student } = await supabaseAdmin
       .from('profiles')
       .select('voornaam, achternaam')
@@ -212,13 +217,16 @@ router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) =>
     const logboekIds = data.map(l => l.id)
     const { data: competenties } = await supabaseAdmin
       .from('logbook_competencies')
-      .select('logbook_id, competence_name, selected')
+      .select('logbook_id, competence_name, selected, description')
       .in('logbook_id', logboekIds)
 
     const logboekenMetCompetenties = data.map(log => ({
       ...log,
       competenties: competenties
-        ? competenties.filter(c => c.logbook_id === log.id)
+        ? competenties.filter(c => c.logbook_id === log.id).map(c => ({
+            naam: c.competence_name,
+            description: c.description || ''
+          }))
         : []
     }))
 
@@ -255,12 +263,12 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
 
     if (error) return res.status(500).json({ error: 'Kon logboek niet aanmaken' })
 
-    // Sla competenties op in logbook_competencies
     if (competenties && competenties.length > 0) {
-      const competentieRijen = competenties.map(naam => ({
+      const competentieRijen = competenties.map(c => ({
         logbook_id: data.id,
-        competence_name: naam,
-        selected: true
+        competence_name: typeof c === 'string' ? c : c.naam,
+        selected: true,
+        description: typeof c === 'string' ? '' : (c.description || '')
       }))
 
       const { error: cError } = await supabaseAdmin
@@ -335,6 +343,48 @@ router.post('/:id/aftekenen', authMiddleware, requireRole('mentor'), async (req,
   }
 })
 
+// GET /api/logboeken/mijn/reviews — feedback van mentor per week
+router.get('/mijn/reviews', authMiddleware, requireRole('student'), async (req, res) => {
+  try {
+    const { data: logboeken } = await supabaseAdmin
+      .from('logbooks')
+      .select('id, week_number')
+      .eq('student_id', req.user.id)
+
+    const logboekIds = logboeken.map(l => l.id)
+    if (logboekIds.length === 0) return res.json({ reviews: [] })
+
+    const { data: reviews } = await supabaseAdmin
+      .from('logbook_reviews')
+      .select('logbook_id, week_number, week_feedback, week_status, mentor_id, reviewed_at')
+      .in('logbook_id', logboekIds)
+      .eq('reviewer_role', 'mentor')
+      .order('reviewed_at', { ascending: false })
+
+    const mentorIds = [...new Set(reviews.filter(r => r.mentor_id).map(r => r.mentor_id))]
+    let mentorNamen = {}
+    if (mentorIds.length > 0) {
+      const { data: mentors } = await supabaseAdmin
+        .from('profiles')
+        .select('id, voornaam, achternaam')
+        .in('id', mentorIds)
+      mentors?.forEach(m => {
+        mentorNamen[m.id] = `${m.voornaam} ${m.achternaam}`
+      })
+    }
+
+    const reviewsMetNaam = reviews.map(r => ({
+      ...r,
+      mentor_naam: mentorNamen[r.mentor_id] || 'Mentor'
+    }))
+
+    res.json({ reviews: reviewsMetNaam })
+  } catch (err) {
+    console.error('Reviews ophalen error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
 // PUT /api/logboeken/:id — logboek bewerken (student)
 router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
   try {
@@ -363,7 +413,6 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
 
     if (error) return res.status(500).json({ error: 'Kon logboek niet bewerken' })
 
-    // Competenties updaten: verwijder oude en voeg nieuwe in
     if (competenties !== undefined) {
       await supabaseAdmin
         .from('logbook_competencies')
@@ -371,10 +420,11 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
         .eq('logbook_id', id)
 
       if (competenties.length > 0) {
-        const competentieRijen = competenties.map(naam => ({
+        const competentieRijen = competenties.map(c => ({
           logbook_id: parseInt(id),
-          competence_name: naam,
-          selected: true
+          competence_name: typeof c === 'string' ? c : c.naam,
+          selected: true,
+          description: typeof c === 'string' ? '' : (c.description || '')
         }))
 
         const { error: cError } = await supabaseAdmin

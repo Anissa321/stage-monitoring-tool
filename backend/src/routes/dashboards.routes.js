@@ -209,9 +209,10 @@ router.get('/mentor/student/:studentId', authMiddleware, requireRole('mentor'), 
       .eq('id', studentId)
       .single()
 
+    // Correcte kolomnamen voor stages tabel
     const { data: stage } = await supabaseAdmin
       .from('stages')
-      .select('id, bedrijfsnaam, startdatum, einddatum, status')
+      .select('id, company_name, start_date, end_date, status')
       .eq('student_id', studentId)
       .single()
 
@@ -220,9 +221,18 @@ router.get('/mentor/student/:studentId', authMiddleware, requireRole('mentor'), 
       .select('id, datum, status, tasks, week_number')
       .eq('student_id', studentId)
       .order('datum', { ascending: false })
-      .limit(5)
+      .limit(10)
 
-    res.json({ student, stage: stage || null, logboeken: logboeken || [] })
+    res.json({
+      student,
+      stage: stage ? {
+        company_name: stage.company_name,
+        startdatum: stage.start_date,
+        einddatum: stage.end_date,
+        status: stage.status
+      } : null,
+      logboeken: logboeken || []
+    })
   } catch (err) {
     console.error('Mentor student detail error:', err)
     res.status(500).json({ error: 'Server fout' })
