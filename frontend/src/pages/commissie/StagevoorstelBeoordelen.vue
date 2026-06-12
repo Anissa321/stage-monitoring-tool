@@ -143,3 +143,53 @@ function rejectProposal() {
     </section>
  </main>
 </template>
+
+<style scoped>
+.commissie-page {
+  min-height: 100vh;
+  background: #f3f4f6;
+  color: #111827;
+  font-family: Inter, Arial, sans-serif;
+}
+
+.topbar {
+  height: 72px;
+  background: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 64px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+nav {
+  display: flex;
+  gap: 28px;
+}
+
+nav a {
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+}
+
+nav .active {
+  color: #2563eb;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ede9fe;
+  color: #6d28d9;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
