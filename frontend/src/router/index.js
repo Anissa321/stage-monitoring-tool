@@ -13,6 +13,7 @@ import LogboekInvullen from '../pages/student/LogboekInvullen.vue'
 import LogboekBekijken from '../pages/docent/LogboekBekijken.vue'
 import StudentDetailMentor from '../pages/mentor/StudentDetailMentor.vue'
 import StagevoorstelIndienen from '../pages/student/StagevoorstelIndienen.vue'
+import StagevoorstelDetail from '../pages/student/StagevoorstelDetail.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -24,6 +25,7 @@ const routes = [
   { path: '/student/logboek', name: 'LogboekOverzicht', component: LogboekOverzicht },
   { path: '/student/logboek-invullen', name: 'LogboekInvullen', component: LogboekInvullen },
   { path: '/student/stagevoorstel', name: 'StagevoorstelIndienen', component: StagevoorstelIndienen },
+  { path: '/student/stagevoorstel/detail', name: 'StagevoorstelDetail', component: StagevoorstelDetail },
 
   // DOCENT
   { path: '/docent', redirect: '/docent/dashboard' },
