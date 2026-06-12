@@ -1,83 +1,3 @@
-<template>
-  <main class="commissie-page">
-    <header class="topbar">
-      <strong>Stage Monitor</strong>
-
-      <nav>
-        <a @click="router.push('/commissie/dashboard')">Dashboard</a>
-        <a class="active">Aanvragen</a>
-        <a>Overzicht Beoordeling</a>
-      </nav>
-
-      <div class="profile">
-        <div class="avatar">MD</div>
-        <span>Marie Declercq</span>
-      </div>
-    </header>
-
-    <section class="page-header">
-      <button class="back-btn" @click="goBack">
-        ← Terug naar voorstel
-      </button>
-
-      <h1>Aanpassingen vereist</h1>
-      <p>Stagevoorstel van Sara De Vos — DataLab</p>
-
-      <span class="badge purple">
-        ● Aanpassingen vereist
-      </span>
-    </section>
-
-    <section class="alert">
-      ⚠ De student ontvangt een melding met jouw feedback en kan het voorstel aanpassen en opnieuw indienen.
-    </section>
-
-    <section class="student-card">
-      <div class="avatar green-avatar">SD</div>
-
-      <div>
-        <h3>Sara De Vos</h3>
-        <p>sara.devos@student.ehb.be • Toegepaste Informatica • 3e jaar</p>
-        <p>Stage bij DataLab • 1 mrt - 31 mei 2026</p>
-      </div>
-    </section>
-
-    <section class="feedback-card">
-      <h2>Feedback voor de student</h2>
-
-      <div class="field">
-        <label>✕ Wat moet aangepast worden</label>
-        <textarea v-model="feedback.aanpassen"></textarea>
-      </div>
-
-      <div class="field good">
-        <label>✓ Wat reeds goed is</label>
-        <textarea v-model="feedback.goed"></textarea>
-      </div>
-
-      <div class="field checklist">
-        <label>☑ Vereiste aanpassingen</label>
-        <textarea v-model="feedback.checklist"></textarea>
-      </div>
-    </section>
-
-    <section class="deadline-section">
-      <label>Deadline voor herindienen</label>
-      <input v-model="feedback.deadline" type="date">
-    </section>
-
-    <section class="actions">
-      <button class="cancel-btn" @click="goBack">
-        Annuleren
-      </button>
-
-      <button class="send-btn" @click="sendFeedback">
-        ✎ Feedback versturen naar student
-      </button>
-    </section>
-  </main>
-</template>
-
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -151,5 +71,84 @@ nav a.active {
   font-weight: 800;
   font-size: 13px;
   color: #991b1b;
+}
+
+.green-avatar {
+  background: #dcfce7;
+  color: #059669;
+  border: none;
+}
+
+.page-header {
+  margin: 40px 64px 28px;
+  padding: 42px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #991b1b, #dc2626);
+  color: white;
+  box-shadow: 0 18px 40px rgba(153,27,27,0.22);
+}
+
+.back-btn {
+  border: none;
+  background: transparent;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+h1 {
+  font-size: 38px;
+  margin: 18px 0 8px;
+  font-weight: 800;
+}
+
+.page-header p {
+  margin: 0 0 14px;
+  opacity: 0.9;
+}
+
+.badge {
+  display: inline-block;
+  padding: 7px 13px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.purple {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.alert {
+  margin: 0 64px 28px;
+  padding: 18px 22px;
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  border-radius: 16px;
+  font-weight: 600;
+}
+
+.student-card {
+  margin: 0 64px 28px;
+  background: white;
+  border-radius: 22px;
+  padding: 28px 32px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 14px 30px rgba(15,23,42,0.05);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.student-card h3 {
+  margin: 0 0 4px;
+}
+
+.student-card p {
+  margin: 4px 0;
+  color: #64748b;
 }
 </style>
