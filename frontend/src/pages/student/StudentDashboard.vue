@@ -77,7 +77,7 @@ function initialen() {
       <div class="rocket">🚀</div>
       <h2>Klaar om je stage te starten?</h2>
       <p>Dien je stagevoorstel in en de stagecommissie zal het beoordelen binnen 5 werkdagen.</p>
-      <button class="primary-btn">Stagevoorstel indienen</button>
+      <button class="primary-btn" @click="router.push('/student/stagevoorstel')">Stagevoorstel indienen</button>
     </section>
 
     <section class="steps-section">
@@ -106,7 +106,7 @@ function initialen() {
         <div class="step-card">
           <div class="step-number">5</div>
           <h3>Evaluatie</h3>
-          <p>Ontvang feedback en rond je stage officieel af.</p>
+          <p>Ontvang feedback en scores per competentie.</p>
         </div>
       </div>
     </section>
