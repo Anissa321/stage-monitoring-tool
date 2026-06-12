@@ -5,11 +5,11 @@ import { supabaseAdmin } from '../config/supabase.js'
 
 const router = Router()
 
-// GET /api/stagevoostellen/mijn — student ziet eigen voorstel
+// GET /api/stagevoorstellen/mijn — student ziet eigen voorstel
 router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
-      .from('stagevoostellen')
+      .from('stagevoorstellen')
       .select('*')
       .eq('student_id', req.user.id)
       .single()
@@ -25,7 +25,7 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
   }
 })
 
-// POST /api/stagevoostellen — student dient voorstel in
+// POST /api/stagevoorstellen — student dient voorstel in
 router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
   try {
     const {
@@ -37,26 +37,32 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
       return res.status(400).json({ error: 'Bedrijfsnaam en opdrachtomschrijving zijn verplicht' })
     }
 
+    const insertData = {
+      student_id: req.user.id,
+      bedrijfsnaam,
+      bedrijf_adres: bedrijf_adres || null,
+      mentor_naam: mentor_naam || null,
+      mentor_mail: mentor_mail || null,
+      opdrachtomschrijving,
+      startdatum: startdatum || null,
+      einddatum: einddatum || null,
+      sector: sector || null,
+      status: 'ingediend',
+      indieningsdatum: new Date().toISOString()
+    }
+
+    if (deadline) insertData.deadline = deadline
+
     const { data, error } = await supabaseAdmin
-      .from('stagevoostellen')
-      .insert({
-        student_id: req.user.id,
-        bedrijfsnaam,
-        bedrijf_adres,
-        mentor_naam,
-        mentor_mail,
-        opdrachtomschrijving,
-        startdatum,
-        einddatum,
-        sector,
-        deadline,
-        status: 'ingediend',
-        indieningsdatum: new Date().toISOString()
-      })
+      .from('stagevoorstellen')
+      .insert(insertData)
       .select()
       .single()
 
-    if (error) return res.status(500).json({ error: 'Kon stagevoorstel niet aanmaken' })
+    if (error) {
+      console.error('Supabase insert error:', error)
+      return res.status(500).json({ error: 'Kon stagevoorstel niet aanmaken' })
+    }
 
     res.status(201).json({ stagevoorstel: data })
   } catch (err) {
@@ -65,7 +71,7 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
   }
 })
 
-// PUT /api/stagevoostellen/:id — student past voorstel aan
+// PUT /api/stagevoorstellen/:id — student past voorstel aan
 router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
   try {
     const { id } = req.params
@@ -75,7 +81,7 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
     } = req.body
 
     const { data: bestaand } = await supabaseAdmin
-      .from('stagevoostellen')
+      .from('stagevoorstellen')
       .select('id, status, student_id')
       .eq('id', id)
       .eq('student_id', req.user.id)
@@ -86,27 +92,33 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
       return res.status(403).json({ error: 'Goedgekeurd stagevoorstel kan niet meer bewerkt worden' })
     }
 
+    const updateData = {
+      bedrijfsnaam,
+      bedrijf_adres: bedrijf_adres || null,
+      mentor_naam: mentor_naam || null,
+      mentor_mail: mentor_mail || null,
+      opdrachtomschrijving,
+      startdatum: startdatum || null,
+      einddatum: einddatum || null,
+      sector: sector || null,
+      status: 'ingediend',
+      indieningsdatum: new Date().toISOString()
+    }
+
+    if (deadline) updateData.deadline = deadline
+
     const { data, error } = await supabaseAdmin
-      .from('stagevoostellen')
-      .update({
-        bedrijfsnaam,
-        bedrijf_adres,
-        mentor_naam,
-        mentor_mail,
-        opdrachtomschrijving,
-        startdatum,
-        einddatum,
-        sector,
-        deadline,
-        status: 'ingediend',
-        indieningsdatum: new Date().toISOString()
-      })
+      .from('stagevoorstellen')
+      .update(updateData)
       .eq('id', id)
       .eq('student_id', req.user.id)
       .select()
       .single()
 
-    if (error) return res.status(500).json({ error: 'Kon stagevoorstel niet bewerken' })
+    if (error) {
+      console.error('Supabase update error:', error)
+      return res.status(500).json({ error: 'Kon stagevoorstel niet bewerken' })
+    }
 
     res.json({ stagevoorstel: data })
   } catch (err) {
@@ -115,15 +127,15 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
   }
 })
 
-// GET /api/stagevoostellen/commissie — stagecommissie ziet alle voorstellen
+// GET /api/stagevoorstellen/commissie — stagecommissie ziet alle voorstellen
 router.get('/commissie', authMiddleware, requireRole('stagecommissie'), async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
-      .from('stagevoostellen')
+      .from('stagevoorstellen')
       .select('*')
       .order('indieningsdatum', { ascending: false })
 
-    if (error) return res.status(500).json({ error: 'Kon stagevoostellen niet ophalen' })
+    if (error) return res.status(500).json({ error: 'Kon stagevoorstellen niet ophalen' })
 
     const studentIds = data.map(s => s.student_id).filter(Boolean)
     let studentNamen = {}
@@ -142,14 +154,14 @@ router.get('/commissie', authMiddleware, requireRole('stagecommissie'), async (r
       student_naam: studentNamen[v.student_id] || 'Onbekend'
     }))
 
-    res.json({ stagevoostellen: voorstellenMetNaam })
+    res.json({ stagevoorstellen: voorstellenMetNaam })
   } catch (err) {
-    console.error('Commissie stagevoostellen error:', err)
+    console.error('Commissie stagevoorstellen error:', err)
     res.status(500).json({ error: 'Server fout' })
   }
 })
 
-// PUT /api/stagevoostellen/:id/beoordelen — stagecommissie beoordeelt voorstel
+// PUT /api/stagevoorstellen/:id/beoordelen — stagecommissie beoordeelt voorstel
 router.put('/:id/beoordelen', authMiddleware, requireRole('stagecommissie'), async (req, res) => {
   try {
     const { id } = req.params
@@ -160,15 +172,17 @@ router.put('/:id/beoordelen', authMiddleware, requireRole('stagecommissie'), asy
     }
 
     const { data, error } = await supabaseAdmin
-      .from('stagevoostellen')
+      .from('stagevoorstellen')
       .update({ status, feedback_aanpassen, feedback_positief })
       .eq('id', id)
       .select()
       .single()
 
-    if (error) return res.status(500).json({ error: 'Kon stagevoorstel niet beoordelen' })
+    if (error) {
+      console.error('Supabase beoordelen error:', error)
+      return res.status(500).json({ error: 'Kon stagevoorstel niet beoordelen' })
+    }
 
-    // Als aanpassen → sla aanpassing op in stagevoorstel_aanpassingen
     if (status === 'aanpassen' && feedback_aanpassen) {
       await supabaseAdmin
         .from('stagevoorstel_aanpassingen')
@@ -186,7 +200,7 @@ router.put('/:id/beoordelen', authMiddleware, requireRole('stagecommissie'), asy
   }
 })
 
-// GET /api/stagevoostellen/:id/aanpassingen — aanpassingen ophalen
+// GET /api/stagevoorstellen/:id/aanpassingen — aanpassingen ophalen
 router.get('/:id/aanpassingen', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params
