@@ -26,7 +26,8 @@ const routes = [
   { path: '/student/logboek', name: 'LogboekOverzicht', component: LogboekOverzicht },
   { path: '/student/logboek-invullen', name: 'LogboekInvullen', component: LogboekInvullen },
   { path: '/student/stagevoorstel', name: 'StagevoorstelIndienen', component: StagevoorstelIndienen },
-  { path: '/student/stagevoorstel/detail', name: 'StagevoorstelDetail', component: StagevoorstelDetail },
+ { path: '/student/stagevoorstel/detail', name: 'StagevoorstelDetail', component: StagevoorstelDetail },
+ 
 
   // DOCENT
   { path: '/docent', redirect: '/docent/dashboard' },
