@@ -16,13 +16,6 @@ const logboeken = ref([])
 const student = ref(null)
 const mentor = ref(null)
 
-const checklist = ref({
-  takenCorrect: false,
-  competentiesCorrect: false,
-  urenCorrect: false,
-  feedbackIngevuld: false
-})
-
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
@@ -76,12 +69,30 @@ function statusLabel(status) {
   return status
 }
 
-function totaalUren() {
-  return logboeken.value.reduce((sum, l) => sum + (l.uren_gewerkt || 0), 0)
+// Parse competenties - kunnen JSON-strings of objecten zijn
+function parseCompetenties(competenties) {
+  if (!competenties || !competenties.length) return []
+  return competenties.map(c => {
+    if (typeof c === 'string') {
+      try {
+        const parsed = JSON.parse(c)
+        return { naam: parsed.naam || parsed.name, description: parsed.description }
+      } catch {
+        return { naam: c, description: '' }
+      }
+    }
+    return { naam: c.naam || c.name, description: c.description }
+  })
 }
 
-function aantalIngediend() {
-  return logboeken.value.filter(l => ['ingediend', 'goedgekeurd'].includes(l.status)).length
+// Status van de hele week - groen "Goedgekeurd" als alle dagen goedgekeurd/vrije dag zijn
+function weekStatusLabel() {
+  const alleGoedgekeurd = logboeken.value.length > 0 && logboeken.value.every(l => ['goedgekeurd', 'vrije_dag'].includes(l.status))
+  return alleGoedgekeurd ? '✓ Goedgekeurd' : '⏳ Wacht op weekgoedkeuring'
+}
+function weekStatusKlasse() {
+  const alleGoedgekeurd = logboeken.value.length > 0 && logboeken.value.every(l => ['goedgekeurd', 'vrije_dag'].includes(l.status))
+  return alleGoedgekeurd ? 'status-pill success' : 'status-pill warning'
 }
 
 async function aftekenen(week_status) {
@@ -140,7 +151,6 @@ async function logout() {
       <nav>
         <a @click="router.push('/mentor/dashboard')">Dashboard</a>
         <a class="active" @click="router.push('/mentor/stagiairs')">Stagiairs</a>
-        <a @click="router.push('/mentor/logboek')">Logboeken</a>
         <a>Evaluaties</a>
       </nav>
       <div class="profile">
@@ -161,26 +171,7 @@ async function logout() {
             <h1>Week {{ weekNummer }} aftekenen — {{ student?.voornaam }} {{ student?.achternaam }}</h1>
             <p>Week {{ weekNummer }}</p>
           </div>
-          <span class="status-pill warning">⏳ Wacht op weekgoedkeuring</span>
-        </div>
-      </section>
-
-      <section class="summary-card">
-        <div class="summary-item">
-          <span>Totaal uren</span>
-          <strong>{{ totaalUren() }} uur</strong>
-        </div>
-        <div class="summary-item">
-          <span>Ingediende dagen</span>
-          <strong>{{ aantalIngediend() }} / {{ logboeken.length }}</strong>
-        </div>
-        <div class="summary-item">
-          <span>Week</span>
-          <strong>Week {{ weekNummer }}</strong>
-        </div>
-        <div class="summary-item">
-          <span>Status</span>
-          <strong>Wacht op aftekening</strong>
+          <span :class="weekStatusKlasse()">{{ weekStatusLabel() }}</span>
         </div>
       </section>
 
@@ -197,10 +188,13 @@ async function logout() {
           </div>
           <div class="competencies">
             <span>Competenties</span>
-            <div class="tags">
-              <small v-if="log.competenties && log.competenties.length" v-for="comp in log.competenties" :key="comp" class="tag">{{ comp }}</small>
-              <small v-else class="empty-tag">Geen competenties</small>
+            <div v-if="parseCompetenties(log.competenties).length" class="comp-list">
+              <div v-for="(comp, i) in parseCompetenties(log.competenties)" :key="i" class="comp-item">
+                <strong>{{ comp.naam }}</strong>
+                <p v-if="comp.description">{{ comp.description }}</p>
+              </div>
             </div>
+            <small v-else class="empty-tag">Geen competenties</small>
           </div>
         </article>
       </section>
@@ -211,13 +205,6 @@ async function logout() {
         <textarea v-model="feedback" placeholder="Schrijf hier je feedback..."></textarea>
         <div v-if="error" class="error-msg">{{ error }}</div>
         <div v-if="succes" class="succes-msg">{{ succes }}</div>
-        <div class="mentor-checklist">
-          <h3>Controle door mentor</h3>
-          <label><input v-model="checklist.takenCorrect" type="checkbox"> Werkzaamheden komen overeen met uitgevoerde taken</label>
-          <label><input v-model="checklist.competentiesCorrect" type="checkbox"> Competenties zijn correct aangeduid</label>
-          <label><input v-model="checklist.urenCorrect" type="checkbox"> Student heeft voldoende uren gepresteerd</label>
-          <label><input v-model="checklist.feedbackIngevuld" type="checkbox"> Feedback werd ingevuld</label>
-        </div>
       </section>
 
       <section class="actions">
@@ -254,21 +241,20 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
 .title-row h1 { margin: 0; font-size: 28px; font-weight: 800; }
 .title-row p { margin: 6px 0 0; color: #64748b; }
-.summary-card { margin: 0 64px 24px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-.summary-item { background: white; border-radius: 16px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 8px 22px rgba(15,23,42,0.04); }
-.summary-item span { display: block; color: #64748b; font-size: 13px; margin-bottom: 8px; }
-.summary-item strong { font-size: 20px; color: #111827; }
-.status-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 7px 13px; font-size: 12px; font-weight: 700; }
+.status-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 7px 13px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .warning { background: #fef3c7; color: #92400e; }
+.success { background: #dcfce7; color: #15803d; }
 .days-list { padding: 8px 64px 20px; display: flex; flex-direction: column; gap: 18px; }
-.day-card { background: white; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px; display: grid; grid-template-columns: 200px 1fr 320px; gap: 28px; box-shadow: 0 8px 22px rgba(15,23,42,0.04); }
+.day-card { background: white; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px; display: grid; grid-template-columns: 200px 1fr 420px; gap: 28px; box-shadow: 0 8px 22px rgba(15,23,42,0.04); }
 .day-meta h3 { margin: 0 0 6px; font-size: 14px; font-weight: 700; }
 .day-meta p { margin: 0 0 8px; color: #64748b; font-size: 13px; }
 .day-task span, .competencies span { display: block; color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; }
 .day-task p { margin: 0; color: #334155; font-style: italic; line-height: 1.5; }
-.tags { display: flex; gap: 8px; flex-wrap: wrap; }
-.tag { border-radius: 999px; padding: 5px 12px; font-weight: 700; font-size: 12px; background: #e0e7ff; color: #3730a3; }
-.empty-tag { border-radius: 999px; padding: 5px 12px; font-weight: 700; font-size: 12px; background: #f1f5f9; color: #64748b; }
+.comp-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.comp-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; }
+.comp-item strong { display: block; font-size: 11px; color: #991b1b; margin-bottom: 2px; }
+.comp-item p { margin: 0; font-size: 11px; color: #475569; line-height: 1.4; }
+.empty-tag { border-radius: 999px; padding: 5px 12px; font-weight: 700; font-size: 12px; background: #f1f5f9; color: #64748b; display: inline-block; }
 .badge { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .badge.green { background: #dcfce7; color: #15803d; }
 .badge.warning { background: #fef3c7; color: #92400e; }
@@ -278,9 +264,6 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .feedback-section p { margin: 0 0 14px; color: #64748b; }
 textarea { width: 100%; min-height: 145px; border: 1px solid #cbd5e1; border-radius: 14px; padding: 16px; resize: vertical; color: #334155; line-height: 1.5; background: white; font-size: 14px; }
 textarea:focus { outline: none; border-color: #991b1b; box-shadow: 0 0 0 3px rgba(153,27,27,0.12); }
-.mentor-checklist { margin-top: 18px; padding: 20px; background: white; border-radius: 16px; border: 1px solid #e5e7eb; }
-.mentor-checklist h3 { margin-top: 0; margin-bottom: 16px; font-size: 15px; }
-.mentor-checklist label { display: flex; gap: 10px; margin-bottom: 12px; cursor: pointer; color: #334155; font-size: 14px; }
 .actions { margin: 0 64px; padding-bottom: 50px; display: flex; justify-content: space-between; align-items: center; }
 .action-buttons { display: flex; gap: 12px; }
 .cancel-btn, .reject-btn, .approve-btn { border-radius: 12px; padding: 12px 20px; font-weight: 700; cursor: pointer; font-size: 14px; }
@@ -293,9 +276,9 @@ textarea:focus { outline: none; border-color: #991b1b; box-shadow: 0 0 0 3px rgb
 @media (max-width: 900px) {
   .topbar { padding: 0 20px; } nav { display: none; }
   .page-header, .days-list, .feedback-section, .actions { padding-left: 20px; padding-right: 20px; margin-left: 0; margin-right: 0; }
-  .summary-card { margin-left: 20px; margin-right: 20px; grid-template-columns: 1fr 1fr; }
   .title-row { flex-direction: column; }
   .day-card { grid-template-columns: 1fr; }
+  .comp-list { grid-template-columns: 1fr; }
   .actions { flex-direction: column; align-items: stretch; gap: 14px; }
   .action-buttons { flex-direction: column; }
 }
