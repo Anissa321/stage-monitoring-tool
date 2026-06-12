@@ -16,6 +16,8 @@ import StagevoorstelIndienen from '../pages/student/StagevoorstelIndienen.vue'
 import StagevoorstelDetail from '../pages/student/StagevoorstelDetail.vue'
 import StagevoorstelBeoordelen from '../pages/commissie/StagevoorstelBeoordelen.vue'
 import AdminCompetencies from '../pages/admin/AdminCompetencies.vue'
+import FeedbackGeven from '../pages/commissie/FeedbackGeven.vue'
+
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'LoginPage', component: LoginPage },
@@ -45,6 +47,7 @@ const routes = [
   { path: '/commissie', redirect: '/commissie/dashboard' },
   { path: '/commissie/dashboard', name: 'CommissieDashboard', component: CommissieDashboard },
   { path: '/commissie/stagevoorstel', name: 'StagevoorstelBeoordelen', component: StagevoorstelBeoordelen },
+  { path: '/commissie/feedback-geven', name: 'FeedbackGeven', component: FeedbackGeven },
 
   // ADMIN
   { path: '/admin', redirect: '/admin/dashboard' },
