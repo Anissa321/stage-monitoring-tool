@@ -442,7 +442,7 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
   }
 })
 
-// DELETE /api/logboeken/:id — logboek verwijderen (student)
+// DELETE /api/logboeken/:id — logboek verwijderen/resetten (student)
 router.delete('/:id', authMiddleware, requireRole('student'), async (req, res) => {
   try {
     const { id } = req.params
@@ -459,22 +459,31 @@ router.delete('/:id', authMiddleware, requireRole('student'), async (req, res) =
       return res.status(403).json({ error: 'Goedgekeurd logboek kan niet verwijderd worden' })
     }
 
+    // Reset competenties
     await supabaseAdmin
       .from('logbook_competencies')
       .delete()
       .eq('logbook_id', id)
 
+    // Reset logboek naar niet_ingevuld
     const { error } = await supabaseAdmin
       .from('logbooks')
-      .delete()
+      .update({
+        status: 'niet_ingevuld',
+        tasks: null,
+        reflection: null,
+        learning_points: null,
+        uren_gewerkt: 0,
+        submitted_at: null
+      })
       .eq('id', id)
       .eq('student_id', req.user.id)
 
-    if (error) return res.status(500).json({ error: 'Kon logboek niet verwijderen' })
+    if (error) return res.status(500).json({ error: 'Kon logboek niet resetten' })
 
-    res.json({ message: 'Logboek verwijderd' })
+    res.json({ message: 'Logboek gereset' })
   } catch (err) {
-    console.error('Logboek verwijderen error:', err)
+    console.error('Logboek reset error:', err)
     res.status(500).json({ error: 'Server fout' })
   }
 })

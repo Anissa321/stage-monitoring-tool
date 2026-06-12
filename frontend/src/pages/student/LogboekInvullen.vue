@@ -55,11 +55,25 @@ async function logout() {
 }
 
 onMounted(async () => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    router.push('/login')
+    return
+  }
+
   if (logboekId) {
-    const token = localStorage.getItem('token')
     const res = await fetch('http://localhost:3000/api/logboeken/mijn', {
       headers: { Authorization: `Bearer ${token}` }
     })
+
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('role')
+      localStorage.removeItem('user')
+      router.push('/login')
+      return
+    }
+
     const data = await res.json()
     const logboek = data.logboeken?.find(l => l.id == logboekId)
 
@@ -95,6 +109,11 @@ async function verstuurLogboek(status) {
   isLoading.value = true
   try {
     const token = localStorage.getItem('token')
+    if (!token) {
+      router.push('/login')
+      return
+    }
+
     const url = logboekId
       ? `http://localhost:3000/api/logboeken/${logboekId}`
       : 'http://localhost:3000/api/logboeken'
@@ -120,6 +139,15 @@ async function verstuurLogboek(status) {
         }))
       })
     })
+
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('role')
+      localStorage.removeItem('user')
+      router.push('/login')
+      return
+    }
+
     const data = await res.json()
     if (!res.ok) {
       error.value = data.error || 'Logboek kon niet opgeslagen worden'

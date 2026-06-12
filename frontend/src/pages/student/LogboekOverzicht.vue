@@ -58,10 +58,35 @@ function korteCompetentie(competentie) {
 }
 
 function klikOpCard(logboek) {
-  if (logboek.status === 'niet_ingevuld') {
-    router.push('/student/logboek-invullen')
-  } else {
-    router.push(`/student/logboek-invullen?id=${logboek.id}`)
+  if (logboek.status === 'vrije_dag') return
+  router.push(`/student/logboek-invullen?id=${logboek.id}`)
+}
+
+async function resetLogboek(logboek) {
+  if (!confirm(`Logboek van ${formatDatum(logboek.datum)} resetten?`)) return
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch(`http://localhost:3000/api/logboeken/${logboek.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (res.ok) {
+      const index = logboeken.value.findIndex(l => l.id === logboek.id)
+      if (index !== -1) {
+        logboeken.value[index] = {
+          ...logboeken.value[index],
+          status: 'niet_ingevuld',
+          tasks: null,
+          uren_gewerkt: 0,
+          competenties: []
+        }
+      }
+    } else {
+      const data = await res.json()
+      alert(data.error || 'Kon logboek niet resetten')
+    }
+  } catch (err) {
+    console.error(err)
   }
 }
 
@@ -166,7 +191,7 @@ onMounted(async () => {
               v-for="logboek in weekGroep.logboeken"
               :key="logboek.id"
               class="day-card"
-              :class="[statusClass(logboek.status), logboek.status !== 'niet_ingevuld' ? 'clickable' : '']"
+              :class="[statusClass(logboek.status), (logboek.status !== 'niet_ingevuld' && logboek.status !== 'vrije_dag') ? 'clickable' : '']"
               @click="klikOpCard(logboek)"
             >
               <h3>{{ formatDatum(logboek.datum) }}</h3>
@@ -176,20 +201,29 @@ onMounted(async () => {
               <p v-if="logboek.uren_gewerkt" class="hours">{{ logboek.uren_gewerkt }} uur gewerkt</p>
 
               <div v-if="logboek.competenties && logboek.competenties.length" class="tags">
-               <span v-for="competentie in logboek.competenties" :key="competentie.naam || competentie">
-              {{ korteCompetentie(competentie.naam || competentie) }}
+                <span v-for="competentie in logboek.competenties" :key="competentie.naam || competentie">
+                  {{ korteCompetentie(competentie.naam || competentie) }}
                 </span>
               </div>
 
               <button
                 v-if="logboek.status === 'niet_ingevuld'"
                 class="fill-card-btn"
-                @click.stop="router.push('/student/logboek-invullen')"
+                @click.stop="router.push(`/student/logboek-invullen?id=${logboek.id}`)"
               >
                 + Logboek invullen
               </button>
 
-              <div v-if="logboek.status === 'ingediend' || logboek.status === 'goedgekeurd'" class="readonly-badge">
+              <div v-if="logboek.status === 'ingediend' && logboek.datum === '2026-05-08'" class="card-actions">
+                <div class="readonly-badge">🔒 Niet meer aanpasbaar</div>
+                <button class="delete-btn" @click.stop="resetLogboek(logboek)">🗑 Reset</button>
+              </div>
+
+              <div v-if="logboek.status === 'ingediend' && logboek.datum !== '2026-05-08'" class="readonly-badge">
+                🔒 Niet meer aanpasbaar
+              </div>
+
+              <div v-if="logboek.status === 'goedgekeurd'" class="readonly-badge">
                 🔒 Niet meer aanpasbaar
               </div>
             </article>
@@ -294,7 +328,12 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .fill-card-btn { margin-top: 18px; border: none; background: #991b1b; color: white; padding: 9px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; width: 100%; }
 .fill-card-btn:hover { background: #7f1d1d; }
 
+.card-actions { margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
+
 .readonly-badge { margin-top: 10px; font-size: 11px; color: #94a3b8; }
+
+.delete-btn { border: none; background: transparent; color: #ef4444; font-size: 11px; font-weight: 600; cursor: pointer; padding: 0; }
+.delete-btn:hover { color: #dc2626; }
 
 .feedback-card { margin-top: 20px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 20px; padding: 24px; }
 .feedback-card h3 { margin-bottom: 12px; color: #991b1b; font-size: 16px; }
