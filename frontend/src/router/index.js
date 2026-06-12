@@ -5,6 +5,7 @@ import StudentDashboard from '../pages/student/StudentDashboard.vue'
 import DocentDashboard from '../pages/docent/DocentDashboard.vue'
 import CommissieDashboard from '../pages/commissie/CommissieDashboard.vue'
 import MentorDashboard from '../pages/mentor/MentorDashboard.vue'
+import MentorStagiairs from '../pages/mentor/MentorStagiairs.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
 import LogboekAftekenen from '../pages/mentor/LogboekAftekenen.vue'
 import LogboekOverzicht from '../pages/student/LogboekOverzicht.vue'
@@ -13,95 +14,34 @@ import LogboekBekijken from '../pages/docent/LogboekBekijken.vue'
 import StudentDetailMentor from '../pages/mentor/StudentDetailMentor.vue'
 
 const routes = [
-  {
-    path: '/',
-    redirect: '/login'
-  },
-  {
-    path: '/login',
-    name: 'LoginPage',
-    component: LoginPage
-  },
+  { path: '/', redirect: '/login' },
+  { path: '/login', name: 'LoginPage', component: LoginPage },
 
   // STUDENT
-  {
-    path: '/student',
-    redirect: '/student/dashboard'
-  },
-  {
-    path: '/student/dashboard',
-    name: 'StudentDashboard',
-    component: StudentDashboard
-  },
-  {
-    path: '/student/logboek',
-    name: 'LogboekOverzicht',
-    component: LogboekOverzicht
-  },
-  {
-    path: '/student/logboek-invullen',
-    name: 'LogboekInvullen',
-    component: LogboekInvullen
-  },
+  { path: '/student', redirect: '/student/dashboard' },
+  { path: '/student/dashboard', name: 'StudentDashboard', component: StudentDashboard },
+  { path: '/student/logboek', name: 'LogboekOverzicht', component: LogboekOverzicht },
+  { path: '/student/logboek-invullen', name: 'LogboekInvullen', component: LogboekInvullen },
 
   // DOCENT
-  {
-    path: '/docent',
-    redirect: '/docent/dashboard'
-  },
-  {
-    path: '/docent/dashboard',
-    name: 'DocentDashboard',
-    component: DocentDashboard
-  },
-  {
-    path: '/docent/logboek',
-    name: 'DocentLogboek',
-    component: LogboekBekijken
-  },
+  { path: '/docent', redirect: '/docent/dashboard' },
+  { path: '/docent/dashboard', name: 'DocentDashboard', component: DocentDashboard },
+  { path: '/docent/logboek', name: 'DocentLogboek', component: LogboekBekijken },
 
   // MENTOR
-  {
-    path: '/mentor',
-    redirect: '/mentor/dashboard'
-  },
-  {
-    path: '/mentor/dashboard',
-    name: 'MentorDashboard',
-    component: MentorDashboard
-  },
-  {
-    path: '/mentor/week/:studentId/:weekNummer',
-    name: 'WeekAftekenen',
-    component: LogboekAftekenen
-  },
-  {
-    path: '/mentor/student/:id',
-    name: 'StudentDetailMentor',
-    component: StudentDetailMentor
-  },
+  { path: '/mentor', redirect: '/mentor/dashboard' },
+  { path: '/mentor/dashboard', name: 'MentorDashboard', component: MentorDashboard },
+  { path: '/mentor/stagiairs', name: 'MentorStagiairs', component: MentorStagiairs },
+  { path: '/mentor/student/:id', name: 'StudentDetailMentor', component: StudentDetailMentor },
+  { path: '/mentor/week/:studentId/:weekNummer', name: 'WeekAftekenen', component: LogboekAftekenen },
 
   // COMMISSIE
-  {
-    path: '/commissie',
-    redirect: '/commissie/dashboard'
-  },
-  {
-    path: '/commissie/dashboard',
-    name: 'CommissieDashboard',
-    component: CommissieDashboard
-  },
+  { path: '/commissie', redirect: '/commissie/dashboard' },
+  { path: '/commissie/dashboard', name: 'CommissieDashboard', component: CommissieDashboard },
 
   // ADMIN
-  {
-    path: '/admin',
-    redirect: '/admin/dashboard'
-  },
-  {
-    path: '/admin/dashboard',
-    name: 'AdminDashboard',
-    component: AdminDashboard
-  }
+  { path: '/admin', redirect: '/admin/dashboard' },
+  { path: '/admin/dashboard', name: 'AdminDashboard', component: AdminDashboard }
 ]
 
 const router = createRouter({
@@ -113,40 +53,13 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
 
-  if (to.path === '/login') {
-    next()
-    return
-  }
-
-  if (!token) {
-    next('/login')
-    return
-  }
-
-  if (to.path.startsWith('/student') && role !== 'student') {
-    next('/login')
-    return
-  }
-
-  if (to.path.startsWith('/docent') && role !== 'docent') {
-    next('/login')
-    return
-  }
-
-  if (to.path.startsWith('/mentor') && role !== 'mentor') {
-    next('/login')
-    return
-  }
-
-  if (to.path.startsWith('/commissie') && role !== 'stagecommissie') {
-    next('/login')
-    return
-  }
-
-  if (to.path.startsWith('/admin') && role !== 'administratie') {
-    next('/login')
-    return
-  }
+  if (to.path === '/login') { next(); return }
+  if (!token) { next('/login'); return }
+  if (to.path.startsWith('/student') && role !== 'student') { next('/login'); return }
+  if (to.path.startsWith('/docent') && role !== 'docent') { next('/login'); return }
+  if (to.path.startsWith('/mentor') && role !== 'mentor') { next('/login'); return }
+  if (to.path.startsWith('/commissie') && role !== 'stagecommissie') { next('/login'); return }
+  if (to.path.startsWith('/admin') && role !== 'administratie') { next('/login'); return }
 
   next()
 })

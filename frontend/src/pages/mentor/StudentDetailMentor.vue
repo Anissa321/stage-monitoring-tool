@@ -16,16 +16,13 @@ const mentor = ref(null)
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
-
   try {
-    // Haal mentor info op
     const resMe = await fetch('http://localhost:3000/api/auth/me', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const meData = await resMe.json()
     mentor.value = meData.user
 
-    // Haal student detail op
     const res = await fetch(`http://localhost:3000/api/dashboards/mentor/student/${studentId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -39,7 +36,6 @@ onMounted(async () => {
     student.value = data.student
     stage.value = data.stage
     logboeken.value = data.logboeken
-
   } catch (err) {
     error.value = 'Verbindingsfout met server'
   } finally {
@@ -53,8 +49,7 @@ function initialen(voornaam, achternaam) {
 
 function formatDatum(datum) {
   if (!datum) return ''
-  const d = new Date(datum)
-  return d.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(datum).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function statusKlasse(status) {
@@ -75,12 +70,8 @@ function statusLabel(status) {
   return status
 }
 
-function goToAftekenen(logboekId) {
-  router.push(`/mentor/logboek/${logboekId}`)
-}
-
-function goBack() {
-  router.push('/mentor')
+function goToAftekenen(log) {
+  router.push(`/mentor/week/${studentId}/${log.week_number}`)
 }
 
 async function logout() {
@@ -107,14 +98,12 @@ async function logout() {
         <div class="logo-circle">SM</div>
         <span>Stage Monitor</span>
       </div>
-
       <nav>
-        <a @click="goBack">Dashboard</a>
-        <a class="active">Stagiairs</a>
-        <a>Logboeken</a>
+        <a @click="router.push('/mentor/dashboard')">Dashboard</a>
+        <a class="active" @click="router.push('/mentor/stagiairs')">Stagiairs</a>
+        <a @click="router.push('/mentor/logboek')">Logboeken</a>
         <a>Evaluaties</a>
       </nav>
-
       <div class="profile">
         <span>{{ mentor?.voornaam }} {{ mentor?.achternaam }}</span>
         <button class="logout-btn" @click="logout">Uitloggen</button>
@@ -127,13 +116,10 @@ async function logout() {
 
     <div v-else>
       <section class="page-header">
-        <button class="back-btn" @click="goBack">← Terug naar dashboard</button>
-
+        <button class="back-btn" @click="router.push('/mentor/dashboard')">← Terug naar dashboard</button>
         <div class="title-row">
           <div class="student-info">
-            <div class="student-avatar-large">
-              {{ initialen(student?.voornaam, student?.achternaam) }}
-            </div>
+            <div class="student-avatar-large">{{ initialen(student?.voornaam, student?.achternaam) }}</div>
             <div>
               <h1>{{ student?.voornaam }} {{ student?.achternaam }}</h1>
               <p>{{ student?.email }}</p>
@@ -143,15 +129,12 @@ async function logout() {
         </div>
       </section>
 
-      <!-- Stage info -->
       <section class="card" v-if="stage">
-        <div class="card-header">
-          <h2>Stage informatie</h2>
-        </div>
+        <div class="card-header"><h2>Stage informatie</h2></div>
         <div class="stage-grid">
           <div class="stage-item">
             <span>Bedrijf</span>
-            <strong>{{ stage.bedrijfsnaam || 'Onbekend' }}</strong>
+            <strong>{{ stage.company_name || 'Onbekend' }}</strong>
           </div>
           <div class="stage-item">
             <span>Mentor</span>
@@ -175,7 +158,6 @@ async function logout() {
         </div>
       </section>
 
-      <!-- Recente logboeken -->
       <section class="card">
         <div class="card-header">
           <div>
@@ -183,11 +165,7 @@ async function logout() {
             <p>Laatste activiteit van {{ student?.voornaam }}</p>
           </div>
         </div>
-
-        <div v-if="logboeken.length === 0" class="leeg">
-          Geen logboeken gevonden.
-        </div>
-
+        <div v-if="logboeken.length === 0" class="leeg">Geen logboeken gevonden.</div>
         <table v-else>
           <thead>
             <tr>
@@ -205,13 +183,7 @@ async function logout() {
               <td class="taken">{{ log.tasks || 'Niet ingevuld' }}</td>
               <td><span :class="statusKlasse(log.status)">{{ statusLabel(log.status) }}</span></td>
               <td>
-                <button
-                  v-if="log.status === 'ingediend'"
-                  class="icon-btn"
-                  @click="goToAftekenen(log.id)"
-                >
-                  Aftekenen
-                </button>
+                <button v-if="log.status === 'ingediend'" class="icon-btn" @click="goToAftekenen(log)">Aftekenen</button>
                 <span v-else class="geen-actie">—</span>
               </td>
             </tr>
@@ -224,283 +196,50 @@ async function logout() {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-* {
-  box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
-}
-
-.mentor-page {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-  color: #111827;
-}
-
-.topbar {
-  height: 72px;
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 64px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  backdrop-filter: blur(10px);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 800;
-  color: #991b1b;
-}
-
-.logo-circle {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #991b1b;
-  color: white;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-}
-
-nav {
-  display: flex;
-  gap: 8px;
-}
-
-nav a {
-  text-decoration: none;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 10px 18px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-nav a:hover,
-nav a.active {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.profile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
-}
-
-.avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-}
-
-.logout-btn {
-  border: none;
-  background: #991b1b;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+.mentor-page { min-height: 100vh; background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%); color: #111827; }
+.topbar { height: 72px; background: rgba(255,255,255,0.95); border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; padding: 0 64px; position: sticky; top: 0; z-index: 10; backdrop-filter: blur(10px); }
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 800; color: #991b1b; }
+.logo-circle { width: 38px; height: 38px; border-radius: 12px; background: #991b1b; color: white; display: grid; place-items: center; font-size: 13px; }
+nav { display: flex; gap: 8px; }
+nav a { text-decoration: none; color: #64748b; font-size: 14px; font-weight: 600; padding: 10px 18px; border-radius: 12px; cursor: pointer; transition: 0.2s ease; }
+nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
+.profile { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; color: #334155; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; background: #f1f5f9; border: 1px solid #e2e8f0; display: grid; place-items: center; font-size: 13px; }
+.logout-btn { border: none; background: #991b1b; color: white; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s ease; }
 .logout-btn:hover { background: #7f1d1d; }
-
-.loading {
-  text-align: center;
-  padding: 60px;
-  color: #64748b;
-}
-
-.error-msg {
-  text-align: center;
-  padding: 60px;
-  color: #991b1b;
-}
-
-.leeg {
-  padding: 28px;
-  color: #64748b;
-  font-size: 14px;
-}
-
-.page-header {
-  padding: 30px 64px 20px;
-}
-
-.back-btn {
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-weight: 600;
-  cursor: pointer;
-  margin-bottom: 20px;
-  font-size: 14px;
-  padding: 0;
-}
-
+.loading { text-align: center; padding: 60px; color: #64748b; }
+.error-msg { text-align: center; padding: 60px; color: #991b1b; }
+.leeg { padding: 28px; color: #64748b; font-size: 14px; }
+.page-header { padding: 30px 64px 20px; }
+.back-btn { border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; margin-bottom: 20px; font-size: 14px; padding: 0; }
 .back-btn:hover { color: #991b1b; }
-
-.title-row {
-  display: flex;
-  align-items: center;
-}
-
-.student-info {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.student-avatar-large {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: #dbeafe;
-  color: #1d4ed8;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 22px;
-}
-
-.student-info h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-}
-
-.student-info p {
-  margin: 4px 0 8px;
-  color: #64748b;
-  font-size: 14px;
-}
-
-.card {
-  margin: 24px 64px;
-  background: white;
-  border-radius: 22px;
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
-}
-
-.card-header {
-  padding: 24px 28px;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.card-header h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.card-header p {
-  margin: 6px 0 0;
-  color: #64748b;
-  font-size: 14px;
-}
-
-.stage-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-  padding: 24px 28px;
-}
-
-.stage-item span {
-  display: block;
-  color: #64748b;
-  font-size: 13px;
-  margin-bottom: 6px;
-}
-
-.stage-item strong {
-  font-size: 15px;
-  color: #0f172a;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th {
-  background: #f8fafc;
-  color: #94a3b8;
-  text-align: left;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.7px;
-  padding: 16px 28px;
-}
-
-td {
-  padding: 20px 28px;
-  border-top: 1px solid #f1f5f9;
-  font-size: 14px;
-  color: #334155;
-}
-
-.taken {
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.badge {
-  padding: 7px 13px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
+.title-row { display: flex; align-items: center; }
+.student-info { display: flex; align-items: center; gap: 20px; }
+.student-avatar-large { width: 72px; height: 72px; border-radius: 50%; background: #dbeafe; color: #1d4ed8; display: grid; place-items: center; font-weight: 800; font-size: 22px; }
+.student-info h1 { margin: 0; font-size: 28px; font-weight: 800; }
+.student-info p { margin: 4px 0 8px; color: #64748b; font-size: 14px; }
+.card { margin: 24px 64px; background: white; border-radius: 22px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 14px 30px rgba(15,23,42,0.05); }
+.card-header { padding: 24px 28px; border-bottom: 1px solid #f1f5f9; }
+.card-header h2 { margin: 0; font-size: 18px; }
+.card-header p { margin: 6px 0 0; color: #64748b; font-size: 14px; }
+.stage-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; padding: 24px 28px; }
+.stage-item span { display: block; color: #64748b; font-size: 13px; margin-bottom: 6px; }
+.stage-item strong { font-size: 15px; color: #0f172a; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #f8fafc; color: #94a3b8; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.7px; padding: 16px 28px; }
+td { padding: 20px 28px; border-top: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
+.taken { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .green { background: #dcfce7; color: #15803d; }
 .blue { background: #dbeafe; color: #1d4ed8; }
 .orange { background: #fef3c7; color: #b45309; }
 .gray { background: #f1f5f9; color: #64748b; }
-
-.icon-btn {
-  border: 1px solid #991b1b;
-  background: white;
-  color: #991b1b;
-  padding: 7px 14px;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.icon-btn:hover {
-  background: #991b1b;
-  color: white;
-}
-
-.geen-actie {
-  color: #94a3b8;
-}
-
+.icon-btn { border: 1px solid #991b1b; background: white; color: #991b1b; padding: 7px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 13px; }
+.icon-btn:hover { background: #991b1b; color: white; }
+.geen-actie { color: #94a3b8; }
 @media (max-width: 900px) {
-  .topbar { padding: 0 20px; }
-  nav { display: none; }
+  .topbar { padding: 0 20px; } nav { display: none; }
   .page-header, .card { margin-left: 20px; margin-right: 20px; }
   .stage-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
   table { display: block; overflow-x: auto; }

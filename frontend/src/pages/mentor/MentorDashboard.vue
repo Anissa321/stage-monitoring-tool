@@ -57,8 +57,8 @@ function formatDatum(datum) {
       </div>
       <nav>
         <a class="active">Dashboard</a>
-        <a>Stagiairs</a>
-        <a>Logboeken</a>
+        <a @click="router.push('/mentor/stagiairs')">Stagiairs</a>
+        <a @click="router.push('/mentor/logboek')">Logboeken</a>
         <a>Evaluaties</a>
       </nav>
       <div class="profile">
