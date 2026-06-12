@@ -8,8 +8,6 @@ const form = ref({
   bedrijfsnaam: '',
   sector: '',
   bedrijf_adres: '',
-  mentor_naam: '',
-  mentor_mail: '',
   docent_naam: '',
   opdrachtomschrijving: '',
   startdatum: '',
@@ -24,7 +22,7 @@ async function indienen() {
   error.value = ''
   succes.value = ''
 
-  if (!form.value.bedrijfsnaam || !form.value.mentor_naam || !form.value.mentor_mail || !form.value.opdrachtomschrijving || !form.value.startdatum || !form.value.einddatum) {
+  if (!form.value.bedrijfsnaam || !form.value.opdrachtomschrijving || !form.value.startdatum || !form.value.einddatum) {
     error.value = 'Vul alle verplichte velden in'
     return
   }
@@ -33,7 +31,7 @@ async function indienen() {
   const token = localStorage.getItem('token')
 
   try {
-    const res = await fetch('http://localhost:3000/api/stagevoorstellen', {
+    const res = await fetch('http://localhost:3000/api/stagevoostellen', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -75,6 +73,7 @@ function goBack() {
         <a @click="router.push('/student/documenten')">Documenten</a>
         <a @click="router.push('/student/evaluatie')">Evaluatie</a>
       </nav>
+      <div class="spacer"></div>
     </header>
 
     <section class="page-header">
@@ -97,20 +96,6 @@ function goBack() {
         <div class="field full-width">
           <label>Adres</label>
           <input v-model="form.bedrijf_adres" type="text" placeholder="bv. Hoofdstraat 12, 1000 Brussel" />
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>👤 Mentor (bedrijfsbegeleider)</h2>
-      <div class="form-grid">
-        <div class="field">
-          <label>Naam mentor *</label>
-          <input v-model="form.mentor_naam" type="text" placeholder="bv. Jan De Smet" />
-        </div>
-        <div class="field">
-          <label>E-mail mentor *</label>
-          <input v-model="form.mentor_mail" type="email" placeholder="bv. j.desmet@acme.be" />
         </div>
       </div>
     </section>
@@ -153,7 +138,7 @@ function goBack() {
     <section class="actions">
       <button class="cancel-btn" @click="goBack">Annuleren</button>
       <button class="submit-btn" :disabled="loading" @click="indienen">
-        {{ loading ? 'Indienen...' : ' Stagevoorstel indienen' }}
+        {{ loading ? 'Indienen...' : '📋 Stagevoorstel indienen' }}
       </button>
     </section>
   </main>
@@ -169,6 +154,7 @@ function goBack() {
 nav { display: flex; gap: 8px; }
 nav a { text-decoration: none; color: #64748b; font-size: 14px; font-weight: 600; padding: 10px 18px; border-radius: 12px; cursor: pointer; transition: 0.2s ease; }
 nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
+.spacer { width: 1px; }
 
 .page-header { margin: 40px 64px 24px; }
 .back-btn { border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; margin-bottom: 14px; font-size: 14px; padding: 0; }

@@ -3,26 +3,38 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const data = ref(null)
+const user = ref(null)
+const voorstel = ref(null)
 const loading = ref(true)
+const error = ref('')
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/dashboards/student', {
+    const resMe = await fetch('http://localhost:3000/api/auth/me', {
       headers: { Authorization: `Bearer ${token}` }
     })
-    data.value = await res.json()
+    const meData = await resMe.json()
+    user.value = meData.user
+
+    const res = await fetch('http://localhost:3000/api/stagevoostellen/mijn', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+
+    if (res.ok) {
+      voorstel.value = data.voorstel || data
+    }
   } catch (err) {
-    console.error(err)
+    error.value = 'Verbindingsfout met server'
   } finally {
     loading.value = false
   }
 })
 
-function voornaam() { return data.value?.user?.voornaam || 'Student' }
+function voornaam() { return user.value?.voornaam || 'Student' }
 function initialen() {
-  const u = data.value?.user
+  const u = user.value
   if (!u) return 'S'
   return (u.voornaam?.[0] || '') + (u.achternaam?.[0] || '')
 }
@@ -44,7 +56,7 @@ const statusInfo = {
 }
 
 function huidigeStatus() {
-  return statusInfo[data.value?.stagevoorstel?.status] || statusInfo.in_behandeling
+  return statusInfo[voorstel.value?.status] || statusInfo.in_behandeling
 }
 </script>
 
@@ -68,6 +80,7 @@ function huidigeStatus() {
     </header>
 
     <div v-if="loading" class="loading">Laden...</div>
+    <div v-else-if="error" class="error-msg">{{ error }}</div>
 
     <div v-else>
       <section class="page-header">
@@ -75,7 +88,7 @@ function huidigeStatus() {
         <h1>Mijn stage</h1>
       </section>
 
-      <section v-if="data?.stagevoorstel" class="status-banner" :class="huidigeStatus().class">
+      <section v-if="voorstel" class="status-banner" :class="huidigeStatus().class">
         <span class="banner-icon">{{ huidigeStatus().icon }}</span>
         <div>
           <strong>{{ huidigeStatus().label }}</strong>
@@ -83,31 +96,26 @@ function huidigeStatus() {
         </div>
       </section>
 
-      <section v-if="data?.stagevoorstel" class="card">
+      <section v-if="voorstel" class="card">
         <h2>Stage informatie</h2>
         <div class="info-grid">
           <div>
             <span class="label">🏢 Bedrijf</span>
-            <strong>{{ data.stagevoorstel.bedrijfsnaam }}</strong>
-            <p v-if="data.stagevoorstel.sector" class="sub-text">{{ data.stagevoorstel.sector }}</p>
-            <p v-if="data.stagevoorstel.bedrijf_adres" class="sub-text">{{ data.stagevoorstel.bedrijf_adres }}</p>
+            <strong>{{ voorstel.bedrijfsnaam }}</strong>
+            <p v-if="voorstel.sector" class="sub-text">{{ voorstel.sector }}</p>
+            <p v-if="voorstel.bedrijf_adres" class="sub-text">{{ voorstel.bedrijf_adres }}</p>
           </div>
           <div>
             <span class="label">📅 Periode</span>
-            <strong>{{ formatDatum(data.stagevoorstel.startdatum) }} - {{ formatDatum(data.stagevoorstel.einddatum) }}</strong>
+            <strong>{{ formatDatum(voorstel.startdatum) }} - {{ formatDatum(voorstel.einddatum) }}</strong>
           </div>
-          <div>
-            <span class="label">👤 Mentor</span>
-            <strong>{{ data.stagevoorstel.mentor_naam }}</strong>
-            <p v-if="data.stagevoorstel.mentor_mail" class="sub-text">{{ data.stagevoorstel.mentor_mail }}</p>
-          </div>
-          <div v-if="data.stagevoorstel.docent_naam">
+          <div v-if="voorstel.docent_naam">
             <span class="label">🎓 Begeleidende docent</span>
-            <strong>{{ data.stagevoorstel.docent_naam }}</strong>
+            <strong>{{ voorstel.docent_naam }}</strong>
           </div>
           <div class="full-width">
             <span class="label">📝 Opdrachtomschrijving</span>
-            <p class="text">{{ data.stagevoorstel.opdrachtomschrijving }}</p>
+            <p class="text">{{ voorstel.opdrachtomschrijving }}</p>
           </div>
         </div>
       </section>
@@ -134,6 +142,7 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .avatar { width: 38px; height: 38px; border-radius: 50%; background: #f1f5f9; border: 1px solid #e2e8f0; display: grid; place-items: center; font-size: 13px; }
 
 .loading { text-align: center; padding: 60px; color: #64748b; }
+.error-msg { text-align: center; padding: 60px; color: #991b1b; }
 
 .page-header { margin: 40px 64px 24px; }
 .back-btn { border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; margin-bottom: 14px; font-size: 14px; padding: 0; }
