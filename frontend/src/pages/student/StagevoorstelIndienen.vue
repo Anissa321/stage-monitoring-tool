@@ -138,7 +138,7 @@ function goBack() {
     <section class="actions">
       <button class="cancel-btn" @click="goBack">Annuleren</button>
       <button class="submit-btn" :disabled="loading" @click="indienen">
-        {{ loading ? 'Indienen...' : '📋 Stagevoorstel indienen' }}
+        {{ loading ? 'Indienen...' : ' Stagevoorstel indienen' }}
       </button>
     </section>
   </main>
