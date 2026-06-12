@@ -101,7 +101,6 @@ async function logout() {
       <nav>
         <a @click="router.push('/mentor/dashboard')">Dashboard</a>
         <a class="active" @click="router.push('/mentor/stagiairs')">Stagiairs</a>
-        <a @click="router.push('/mentor/logboek')">Logboeken</a>
         <a>Evaluaties</a>
       </nav>
       <div class="profile">

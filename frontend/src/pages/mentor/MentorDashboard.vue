@@ -66,7 +66,6 @@ function goToAftekenen(logboek) {
       <nav>
         <a class="active">Dashboard</a>
         <a @click="router.push('/mentor/stagiairs')">Stagiairs</a>
-        <a @click="router.push('/mentor/dashboard')">Logboeken</a>
         <a>Evaluaties</a>
       </nav>
       <div class="profile">
