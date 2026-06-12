@@ -97,5 +97,49 @@ function rejectProposal() {
       </article>
     </section>
 
+    <section class="card wide">
+      <h2>Stagedetails</h2>
+
+      <div class="info-grid three">
+        <div>
+          <span>Periode</span>
+          <strong>1 februari 2026 - 30 april 2026</strong>
+        </div>
+
+        <div>
+          <span>Werkuren</span>
+          <strong>Maandag - vrijdag, 09:00 - 17:00</strong>
+        </div>
+
+        <div>
+          <span>Locatie</span>
+          <strong>Brussel (on-site)</strong>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <span>Omschrijving opdracht</span>
+        <p>
+          Ontwikkeling van een intern dashboard voor klantenbeheer. De student werkt mee aan een React/Node.js applicatie en is verantwoordelijk voor frontend implementatie van meerdere modules inclusief rapportage en gebruikersbeheer.
+        </p>
+      </div>
+
+      <div>
+        <span>Verwachte competenties</span>
+        <p>React • Node.js • PostgreSQL • REST API • Git</p>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Beslissing</h2>
+
+      <div class="decision-grid">
+        <button class="approve" @click="approveProposal">✓ Goedkeuren</button>
+        <button class="changes" @click="goToFeedback">✎ Aanpassingen vereist</button>
+        <button class="reject" @click="rejectProposal">× Afkeuren</button>
+      </div>
+    </section>
  </main>
 </template>
