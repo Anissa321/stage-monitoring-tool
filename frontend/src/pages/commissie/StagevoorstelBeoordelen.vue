@@ -193,3 +193,146 @@ nav .active {
   place-items: center;
   font-weight: 800;
 }
+</style>
+
+<style scoped>
+.commissie-page {
+  min-height: 100vh;
+  background: #f3f4f6;
+  color: #111827;
+  font-family: Inter, Arial, sans-serif;
+}
+
+.topbar {
+  height: 72px;
+  background: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 64px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+nav {
+  display: flex;
+  gap: 28px;
+}
+
+nav a {
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+}
+
+nav .active {
+  color: #2563eb;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  background: #ede9fe;
+  color: #6d28d9;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  width: 36px;
+  height: 36px;
+}
+
+.big {
+  width: 58px;
+  height: 58px;
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.page-header {
+  padding: 36px 64px 20px;
+}
+
+.back-btn {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+h1 {
+  font-size: 30px;
+  margin-bottom: 6px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 7px 13px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.orange {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.grid {
+  padding: 0 64px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 26px;
+  margin-bottom: 24px;
+}
+
+.wide {
+  margin: 0 64px 24px;
+}
+
+.student-box {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.info-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+span {
+  display: block;
+  color: #64748b;
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+strong {
+  display: block;
+  margin-top: 6px;
+}
+
+.divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 24px 0;
+}
+</style>
