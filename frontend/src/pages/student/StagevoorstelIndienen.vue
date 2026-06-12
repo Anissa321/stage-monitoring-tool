@@ -31,7 +31,7 @@ async function indienen() {
   const token = localStorage.getItem('token')
 
   try {
-    const res = await fetch('http://localhost:3000/api/stagevoostellen', {
+    const res = await fetch('http://localhost:3000/api/stagevoorstellen', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
