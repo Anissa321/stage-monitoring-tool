@@ -32,7 +32,7 @@ function formatDatum(datum) {
 }
 
 function statusClass(status) {
-  if (status === 'goedgekeurd') return 'approved'
+  if (status === 'goedgekeurd') return 'submitted'
   if (status === 'ingediend') return 'submitted'
   if (status === 'concept') return 'draft'
   if (status === 'niet_ingevuld') return 'empty'
@@ -41,7 +41,7 @@ function statusClass(status) {
 }
 
 function statusLabel(status) {
-  if (status === 'goedgekeurd') return 'Goedgekeurd'
+  if (status === 'goedgekeurd') return 'Ingediend'
   if (status === 'ingediend') return 'Ingediend'
   if (status === 'concept') return 'Concept'
   if (status === 'niet_ingevuld') return 'Nog niet ingevuld'
@@ -181,7 +181,8 @@ onMounted(async () => {
           <div class="week-title">
             <h2>
               Week {{ weekGroep.week }}
-              <span v-if="weekGroep.week_status === 'goedgekeurd'" class="week-badge green">✓ Goedgekeurd</span>
+              <span v-if="weekGroep.week_status === 'goedgekeurd'" class="week-badge green">✓ Ingediend</span>
+              <span v-else-if="weekGroep.week_status === 'ingediend'" class="week-badge green">✓ Ingediend</span>
               <span v-else-if="weekGroep.week_status === 'afgekeurd'" class="week-badge red">✗ Afgekeurd</span>
             </h2>
           </div>
@@ -309,14 +310,12 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 
 .hours { margin-top: 8px; color: #0f172a; font-weight: 600; font-size: 13px; }
 
-.day-card.approved { border-top: 5px solid #16a34a; }
-.day-card.submitted { border-top: 5px solid #f59e0b; }
+.day-card.submitted { border-top: 5px solid #16a34a; }
 .day-card.draft { border-top: 5px solid #64748b; }
 .day-card.empty { border-top: 5px solid #991b1b; }
 .day-card.free { border-top: 5px solid #3b82f6; }
 
-.day-card.approved .status { background: #dcfce7; color: #166534; }
-.day-card.submitted .status { background: #fef3c7; color: #92400e; }
+.day-card.submitted .status { background: #dcfce7; color: #166534; }
 .day-card.draft .status { background: #e2e8f0; color: #475569; }
 .day-card.empty .status { background: #fee2e2; color: #991b1b; }
 .day-card.free .status { background: #dbeafe; color: #1d4ed8; }
