@@ -79,6 +79,48 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
   }
 })
 
+// GET /api/logboeken/mijn/reviews — feedback van mentor per week (student)
+router.get('/mijn/reviews', authMiddleware, requireRole('student'), async (req, res) => {
+  try {
+    const { data: logboeken } = await supabaseAdmin
+      .from('logbooks')
+      .select('id, week_number')
+      .eq('student_id', req.user.id)
+
+    const logboekIds = logboeken.map(l => l.id)
+    if (logboekIds.length === 0) return res.json({ reviews: [] })
+
+    const { data: reviews } = await supabaseAdmin
+      .from('logbook_reviews')
+      .select('logbook_id, week_number, week_feedback, week_status, mentor_id, reviewed_at')
+      .in('logbook_id', logboekIds)
+      .eq('reviewer_role', 'mentor')
+      .order('reviewed_at', { ascending: false })
+
+    const mentorIds = [...new Set(reviews.filter(r => r.mentor_id).map(r => r.mentor_id))]
+    let mentorNamen = {}
+    if (mentorIds.length > 0) {
+      const { data: mentors } = await supabaseAdmin
+        .from('profiles')
+        .select('id, voornaam, achternaam')
+        .in('id', mentorIds)
+      mentors?.forEach(m => {
+        mentorNamen[m.id] = `${m.voornaam} ${m.achternaam}`
+      })
+    }
+
+    const reviewsMetNaam = reviews.map(r => ({
+      ...r,
+      mentor_naam: mentorNamen[r.mentor_id] || 'Mentor'
+    }))
+
+    res.json({ reviews: reviewsMetNaam })
+  } catch (err) {
+    console.error('Reviews ophalen error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
 // GET /api/logboeken/nieuw-info — info voor nieuw logboek (student)
 router.get('/nieuw-info', authMiddleware, requireRole('student'), async (req, res) => {
   try {
@@ -237,6 +279,56 @@ router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) =>
   }
 })
 
+// GET /api/logboeken/docent/reviews — mentor feedback voor docent
+router.get('/docent/reviews', authMiddleware, requireRole('docent'), async (req, res) => {
+  try {
+    const { data: koppelingen } = await supabaseAdmin
+      .from('docent_studenten')
+      .select('student_id')
+      .eq('docent_id', req.user.id)
+
+    const studentIds = koppelingen.map(k => k.student_id)
+    if (studentIds.length === 0) return res.json({ reviews: [] })
+
+    const { data: logboeken } = await supabaseAdmin
+      .from('logbooks')
+      .select('id, week_number')
+      .in('student_id', studentIds)
+
+    const logboekIds = logboeken.map(l => l.id)
+    if (logboekIds.length === 0) return res.json({ reviews: [] })
+
+    const { data: reviews } = await supabaseAdmin
+      .from('logbook_reviews')
+      .select('logbook_id, week_number, week_feedback, week_status, mentor_id, reviewed_at')
+      .in('logbook_id', logboekIds)
+      .eq('reviewer_role', 'mentor')
+      .order('reviewed_at', { ascending: false })
+
+    const mentorIds = [...new Set(reviews.filter(r => r.mentor_id).map(r => r.mentor_id))]
+    let mentorNamen = {}
+    if (mentorIds.length > 0) {
+      const { data: mentors } = await supabaseAdmin
+        .from('profiles')
+        .select('id, voornaam, achternaam')
+        .in('id', mentorIds)
+      mentors?.forEach(m => {
+        mentorNamen[m.id] = `${m.voornaam} ${m.achternaam}`
+      })
+    }
+
+    const reviewsMetNaam = reviews.map(r => ({
+      ...r,
+      mentor_naam: mentorNamen[r.mentor_id] || 'Mentor'
+    }))
+
+    res.json({ reviews: reviewsMetNaam })
+  } catch (err) {
+    console.error('Docent reviews error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
 // POST /api/logboeken — nieuw logboek aanmaken (student)
 router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
   try {
@@ -343,48 +435,6 @@ router.post('/:id/aftekenen', authMiddleware, requireRole('mentor'), async (req,
   }
 })
 
-// GET /api/logboeken/mijn/reviews — feedback van mentor per week
-router.get('/mijn/reviews', authMiddleware, requireRole('student'), async (req, res) => {
-  try {
-    const { data: logboeken } = await supabaseAdmin
-      .from('logbooks')
-      .select('id, week_number')
-      .eq('student_id', req.user.id)
-
-    const logboekIds = logboeken.map(l => l.id)
-    if (logboekIds.length === 0) return res.json({ reviews: [] })
-
-    const { data: reviews } = await supabaseAdmin
-      .from('logbook_reviews')
-      .select('logbook_id, week_number, week_feedback, week_status, mentor_id, reviewed_at')
-      .in('logbook_id', logboekIds)
-      .eq('reviewer_role', 'mentor')
-      .order('reviewed_at', { ascending: false })
-
-    const mentorIds = [...new Set(reviews.filter(r => r.mentor_id).map(r => r.mentor_id))]
-    let mentorNamen = {}
-    if (mentorIds.length > 0) {
-      const { data: mentors } = await supabaseAdmin
-        .from('profiles')
-        .select('id, voornaam, achternaam')
-        .in('id', mentorIds)
-      mentors?.forEach(m => {
-        mentorNamen[m.id] = `${m.voornaam} ${m.achternaam}`
-      })
-    }
-
-    const reviewsMetNaam = reviews.map(r => ({
-      ...r,
-      mentor_naam: mentorNamen[r.mentor_id] || 'Mentor'
-    }))
-
-    res.json({ reviews: reviewsMetNaam })
-  } catch (err) {
-    console.error('Reviews ophalen error:', err)
-    res.status(500).json({ error: 'Server fout' })
-  }
-})
-
 // PUT /api/logboeken/:id — logboek bewerken (student)
 router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
   try {
@@ -459,13 +509,11 @@ router.delete('/:id', authMiddleware, requireRole('student'), async (req, res) =
       return res.status(403).json({ error: 'Goedgekeurd logboek kan niet verwijderd worden' })
     }
 
-    // Reset competenties
     await supabaseAdmin
       .from('logbook_competencies')
       .delete()
       .eq('logbook_id', id)
 
-    // Reset logboek naar niet_ingevuld
     const { error } = await supabaseAdmin
       .from('logbooks')
       .update({

@@ -174,17 +174,17 @@ onMounted(async () => {
       <section class="week-section">
         <div class="section-header">
           <h2>Logboeken per week</h2>
-          <button class="new-btn" @click="router.push('/student/logboek-invullen')">+ Logboek invullen</button>
         </div>
 
         <section v-for="weekGroep in logboekenPerWeek" :key="weekGroep.week" class="week-block">
           <div class="week-title">
-            <h2>
-              Week {{ weekGroep.week }}
-              <span v-if="weekGroep.week_status === 'goedgekeurd'" class="week-badge green">✓ Ingediend</span>
-              <span v-else-if="weekGroep.week_status === 'ingediend'" class="week-badge green">✓ Ingediend</span>
-              <span v-else-if="weekGroep.week_status === 'afgekeurd'" class="week-badge red">✗ Afgekeurd</span>
-            </h2>
+             <h2>
+               Week {{ weekGroep.week }}
+                <span v-if="Number(weekGroep.week) === 13" class="week-badge blue">Huidige week</span>
+                <span v-if="weekGroep.week_status === 'goedgekeurd'" class="week-badge green">✓ Ingediend</span>
+                <span v-else-if="weekGroep.week_status === 'ingediend'" class="week-badge green">✓ Ingediend</span>
+                <span v-else-if="weekGroep.week_status === 'afgekeurd'" class="week-badge red">✗ Afgekeurd</span>
+              </h2>
           </div>
 
           <div class="cards">
