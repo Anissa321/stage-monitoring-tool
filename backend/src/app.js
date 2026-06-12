@@ -5,9 +5,7 @@ import dotenv from 'dotenv'
 import authRoutes from './routes/auth.routes.js'
 import dashboardRoutes from './routes/dashboards.routes.js'
 import logboekenRoutes from './routes/logboeken.routes.js'
-import stagevoostelRoutes from './routes/stagevoostellen.routes.js'
-dotenv.config()
-
+import stagevoostelRoutes from './routes/stagevoorstellen.routes.js'
 const app = express()
 
 // Security headers (XSS, clickjacking, MIME sniffing, etc.)
