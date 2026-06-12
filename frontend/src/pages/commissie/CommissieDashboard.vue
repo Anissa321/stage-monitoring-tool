@@ -67,7 +67,9 @@ function formatDatum(datum) {
       </div>
       <nav>
         <a class="active">Dashboard</a>
-        <a>Aanvragen</a>
+        <a @click="$router.push('/commissie/stagevoorstel')">
+        Aanvragen
+        </a>
         <a>Overzicht Beoordeling</a>
       </nav>
       <div class="profile">

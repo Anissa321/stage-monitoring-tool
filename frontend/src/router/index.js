@@ -14,6 +14,7 @@ import LogboekBekijken from '../pages/docent/LogboekBekijken.vue'
 import StudentDetailMentor from '../pages/mentor/StudentDetailMentor.vue'
 import StagevoorstelIndienen from '../pages/student/StagevoorstelIndienen.vue'
 import StagevoorstelDetail from '../pages/student/StagevoorstelDetail.vue'
+import StagevoorstelBeoordelen from '../pages/commissie/StagevoorstelBeoordelen.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -42,6 +43,7 @@ const routes = [
   // COMMISSIE
   { path: '/commissie', redirect: '/commissie/dashboard' },
   { path: '/commissie/dashboard', name: 'CommissieDashboard', component: CommissieDashboard },
+  { path: '/commissie/stagevoorstel', name: 'StagevoorstelBeoordelen', component: StagevoorstelBeoordelen },
 
   // ADMIN
   { path: '/admin', redirect: '/admin/dashboard' },
