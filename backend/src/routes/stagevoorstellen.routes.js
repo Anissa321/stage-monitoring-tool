@@ -30,7 +30,7 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
   try {
     const {
       bedrijfsnaam, bedrijf_adres, mentor_naam, mentor_mail,
-      opdrachtomschrijving, startdatum, einddatum, sector, deadline, docent_naam
+      opdrachtomschrijving, startdatum, einddatum, sector, deadline
     } = req.body
 
     if (!bedrijfsnaam || !opdrachtomschrijving) {
@@ -55,25 +55,7 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
 
     const { data, error } = await supabaseAdmin
       .from('stagevoorstellen')
-
-      .insert({
-        student_id: req.user.id,
-        bedrijfsnaam,
-        bedrijf_adres,
-        mentor_naam,
-        mentor_mail,
-        docent_naam,
-        opdrachtomschrijving,
-        startdatum,
-        einddatum,
-        sector,
-        deadline,
-        status: 'ingediend',
-        indieningsdatum: new Date().toISOString()
-      })
-
       .insert(insertData)
-
       .select()
       .single()
 
@@ -95,7 +77,7 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
     const { id } = req.params
     const {
       bedrijfsnaam, bedrijf_adres, mentor_naam, mentor_mail,
-      opdrachtomschrijving, startdatum, einddatum, sector, deadline, docent_naam
+      opdrachtomschrijving, startdatum, einddatum, sector, deadline
     } = req.body
 
     const { data: bestaand } = await supabaseAdmin
@@ -127,24 +109,7 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
 
     const { data, error } = await supabaseAdmin
       .from('stagevoorstellen')
-
-      .update({
-        bedrijfsnaam,
-        bedrijf_adres,
-        mentor_naam,
-        mentor_mail,
-        docent_naam,
-        opdrachtomschrijving,
-        startdatum,
-        einddatum,
-        sector,
-        deadline,
-        status: 'ingediend',
-        indieningsdatum: new Date().toISOString()
-      })
-
       .update(updateData)
-
       .eq('id', id)
       .eq('student_id', req.user.id)
       .select()
