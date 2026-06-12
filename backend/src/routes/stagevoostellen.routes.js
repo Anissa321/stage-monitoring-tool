@@ -9,7 +9,7 @@ const router = Router()
 router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
-      .from('stagevoostellen')
+      .from('stagevoorstellen')
       .select('*')
       .eq('student_id', req.user.id)
       .single()
@@ -30,7 +30,7 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
   try {
     const {
       bedrijfsnaam, bedrijf_adres, mentor_naam, mentor_mail,
-      opdrachtomschrijving, startdatum, einddatum, sector, deadline
+      opdrachtomschrijving, startdatum, einddatum, sector, deadline, docent_naam
     } = req.body
 
     if (!bedrijfsnaam || !opdrachtomschrijving) {
@@ -38,13 +38,14 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
     }
 
     const { data, error } = await supabaseAdmin
-      .from('stagevoostellen')
+      .from('stagevoorstellen')
       .insert({
         student_id: req.user.id,
         bedrijfsnaam,
         bedrijf_adres,
         mentor_naam,
         mentor_mail,
+        docent_naam,
         opdrachtomschrijving,
         startdatum,
         einddatum,
@@ -71,11 +72,11 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
     const { id } = req.params
     const {
       bedrijfsnaam, bedrijf_adres, mentor_naam, mentor_mail,
-      opdrachtomschrijving, startdatum, einddatum, sector, deadline
+      opdrachtomschrijving, startdatum, einddatum, sector, deadline, docent_naam
     } = req.body
 
     const { data: bestaand } = await supabaseAdmin
-      .from('stagevoostellen')
+      .from('stagevoorstellen')
       .select('id, status, student_id')
       .eq('id', id)
       .eq('student_id', req.user.id)
@@ -87,12 +88,13 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
     }
 
     const { data, error } = await supabaseAdmin
-      .from('stagevoostellen')
+      .from('stagevoorstellen')
       .update({
         bedrijfsnaam,
         bedrijf_adres,
         mentor_naam,
         mentor_mail,
+        docent_naam,
         opdrachtomschrijving,
         startdatum,
         einddatum,
@@ -119,11 +121,11 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
 router.get('/commissie', authMiddleware, requireRole('stagecommissie'), async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
-      .from('stagevoostellen')
+      .from('stagevoorstellen')
       .select('*')
       .order('indieningsdatum', { ascending: false })
 
-    if (error) return res.status(500).json({ error: 'Kon stagevoostellen niet ophalen' })
+    if (error) return res.status(500).json({ error: 'Kon stagevoorstellen niet ophalen' })
 
     const studentIds = data.map(s => s.student_id).filter(Boolean)
     let studentNamen = {}
@@ -142,9 +144,9 @@ router.get('/commissie', authMiddleware, requireRole('stagecommissie'), async (r
       student_naam: studentNamen[v.student_id] || 'Onbekend'
     }))
 
-    res.json({ stagevoostellen: voorstellenMetNaam })
+    res.json({ stagevoorstellen: voorstellenMetNaam })
   } catch (err) {
-    console.error('Commissie stagevoostellen error:', err)
+    console.error('Commissie stagevoorstellen error:', err)
     res.status(500).json({ error: 'Server fout' })
   }
 })
@@ -160,7 +162,7 @@ router.put('/:id/beoordelen', authMiddleware, requireRole('stagecommissie'), asy
     }
 
     const { data, error } = await supabaseAdmin
-      .from('stagevoostellen')
+      .from('stagevoorstellen')
       .update({ status, feedback_aanpassen, feedback_positief })
       .eq('id', id)
       .select()
