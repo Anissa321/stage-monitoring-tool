@@ -115,6 +115,38 @@ function goBack() {
       </div>
     </section>
 
+    <section class="card">
+      <h2>🎓 Begeleiding EHB</h2>
+      <div class="form-grid">
+        <div class="field full-width">
+          <label>Docent EHB</label>
+          <input v-model="form.docent_naam" type="text" placeholder="bv. Mevr. Janssens" />
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>📅 Stageperiode</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label>Startdatum *</label>
+          <input v-model="form.startdatum" type="date" />
+        </div>
+        <div class="field">
+          <label>Einddatum *</label>
+          <input v-model="form.einddatum" type="date" />
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>📝 Opdrachtomschrijving</h2>
+      <div class="field full-width">
+        <label>Beschrijf de opdracht *</label>
+        <textarea v-model="form.opdrachtomschrijving" rows="5" placeholder="Beschrijf hier de opdracht/taken die je tijdens je stage zal uitvoeren..."></textarea>
+      </div>
+    </section>
+
     <div v-if="error" class="error-msg">{{ error }}</div>
     <div v-if="succes" class="succes-msg">{{ succes }}</div>
 
