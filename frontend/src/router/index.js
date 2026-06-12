@@ -35,32 +35,6 @@ const routes = [
   { path: '/mentor/student/:id', name: 'StudentDetailMentor', component: StudentDetailMentor },
   { path: '/mentor/week/:studentId/:weekNummer', name: 'WeekAftekenen', component: LogboekAftekenen },
 
-  {
-    path: '/mentor',
-    redirect: '/mentor/dashboard'
-  },
-  {
-    path: '/mentor/dashboard',
-    name: 'MentorDashboard',
-    component: MentorDashboard
-  },
-  {
-    path: '/mentor/stagiairs',
-    name: 'MentorStagiairs',
-    component: MentorStagiairs
-  },
-  {
-    path: '/mentor/week/:studentId/:weekNummer',
-    name: 'WeekAftekenen',
-    component: LogboekAftekenen
-  },
-  {
-    path: '/mentor/student/:id',
-    name: 'StudentDetailMentor',
-    component: StudentDetailMentor
-  },
-
-
   // COMMISSIE
   { path: '/commissie', redirect: '/commissie/dashboard' },
   { path: '/commissie/dashboard', name: 'CommissieDashboard', component: CommissieDashboard },
@@ -79,7 +53,16 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
 
-  if (to.path === '/login') { next(); return }
+  if (to.path === '/login') {
+    if (token && role) {
+      const target = role === 'stagecommissie' ? 'commissie' : role === 'administratie' ? 'admin' : role
+      next(`/${target}/dashboard`)
+    } else {
+      next()
+    }
+    return
+  }
+
   if (!token) { next('/login'); return }
   if (to.path.startsWith('/student') && role !== 'student') { next('/login'); return }
   if (to.path.startsWith('/docent') && role !== 'docent') { next('/login'); return }
