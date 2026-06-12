@@ -259,4 +259,33 @@ input:focus {
 .send-btn:hover {
   background: #7f1d1d;
 }
+
+@media (max-width: 900px) {
+  .topbar {
+    padding: 0 20px;
+  }
+
+  nav {
+    display: none;
+  }
+
+  .page-header,
+  .alert,
+  .student-card,
+  .feedback-card,
+  .deadline-section,
+  .actions {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .deadline-section input {
+    width: 100%;
+  }
+}
 </style>
