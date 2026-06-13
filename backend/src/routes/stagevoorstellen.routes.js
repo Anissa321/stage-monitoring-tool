@@ -222,6 +222,18 @@ router.put('/:id/beoordelen', authMiddleware, requireRole('stagecommissie'), asy
         .update({ mentor_id: authData.user.id })
         .eq('id', id)
 
+      // Koppel mentor aan student
+      const { error: koppelError } = await supabaseAdmin
+        .from('mentor_studenten')
+        .insert({
+          mentor_id: authData.user.id,
+          student_id: data.student_id
+        })
+
+      if (koppelError) {
+        console.error('Mentor-student koppeling error:', koppelError)
+      }
+
       mentorCredentials = {
         email: mentor_mail,
         wachtwoord
@@ -288,15 +300,30 @@ router.delete('/:id', authMiddleware, requireRole('student'), async (req, res) =
 router.put('/:id/reset', authMiddleware, requireRole('student'), async (req, res) => {
   try {
     const { id } = req.params
+
     const { data, error } = await supabaseAdmin
       .from('stagevoorstellen')
-      .update({ status: 'ingediend', feedback_aanpassen: null, feedback_positief: null })
+      .update({ 
+        status: 'ingediend', 
+        feedback_aanpassen: null, 
+        feedback_positief: null,
+        mentor_naam: null,
+        mentor_mail: null,
+        mentor_id: null
+      })
       .eq('id', id)
       .eq('student_id', req.user.id)
       .select()
       .single()
 
     if (error) return res.status(500).json({ error: 'Kon status niet resetten' })
+
+    // Verwijder mentor-student koppeling
+    await supabaseAdmin
+      .from('mentor_studenten')
+      .delete()
+      .eq('student_id', req.user.id)
+
     res.json({ stagevoorstel: data })
   } catch (err) {
     console.error('Reset error:', err)
