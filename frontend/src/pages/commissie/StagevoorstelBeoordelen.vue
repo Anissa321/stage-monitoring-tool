@@ -13,6 +13,10 @@ const succes = ref('')
 const feedbackAanpassen = ref('')
 const feedbackPositief = ref('')
 const toonFeedbackForm = ref(false)
+const toonMentorForm = ref(false)
+const mentorNaam = ref('')
+const mentorMail = ref('')
+const mentorCredentials = ref(null)
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
@@ -44,6 +48,10 @@ async function beoordeel(status) {
     error.value = 'Vul feedback in voor de student'
     return
   }
+  if (status === 'goedgekeurd' && (!mentorNaam.value || !mentorMail.value)) {
+    error.value = 'Vul mentor naam en email in'
+    return
+  }
   error.value = ''
   const token = localStorage.getItem('token')
   try {
@@ -56,7 +64,9 @@ async function beoordeel(status) {
       body: JSON.stringify({
         status,
         feedback_aanpassen: feedbackAanpassen.value || null,
-        feedback_positief: feedbackPositief.value || null
+        feedback_positief: feedbackPositief.value || null,
+        mentor_naam: mentorNaam.value || null,
+        mentor_mail: mentorMail.value || null
       })
     })
     const data = await res.json()
@@ -64,8 +74,13 @@ async function beoordeel(status) {
       error.value = data.error || 'Kon niet beoordelen'
       return
     }
-    succes.value = status === 'goedgekeurd' ? 'Stagevoorstel goedgekeurd!' : status === 'afgekeurd' ? 'Stagevoorstel afgekeurd.' : 'Aanpassingen gevraagd.'
-    setTimeout(() => router.push('/commissie/dashboard'), 1500)
+    if (data.mentorCredentials) {
+      mentorCredentials.value = data.mentorCredentials
+      succes.value = 'Stagevoorstel goedgekeurd! Mentor account aangemaakt.'
+    } else {
+      succes.value = status === 'afgekeurd' ? 'Stagevoorstel afgekeurd.' : 'Aanpassingen gevraagd.'
+      setTimeout(() => router.push('/commissie/dashboard'), 1500)
+    }
   } catch (err) {
     error.value = 'Verbindingsfout met server'
   }
@@ -128,11 +143,6 @@ function goBack() {
               <strong>{{ voorstel.bedrijf_adres || '—' }}</strong>
             </div>
             <div>
-              <span>Mentor</span>
-              <strong>{{ voorstel.mentor_naam || '—' }}</strong>
-              <p v-if="voorstel.mentor_mail">{{ voorstel.mentor_mail }}</p>
-            </div>
-            <div>
               <span>Sector</span>
               <strong>{{ voorstel.sector || '—' }}</strong>
             </div>
@@ -159,16 +169,41 @@ function goBack() {
         </div>
       </section>
 
-      <section class="card wide">
+      <!-- Mentor credentials na goedkeuring -->
+      <section v-if="mentorCredentials" class="card wide credentials-card">
+        <h2>✅ Stagevoorstel goedgekeurd!</h2>
+        <p>Stuur deze gegevens naar de mentor zodat die kan inloggen:</p>
+        <div class="credentials-box">
+          <div class="cred-row">
+            <span>Email</span>
+            <strong>{{ mentorCredentials.email }}</strong>
+          </div>
+          <div class="cred-row">
+            <span>Wachtwoord</span>
+            <strong>{{ mentorCredentials.wachtwoord }}</strong>
+          </div>
+        </div>
+        <button class="primary-btn" @click="router.push('/commissie/dashboard')">Terug naar dashboard</button>
+      </section>
+
+      <section v-else class="card wide">
         <h2>Beslissing</h2>
 
-        <div v-if="!toonFeedbackForm" class="decision-grid">
-          <button class="approve" @click="beoordeel('goedgekeurd')">✓ Goedkeuren</button>
-          <button class="changes" @click="toonFeedbackForm = true">✎ Aanpassingen vereist</button>
-          <button class="reject" @click="beoordeel('afgekeurd')">× Afkeuren</button>
+        <!-- Mentor form bij goedkeuren -->
+        <div v-if="toonMentorForm" class="feedback-form">
+          <h3 style="margin: 0 0 16px; font-size: 15px;">Mentor gegevens invullen</h3>
+          <label>Naam mentor (verplicht)</label>
+          <input v-model="mentorNaam" type="text" placeholder="bv. Jan Janssens" />
+          <label>Email mentor (verplicht)</label>
+          <input v-model="mentorMail" type="email" placeholder="bv. jan@bedrijf.be" />
+          <div class="feedback-actions">
+            <button class="cancel-btn" @click="toonMentorForm = false">Annuleren</button>
+            <button class="approve" style="padding: 10px 20px;" @click="beoordeel('goedgekeurd')">✓ Goedkeuren & account aanmaken</button>
+          </div>
         </div>
 
-        <div v-else class="feedback-form">
+        <!-- Feedback form bij aanpassen -->
+        <div v-else-if="toonFeedbackForm" class="feedback-form">
           <label>Feedback voor de student (verplicht)</label>
           <textarea v-model="feedbackAanpassen" placeholder="Beschrijf welke aanpassingen nodig zijn..."></textarea>
           <label>Positieve punten (optioneel)</label>
@@ -179,8 +214,15 @@ function goBack() {
           </div>
         </div>
 
+        <!-- Beslissing knoppen -->
+        <div v-else class="decision-grid">
+          <button class="approve" @click="toonMentorForm = true">✓ Goedkeuren</button>
+          <button class="changes" @click="toonFeedbackForm = true">✎ Aanpassingen vereist</button>
+          <button class="reject" @click="beoordeel('afgekeurd')">× Afkeuren</button>
+        </div>
+
         <div v-if="error" class="error-msg">{{ error }}</div>
-        <div v-if="succes" class="succes-msg">{{ succes }}</div>
+        <div v-if="succes && !mentorCredentials" class="succes-msg">{{ succes }}</div>
       </section>
     </div>
   </main>
@@ -227,12 +269,23 @@ strong { display: block; margin-top: 6px; }
 .reject:hover { background: #ef4444; color: white; }
 .feedback-form { display: flex; flex-direction: column; gap: 12px; }
 .feedback-form label { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; }
-.feedback-form textarea { border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; min-height: 80px; font-size: 14px; resize: vertical; }
-.feedback-form textarea:focus { outline: none; border-color: #991b1b; }
+.feedback-form textarea, .feedback-form input { border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; font-size: 14px; font-family: inherit; }
+.feedback-form textarea { min-height: 80px; resize: vertical; }
+.feedback-form textarea:focus, .feedback-form input:focus { outline: none; border-color: #991b1b; }
 .feedback-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
 .cancel-btn { border: 1px solid #cbd5e1; background: white; color: #334155; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; }
 .error-msg { margin-top: 16px; color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 16px; font-weight: 600; }
 .succes-msg { margin-top: 16px; color: #15803d; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 12px 16px; font-weight: 700; }
+.credentials-card { border: 2px solid #10b981; }
+.credentials-card h2 { color: #047857; margin: 0 0 8px; }
+.credentials-card p { margin: 0 0 20px; color: #64748b; font-size: 14px; }
+.credentials-box { background: #f0fdf4; border: 1px solid #a7f3d0; border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+.cred-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #d1fae5; }
+.cred-row:last-child { border-bottom: none; }
+.cred-row span { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+.cred-row strong { font-size: 15px; color: #065f46; font-family: monospace; }
+.primary-btn { border: none; background: #991b1b; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.primary-btn:hover { background: #7f1d1d; }
 @media (max-width: 900px) {
   .topbar { padding: 0 20px; } nav { display: none; }
   .page-header, .grid, .wide { margin-left: 20px; margin-right: 20px; }
