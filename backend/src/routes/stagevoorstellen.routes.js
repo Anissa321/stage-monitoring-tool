@@ -218,5 +218,43 @@ router.get('/:id/aanpassingen', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server fout' })
   }
 })
+// DELETE /api/stagevoorstellen/:id — student verwijdert voorstel (demo reset)
+router.delete('/:id', authMiddleware, requireRole('student'), async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const { error } = await supabaseAdmin
+      .from('stagevoorstellen')
+      .delete()
+      .eq('id', id)
+      .eq('student_id', req.user.id)
+
+    if (error) return res.status(500).json({ error: 'Kon stagevoorstel niet verwijderen' })
+
+    res.json({ message: 'Stagevoorstel verwijderd' })
+  } catch (err) {
+    console.error('Stagevoorstel verwijderen error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+// PUT /api/stagevoorstellen/:id/reset — reset status naar ingediend (demo)
+router.put('/:id/reset', authMiddleware, requireRole('student'), async (req, res) => {
+  try {
+    const { id } = req.params
+    const { data, error } = await supabaseAdmin
+      .from('stagevoorstellen')
+      .update({ status: 'ingediend', feedback_aanpassen: null, feedback_positief: null })
+      .eq('id', id)
+      .eq('student_id', req.user.id)
+      .select()
+      .single()
+
+    if (error) return res.status(500).json({ error: 'Kon status niet resetten' })
+    res.json({ stagevoorstel: data })
+  } catch (err) {
+    console.error('Reset error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
 
 export default router
