@@ -84,9 +84,9 @@ function goBack() {
         <span>Stage Monitor</span>
       </div>
       <nav>
-        <a @click="goBack">Dashboard</a>
-        <a class="active">Aanvragen</a>
-        <a>Overzicht Beoordeling</a>
+        <a @click="router.push('/commissie/dashboard')">Dashboard</a>
+        <a class="active" @click="router.push('/commissie/aanvragen')">Aanvragen</a>
+        <a @click="router.push('/commissie/overzicht')">Overzicht Beoordeling</a>
       </nav>
       <div class="profile">
         <div class="avatar">C</div>

@@ -78,8 +78,8 @@ function formatDatum(datum) {
       </div>
       <nav>
         <a class="active">Dashboard</a>
-        <a @click="$router.push('/commissie/stagevoorstel')">Aanvragen</a>
-        <a>Overzicht Beoordeling</a>
+        <a @click="$router.push('/commissie/aanvragen')">Aanvragen</a>
+        <a @click="$router.push('/commissie/overzicht')">Overzicht Beoordeling</a>
       </nav>
       <div class="profile">
         <span>{{ voornaam() }}</span>
