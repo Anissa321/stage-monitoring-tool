@@ -69,8 +69,8 @@ function statusClass(status) {
       </div>
       <nav>
         <a @click="router.push('/commissie/dashboard')">Dashboard</a>
-        <a class="active" @click="router.push('/commissie/aanvragen')">Aanvragen</a>
-        <a @click="router.push('/commissie/overzicht')">Overzicht Beoordeling</a>
+        <a @click="router.push('/commissie/aanvragen')">Aanvragen</a>
+        <a class="active">Overzicht Beoordeling</a>
       </nav>
       <div class="profile">
         <div class="avatar">C</div>
@@ -79,7 +79,7 @@ function statusClass(status) {
 
     <section class="page-header">
       <button class="back-btn" @click="router.push('/commissie/dashboard')">← Terug naar dashboard</button>
-      <h1><h1>Beoordeelde stages</h1></h1>
+      <h1>Beoordeelde stages</h1>
       <p>Alle stages die de commissie heeft beoordeeld dit semester</p>
     </section>
 
@@ -100,6 +100,7 @@ function statusClass(status) {
             <tr>
               <th>Student</th>
               <th>Bedrijf</th>
+              <th>Mentor</th>
               <th>Periode</th>
               <th>Beslissing</th>
               <th>Indieningsdatum</th>
@@ -110,16 +111,17 @@ function statusClass(status) {
             <tr v-for="v in gefilterd" :key="v.id">
               <td class="naam">{{ v.student_naam }}</td>
               <td>{{ v.bedrijfsnaam }}</td>
+              <td>{{ v.mentor_naam || '—' }}</td>
               <td>{{ formatPeriode(v.startdatum, v.einddatum) }}</td>
               <td><span class="badge" :class="statusClass(v.status)">{{ statusLabel(v.status) }}</span></td>
               <td>{{ formatDatum(v.indieningsdatum) }}</td>
               <td><button class="bekijk-btn" @click="router.push(`/commissie/stagevoorstel/${v.id}`)">Bekijk →</button></td>
             </tr>
             <tr v-if="!loading && gefilterd.length === 0">
-              <td colspan="6" class="leeg">Geen beoordeelde stages gevonden.</td>
+              <td colspan="7" class="leeg">Geen beoordeelde stages gevonden.</td>
             </tr>
             <tr v-if="loading">
-              <td colspan="6" class="leeg">Laden...</td>
+              <td colspan="7" class="leeg">Laden...</td>
             </tr>
           </tbody>
         </table>

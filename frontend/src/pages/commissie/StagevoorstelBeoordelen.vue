@@ -43,6 +43,22 @@ function formatDatum(datum) {
   return new Date(datum).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+function statusLabel(status) {
+  if (status === 'ingediend') return '● Wacht op beoordeling'
+  if (status === 'goedgekeurd') return '✓ Goedgekeurd'
+  if (status === 'afgekeurd') return '✗ Afgekeurd'
+  if (status === 'aanpassen') return '✎ Aanpassingen vereist'
+  return status
+}
+
+function statusClass(status) {
+  if (status === 'ingediend') return 'orange'
+  if (status === 'goedgekeurd') return 'green'
+  if (status === 'afgekeurd') return 'red'
+  if (status === 'aanpassen') return 'purple'
+  return ''
+}
+
 async function beoordeel(status) {
   if (status === 'aanpassen' && !feedbackAanpassen.value) {
     error.value = 'Vul feedback in voor de student'
@@ -114,9 +130,9 @@ function goBack() {
     <div v-else>
       <section class="page-header">
         <button class="back-btn" @click="goBack">← Terug naar dashboard</button>
-        <h1>Stagevoorstel beoordelen</h1>
+        <h1>Stagevoorstel {{ voorstel.status === 'ingediend' ? 'beoordelen' : 'details' }}</h1>
         <p>Ingediend door {{ voorstel.student_naam }} op {{ formatDatum(voorstel.indieningsdatum) }}</p>
-        <span class="badge orange">● Wacht op beoordeling</span>
+        <span class="badge" :class="statusClass(voorstel.status)">{{ statusLabel(voorstel.status) }}</span>
       </section>
 
       <section class="grid">
@@ -169,7 +185,7 @@ function goBack() {
         </div>
       </section>
 
-      <!-- Mentor credentials na goedkeuring -->
+      <!-- Mentor credentials net na goedkeuring -->
       <section v-if="mentorCredentials" class="card wide credentials-card">
         <h2>✅ Stagevoorstel goedgekeurd!</h2>
         <p>Stuur deze gegevens naar de mentor zodat die kan inloggen:</p>
@@ -186,10 +202,34 @@ function goBack() {
         <button class="primary-btn" @click="router.push('/commissie/dashboard')">Terug naar dashboard</button>
       </section>
 
+      <!-- Readonly weergave als al beoordeeld -->
+      <section v-else-if="voorstel.status !== 'ingediend'" class="card wide">
+        <h2>Beoordeling</h2>
+        <div class="info-grid">
+          <div v-if="voorstel.mentor_naam">
+            <span>Naam mentor</span>
+            <strong>{{ voorstel.mentor_naam }}</strong>
+          </div>
+          <div v-if="voorstel.mentor_mail">
+            <span>Email mentor</span>
+            <strong>{{ voorstel.mentor_mail }}</strong>
+          </div>
+        </div>
+        <div v-if="voorstel.feedback_aanpassen" style="margin-top: 20px;">
+          <span>Feedback - aanpassingen vereist</span>
+          <p>{{ voorstel.feedback_aanpassen }}</p>
+        </div>
+        <div v-if="voorstel.feedback_positief" style="margin-top: 16px;">
+          <span>Positieve punten</span>
+          <p>{{ voorstel.feedback_positief }}</p>
+        </div>
+        <p class="readonly-note">Dit voorstel is al beoordeeld en kan niet meer worden aangepast.</p>
+      </section>
+
+      <!-- Beslissingsformulier alleen als status = ingediend -->
       <section v-else class="card wide">
         <h2>Beslissing</h2>
 
-        <!-- Mentor form bij goedkeuren -->
         <div v-if="toonMentorForm" class="feedback-form">
           <h3 style="margin: 0 0 16px; font-size: 15px;">Mentor gegevens invullen</h3>
           <label>Naam mentor (verplicht)</label>
@@ -202,7 +242,6 @@ function goBack() {
           </div>
         </div>
 
-        <!-- Feedback form bij aanpassen -->
         <div v-else-if="toonFeedbackForm" class="feedback-form">
           <label>Feedback voor de student (verplicht)</label>
           <textarea v-model="feedbackAanpassen" placeholder="Beschrijf welke aanpassingen nodig zijn..."></textarea>
@@ -214,7 +253,6 @@ function goBack() {
           </div>
         </div>
 
-        <!-- Beslissing knoppen -->
         <div v-else class="decision-grid">
           <button class="approve" @click="toonMentorForm = true">✓ Goedkeuren</button>
           <button class="changes" @click="toonFeedbackForm = true">✎ Aanpassingen vereist</button>
@@ -248,6 +286,9 @@ h1 { font-size: 38px; margin: 18px 0 8px; font-weight: 800; }
 .page-header p { margin: 0 0 14px; opacity: 0.9; }
 .badge { display: inline-block; padding: 7px 13px; border-radius: 999px; font-weight: 700; font-size: 12px; }
 .orange { background: #fef3c7; color: #b45309; }
+.green { background: #dcfce7; color: #047857; }
+.red { background: #fee2e2; color: #dc2626; }
+.purple { background: #ede9fe; color: #6d28d9; }
 .grid { margin: 24px 64px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .card { background: white; border-radius: 22px; padding: 28px; border: 1px solid #e5e7eb; box-shadow: 0 14px 30px rgba(15,23,42,0.05); }
 .wide { margin: 0 64px 24px; }
@@ -286,6 +327,7 @@ strong { display: block; margin-top: 6px; }
 .cred-row strong { font-size: 15px; color: #065f46; font-family: monospace; }
 .primary-btn { border: none; background: #991b1b; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .primary-btn:hover { background: #7f1d1d; }
+.readonly-note { margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; color: #94a3b8; font-size: 13px; font-style: italic; }
 @media (max-width: 900px) {
   .topbar { padding: 0 20px; } nav { display: none; }
   .page-header, .grid, .wide { margin-left: 20px; margin-right: 20px; }
