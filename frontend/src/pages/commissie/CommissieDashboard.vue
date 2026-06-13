@@ -8,10 +8,21 @@ const data = ref(null)
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/dashboards/commissie', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    data.value = await res.json()
+    const [dashRes, voorstellenRes] = await Promise.all([
+      fetch('http://localhost:3000/api/dashboards/commissie', {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch('http://localhost:3000/api/stagevoorstellen/commissie', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ])
+    const dashData = await dashRes.json()
+    const voorstellenData = await voorstellenRes.json()
+
+    data.value = {
+      ...dashData,
+      voorstellen: voorstellenData.stagevoorstellen || []
+    }
   } catch (err) {
     console.error(err)
   }
@@ -44,12 +55,12 @@ function openstaand() {
 }
 function statusBadge(status) {
   if (status === 'ingediend') return 'orange'
-  if (status === 'aanpassingen_vereist') return 'purple'
+  if (status === 'aanpassen') return 'purple'
   return 'orange'
 }
 function statusLabel(status) {
   if (status === 'ingediend') return 'Wacht op beoordeling'
-  if (status === 'aanpassingen_vereist') return 'Aanpassingen vereist'
+  if (status === 'aanpassen') return 'Aanpassingen vereist'
   return status
 }
 function formatDatum(datum) {
@@ -67,9 +78,7 @@ function formatDatum(datum) {
       </div>
       <nav>
         <a class="active">Dashboard</a>
-        <a @click="$router.push('/commissie/stagevoorstel')">
-        Aanvragen
-        </a>
+        <a @click="$router.push('/commissie/stagevoorstel')">Aanvragen</a>
         <a>Overzicht Beoordeling</a>
       </nav>
       <div class="profile">
@@ -94,6 +103,7 @@ function formatDatum(datum) {
       <table>
         <thead>
           <tr>
+            <th>Student</th>
             <th>Bedrijf</th>
             <th>Adres</th>
             <th>Mentor</th>
@@ -104,15 +114,16 @@ function formatDatum(datum) {
         </thead>
         <tbody>
           <tr v-for="voorstel in openstaand()" :key="voorstel.id">
-            <td class="name">{{ voorstel.bedrijfsnaam }}</td>
+            <td class="name">{{ voorstel.student_naam }}</td>
+            <td>{{ voorstel.bedrijfsnaam }}</td>
             <td>{{ voorstel.bedrijf_adres }}</td>
-            <td>{{ voorstel.mentor_naam }}</td>
+            <td>{{ voorstel.mentor_naam || '—' }}</td>
             <td>{{ formatDatum(voorstel.indieningsdatum) }}</td>
             <td><span class="badge" :class="statusBadge(voorstel.status)">{{ statusLabel(voorstel.status) }}</span></td>
-            <td><button class="icon-btn">Beoordeel</button></td>
+            <td><button class="icon-btn" @click="$router.push(`/commissie/stagevoorstel/${voorstel.id}`)">Beoordeel</button></td>
           </tr>
           <tr v-if="!openstaand().length">
-            <td colspan="6" style="padding: 28px; color: #64748b;">Geen openstaande aanvragen.</td>
+            <td colspan="7" style="padding: 28px; color: #64748b;">Geen openstaande aanvragen.</td>
           </tr>
         </tbody>
       </table>

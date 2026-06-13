@@ -48,6 +48,7 @@ const routes = [
   { path: '/commissie/dashboard', name: 'CommissieDashboard', component: CommissieDashboard },
   { path: '/commissie/stagevoorstel', name: 'StagevoorstelBeoordelen', component: StagevoorstelBeoordelen },
   { path: '/commissie/feedback-geven', name: 'FeedbackGeven', component: FeedbackGeven },
+  { path: '/commissie/stagevoorstel/:id', name: 'StagevoorstelBeoordelen', component: StagevoorstelBeoordelen },
 
   // ADMIN
   { path: '/admin', redirect: '/admin/dashboard' },
