@@ -4,10 +4,10 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const logboeken = ref([])
-const geselecteerdLogboek = ref(null)
 const loading = ref(true)
 const error = ref('')
 const user = ref(null)
+const uitgeklapt = ref({})
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
@@ -29,9 +29,6 @@ onMounted(async () => {
     }
     logboeken.value = data.logboeken
     user.value = dashData.user
-    if (logboeken.value.length > 0) {
-      geselecteerdLogboek.value = logboeken.value[0]
-    }
   } catch (err) {
     error.value = 'Verbindingsfout met server'
   } finally {
@@ -46,20 +43,46 @@ const weken = computed(() => {
     if (!groepen[week]) groepen[week] = []
     groepen[week].push(log)
   })
+
   return Object.entries(groepen)
-    .sort((a, b) => b[0] - a[0])
-    .slice(0, 2)
+    .map(([weekNr, logs]) => {
+      const sortedLogs = [...logs].sort((a, b) => new Date(a.datum) - new Date(b.datum))
+      const totaalUren = sortedLogs.reduce((sum, l) => sum + (l.uren_gewerkt || 0), 0)
+      const nietIngevuld = sortedLogs.filter(l => l.status === 'niet_ingevuld').length
+      const eerste = sortedLogs[0]
+      const mentorStatus = eerste?.mentor_week_status || null
+
+      // Bepaal of de week aandacht vereist
+      let signaal = 'ok'
+      let signaalTekst = 'In orde'
+      if (mentorStatus === 'afgekeurd') {
+        signaal = 'aandacht'
+        signaalTekst = 'Afgekeurd door mentor'
+      } else if (nietIngevuld >= 2) {
+        signaal = 'aandacht'
+        signaalTekst = `${nietIngevuld} dagen niet ingevuld`
+      } else if (!mentorStatus) {
+        signaal = 'wacht'
+        signaalTekst = 'Nog niet afgetekend'
+      }
+
+      return {
+        weekNr,
+        logs: sortedLogs,
+        totaalUren,
+        nietIngevuld,
+        mentor_feedback: eerste?.mentor_feedback || null,
+        mentor_week_status: mentorStatus,
+        mentor_naam: eerste?.mentor_naam || null,
+        signaal,
+        signaalTekst
+      }
+    })
+    .sort((a, b) => b.weekNr - a.weekNr)
 })
 
-function selecteerLogboek(logboek) {
-  geselecteerdLogboek.value = logboek
-}
-
-function statusKlasse(status) {
-  if (status === 'goedgekeurd' || status === 'ingediend') return 'done'
-  if (status === 'niet_ingevuld' || status === 'concept') return 'warning'
-  if (status === 'vrije_dag') return 'vrij'
-  return 'active'
+function toggleWeek(weekNr) {
+  uitgeklapt.value[weekNr] = !uitgeklapt.value[weekNr]
 }
 
 function statusLabel(status) {
@@ -70,6 +93,13 @@ function statusLabel(status) {
   if (status === 'vrije_dag') return 'Vrije dag'
   if (status === 'afgekeurd') return '✗ Afgekeurd'
   return status
+}
+
+function statusKlasse(status) {
+  if (status === 'goedgekeurd' || status === 'ingediend') return 'done'
+  if (status === 'niet_ingevuld' || status === 'concept') return 'warning'
+  if (status === 'vrije_dag') return 'vrij'
+  return 'active'
 }
 
 function formatDag(datum) {
@@ -83,9 +113,10 @@ function formatDatum(datum) {
   return `${d.getDate()} ${d.toLocaleDateString('nl-BE', { month: 'long' })}`
 }
 
-function formatVolledigDatum(datum) {
-  if (!datum) return ''
-  return new Date(datum).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+function mentorStatusLabel(status) {
+  if (status === 'goedgekeurd') return '✓ Goedgekeurd door mentor'
+  if (status === 'afgekeurd') return '✗ Afgekeurd door mentor'
+  return 'Nog niet afgetekend door mentor'
 }
 
 function voornaam() { return user.value?.voornaam || 'Docent' }
@@ -139,61 +170,40 @@ async function logout() {
 
         <div class="title-block">
           <h1>Logboek overzicht</h1>
-          <p>{{ logboeken.length }} logboeken gevonden</p>
+          <p>Wekelijkse voortgang — klik op een week voor details</p>
         </div>
 
-        <section v-for="[weekNr, logs] in weken" :key="weekNr" class="week-section">
-          <h2>Week {{ weekNr }}</h2>
-          <div class="week-grid">
-            <article
-              v-for="log in logs"
-              :key="log.id"
-              class="day-box"
-              :class="[statusKlasse(log.status), geselecteerdLogboek?.id === log.id ? 'selected' : '']"
-              @click="selecteerLogboek(log)"
-            >
-              <span>{{ formatDag(log.datum) }}</span>
-              <strong>{{ formatDatum(log.datum) }}</strong>
-              <p>{{ statusLabel(log.status) }}</p>
-            </article>
-          </div>
-        </section>
-
-        <section v-if="geselecteerdLogboek" class="detail-card">
-          <h2>Logboek details — {{ formatVolledigDatum(geselecteerdLogboek.datum) }}</h2>
-
-          <div class="block">
-            <span class="small-label">✎ Uitgevoerde taken</span>
-            <p>{{ geselecteerdLogboek.tasks || 'Niet ingevuld' }}</p>
-          </div>
-
-          <div class="block">
-            <span class="small-label">⏱ Uren gewerkt</span>
-            <strong>{{ geselecteerdLogboek.uren_gewerkt || 0 }} uur</strong>
-          </div>
-
-          <div class="block">
-            <span class="small-label red">📌 Competenties toegepast vandaag</span>
-            <div v-if="geselecteerdLogboek.competenties && geselecteerdLogboek.competenties.length">
-              <div v-for="comp in geselecteerdLogboek.competenties" :key="comp.competence_name" class="competentie">
-                <input type="checkbox" :checked="comp.selected" disabled />
-                <div>
-                  <strong>{{ comp.competence_name }}</strong>
-                </div>
-              </div>
+        <section v-for="week in weken" :key="week.weekNr" class="week-card" :class="'signaal-' + week.signaal">
+          <div class="week-header" @click="toggleWeek(week.weekNr)">
+            <div class="week-titel">
+              <h2>Week {{ week.weekNr }}</h2>
+              <span class="signaal-badge" :class="'badge-' + week.signaal">{{ week.signaalTekst }}</span>
             </div>
-            <p v-else class="geen-data">Geen competenties ingevuld</p>
+            <div class="week-rechts">
+              <span class="uren-badge">⏱ {{ week.totaalUren }} uur</span>
+              <span class="chevron" :class="{ open: uitgeklapt[week.weekNr] }">▾</span>
+            </div>
           </div>
 
-          <div class="block">
-            <span class="small-label yellow">💡 Leerpunten / Reflectie</span>
-            <p>{{ geselecteerdLogboek.reflection || 'Niet ingevuld' }}</p>
+          <div class="mentor-feedback-block" :class="'mentor-' + (week.mentor_week_status || 'wacht')">
+            <span class="small-label">👤 Feedback van mentor</span>
+            <p class="mentor-status">{{ mentorStatusLabel(week.mentor_week_status) }}</p>
+            <p v-if="week.mentor_feedback">{{ week.mentor_feedback }}</p>
+            <p v-if="week.mentor_naam" class="mentor-naam-info">— {{ week.mentor_naam }}</p>
           </div>
 
-          <p v-if="geselecteerdLogboek.submitted_at" class="submitted">
-            Ingediend op {{ formatVolledigDatum(geselecteerdLogboek.submitted_at) }}
-          </p>
+          <div v-if="uitgeklapt[week.weekNr]" class="dagen-detail">
+            <div v-for="log in week.logs" :key="log.id" class="dag-item" :class="statusKlasse(log.status)">
+              <div class="dag-kop">
+                <span class="dag-naam">{{ formatDag(log.datum) }} {{ formatDatum(log.datum) }}</span>
+                <span class="dag-status" :class="statusKlasse(log.status)">{{ statusLabel(log.status) }}</span>
+              </div>
+              <p v-if="log.tasks" class="dag-taak">{{ log.tasks }}</p>
+            </div>
+          </div>
         </section>
+
+        <p v-if="!weken.length" class="geen-data">Geen logboeken gevonden.</p>
       </div>
     </section>
   </main>
@@ -236,48 +246,51 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .title-block h1 { margin: 0; font-size: 30px; font-weight: 800; }
 .title-block p { margin: 6px 0 30px; color: #64748b; }
 
-.week-section { margin-bottom: 32px; }
-.week-section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.week-card { background: white; border-radius: 18px; padding: 24px 28px; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(15,23,42,0.04); margin-bottom: 18px; border-left: 5px solid #cbd5e1; }
+.week-card.signaal-aandacht { border-left-color: #dc2626; }
+.week-card.signaal-ok { border-left-color: #16a34a; }
+.week-card.signaal-wacht { border-left-color: #f59e0b; }
 
-.week-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; margin-bottom: 30px; }
+.week-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.week-titel { display: flex; align-items: center; gap: 14px; }
+.week-titel h2 { font-size: 18px; font-weight: 800; margin: 0; }
 
-.day-box { background: white; border-radius: 14px; padding: 18px; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(15,23,42,0.04); cursor: pointer; transition: box-shadow 0.2s; }
-.day-box:hover { box-shadow: 0 12px 28px rgba(15,23,42,0.1); }
-.day-box.selected { border: 2px solid #991b1b; }
-.day-box span { color: #64748b; font-size: 12px; font-weight: 700; display: block; }
-.day-box strong { display: block; margin: 8px 0; font-size: 18px; }
-.day-box p { display: inline-block; margin: 0; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; }
-.day-box.done p { background: #dcfce7; color: #166534; }
-.day-box.warning p { background: #fef3c7; color: #92400e; }
-.day-box.active p { background: #fee2e2; color: #991b1b; }
-.day-box.vrij p { background: #e0f2fe; color: #075985; }
+.signaal-badge { padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.badge-ok { background: #dcfce7; color: #166534; }
+.badge-aandacht { background: #fee2e2; color: #991b1b; }
+.badge-wacht { background: #fef3c7; color: #92400e; }
 
-.detail-card { background: white; border-radius: 18px; padding: 30px; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(15,23,42,0.04); }
-.detail-card h2 { margin: 0 0 24px; font-size: 20px; font-weight: 800; }
+.week-rechts { display: flex; align-items: center; gap: 16px; }
+.uren-badge { background: #f1f5f9; color: #334155; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+.chevron { color: #94a3b8; font-size: 16px; transition: transform 0.2s; display: inline-block; }
+.chevron.open { transform: rotate(180deg); }
 
-.block { margin-bottom: 26px; }
-.small-label { display: block; color: #64748b; text-transform: uppercase; font-size: 11px; font-weight: 800; margin-bottom: 10px; }
-.small-label.red { color: #991b1b; }
-.small-label.yellow { color: #b45309; }
-.block p { color: #334155; line-height: 1.6; margin: 0; }
-.block strong { font-size: 18px; }
+.mentor-feedback-block { border-radius: 14px; padding: 16px 18px; margin-top: 16px; }
+.mentor-feedback-block.mentor-goedgekeurd { background: #ecfdf5; border: 1px solid #a7f3d0; }
+.mentor-feedback-block.mentor-afgekeurd { background: #fef2f2; border: 1px solid #fecaca; }
+.mentor-feedback-block.mentor-wacht { background: #f8fafc; border: 1px solid #e2e8f0; }
+.small-label { display: block; color: #64748b; text-transform: uppercase; font-size: 11px; font-weight: 800; margin-bottom: 8px; }
+.mentor-status { font-weight: 700; margin: 0 0 6px; color: #334155; font-size: 14px; }
+.mentor-feedback-block p { margin: 0; color: #334155; line-height: 1.6; font-size: 14px; }
+.mentor-naam-info { margin-top: 6px !important; font-size: 13px; color: #64748b; font-style: italic; }
 
-.geen-data { color: #94a3b8; font-style: italic; font-size: 14px; }
+.dagen-detail { margin-top: 18px; padding-top: 18px; border-top: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 12px; }
+.dag-item { border-radius: 12px; padding: 12px 14px; border: 1px solid #f1f5f9; background: #fafbfc; }
+.dag-kop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.dag-naam { font-size: 13px; font-weight: 700; color: #334155; text-transform: capitalize; }
+.dag-status { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+.dag-item.done .dag-status { background: #dcfce7; color: #166534; }
+.dag-item.warning .dag-status { background: #fef3c7; color: #92400e; }
+.dag-item.active .dag-status { background: #fee2e2; color: #991b1b; }
+.dag-item.vrij .dag-status { background: #e0f2fe; color: #075985; }
+.dag-taak { margin: 0; font-size: 13px; color: #64748b; line-height: 1.5; }
 
-.competentie { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
-.competentie input { margin-top: 3px; accent-color: #991b1b; width: 16px; height: 16px; }
-.competentie strong { font-size: 14px; display: block; }
+.geen-data { color: #94a3b8; font-style: italic; padding: 40px; text-align: center; }
 
-.submitted { margin-top: 38px; color: #64748b; font-style: italic; font-size: 13px; }
-
-@media (max-width: 1000px) {
-  .week-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 900px) {
   .topbar { padding: 0 20px; }
   nav { display: none; }
   .content { padding: 24px 20px; }
-}
-
-@media (max-width: 700px) {
-  .week-grid { grid-template-columns: 1fr; }
+  .week-header { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
 </style>
