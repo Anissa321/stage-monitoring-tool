@@ -61,7 +61,6 @@ function gaNaarLogboek() {
       <nav>
         <a @click="router.push('/docent/dashboard')">Dashboard</a>
         <a class="active" @click="router.push('/docent/studenten')">Stagiairs</a>
-        <a @click="router.push('/docent/logboek')">Logboeken</a>
         <a @click="router.push('/docent/evaluaties')">Evaluaties</a>
       </nav>
       <div class="profile">
