@@ -52,7 +52,6 @@ const weken = computed(() => {
       const eerste = sortedLogs[0]
       const mentorStatus = eerste?.mentor_week_status || null
 
-      // Bepaal of de week aandacht vereist
       let signaal = 'ok'
       let signaalTekst = 'In orde'
       if (mentorStatus === 'afgekeurd') {
@@ -151,9 +150,9 @@ async function logout() {
       </div>
       <nav>
         <a @click="router.push('/docent/dashboard')">Dashboard</a>
-        <a>Stagiairs</a>
+        <a @click="router.push('/docent/studenten')">Stagiairs</a>
         <a class="active" @click="router.push('/docent/logboek')">Logboeken</a>
-        <a>Evaluaties</a>
+        <a @click="router.push('/docent/evaluaties')">Evaluaties</a>
       </nav>
       <div class="profile">
         <span>{{ voornaam() }}</span>
@@ -166,7 +165,7 @@ async function logout() {
       <div v-if="loading" class="loading">Logboeken laden...</div>
       <div v-else-if="error" class="error-msg">{{ error }}</div>
       <div v-else>
-        <button class="back-btn" @click="router.push('/docent/dashboard')">← Terug naar studentdossier</button>
+        <button class="back-btn" @click="router.push('/docent/studenten')">← Terug naar stagiairs</button>
 
         <div class="title-block">
           <h1>Logboek overzicht</h1>

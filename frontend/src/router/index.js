@@ -19,6 +19,8 @@ import StagevoorstelBeoordelen from '../pages/commissie/StagevoorstelBeoordelen.
 import AdminCompetencies from '../pages/admin/AdminCompetencies.vue'
 import FeedbackGeven from '../pages/commissie/FeedbackGeven.vue'
 import CommissieAanvragen from '../pages/commissie/CommissieAanvragen.vue'
+import MijnStudenten from '../pages/docent/MijnStudenten.vue'
+
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -36,6 +38,8 @@ const routes = [
   { path: '/docent', redirect: '/docent/dashboard' },
   { path: '/docent/dashboard', name: 'DocentDashboard', component: DocentDashboard },
   { path: '/docent/logboek', name: 'DocentLogboek', component: LogboekBekijken },
+  { path: '/docent/studenten', name: 'MijnStudenten', component: MijnStudenten },
+
 
   // MENTOR
   { path: '/mentor', redirect: '/mentor/dashboard' },
