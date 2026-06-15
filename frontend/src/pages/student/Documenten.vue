@@ -1,24 +1,41 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import SignaturePad from '../../components/SignaturePad.vue'
 
 const router = useRouter()
 const data = ref(null)
-const bestand = ref(null)
-const isDragging = ref(false)
-const uploading = ref(false)
+const overeenkomst = ref(null)
+const loading = ref(true)
 const error = ref('')
 const succes = ref('')
+const opslaan = ref(false)
+const handtekening = ref('')
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/dashboards/student', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    data.value = await res.json()
+    const [dashRes, overRes] = await Promise.all([
+      fetch('http://localhost:3000/api/dashboards/student', {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch('http://localhost:3000/api/stageovereenkomsten/mijn', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ])
+    data.value = await dashRes.json()
+    const overData = await overRes.json()
+
+    if (overData.overeenkomst) {
+      overeenkomst.value = overData.overeenkomst
+    } else {
+      error.value = overData.error || 'Geen stageovereenkomst beschikbaar'
+    }
   } catch (err) {
     console.error(err)
+    error.value = 'Verbindingsfout met server'
+  } finally {
+    loading.value = false
   }
 })
 
@@ -27,6 +44,61 @@ function initialen() {
   const u = data.value?.user
   if (!u) return 'S'
   return (u.voornaam?.[0] || '') + (u.achternaam?.[0] || '')
+}
+
+function bekijkOvereenkomst() {
+  const token = localStorage.getItem('token')
+  fetch(`http://localhost:3000/api/stageovereenkomsten/${overeenkomst.value.id}/preview-pdf`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then(res => res.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    })
+    .catch(() => {
+      error.value = 'Kon overeenkomst niet openen'
+    })
+}
+
+function formatDatum(datum) {
+  if (!datum) return '—'
+  return new Date(datum).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+const studentHeeftGetekend = computed(() => !!overeenkomst.value?.student_handtekening)
+const mentorHeeftGetekend = computed(() => !!overeenkomst.value?.mentor_handtekening)
+const volledigGetekend = computed(() => overeenkomst.value?.status === 'volledig_getekend')
+
+async function ondertekenen() {
+  if (!handtekening.value) {
+    error.value = 'Plaats eerst je handtekening.'
+    return
+  }
+  error.value = ''
+  opslaan.value = true
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch(`http://localhost:3000/api/stageovereenkomsten/${overeenkomst.value.id}/tekenen-student`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ handtekening: handtekening.value })
+    })
+    const result = await res.json()
+    if (!res.ok) {
+      error.value = result.error || 'Kon handtekening niet opslaan'
+      return
+    }
+    overeenkomst.value = result.overeenkomst
+    succes.value = 'Stageovereenkomst ondertekend!'
+  } catch (err) {
+    error.value = 'Verbindingsfout met server'
+  } finally {
+    opslaan.value = false
+  }
 }
 
 async function logout() {
@@ -43,84 +115,6 @@ async function logout() {
   localStorage.removeItem('role')
   localStorage.removeItem('user')
   router.push('/login')
-}
-
-function onDragOver(e) {
-  e.preventDefault()
-  isDragging.value = true
-}
-
-function onDragLeave() {
-  isDragging.value = false
-}
-
-function onDrop(e) {
-  e.preventDefault()
-  isDragging.value = false
-  const file = e.dataTransfer.files[0]
-  verwerkBestand(file)
-}
-
-function onFileInput(e) {
-  const file = e.target.files[0]
-  verwerkBestand(file)
-}
-
-function verwerkBestand(file) {
-  error.value = ''
-  if (!file) return
-  if (file.type !== 'application/pdf') {
-    error.value = 'Alleen PDF-bestanden zijn toegestaan.'
-    return
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    error.value = 'Bestand is te groot. Maximum is 10 MB.'
-    return
-  }
-  bestand.value = file
-}
-
-function verwijderBestand() {
-  bestand.value = null
-  error.value = ''
-}
-
-function formatSize(bytes) {
-  return (bytes / 1024 / 1024).toFixed(2) + ' MB'
-}
-
-async function uploaden() {
-  if (!bestand.value) {
-    error.value = 'Selecteer eerst een PDF-bestand.'
-    return
-  }
-
-  uploading.value = true
-  error.value = ''
-
-  try {
-    // TODO: vervang dit door echte API call als Artin endpoint heeft gemaakt
-    // const formData = new FormData()
-    // formData.append('overeenkomst', bestand.value)
-    // const token = localStorage.getItem('token')
-    // const res = await fetch('http://localhost:3000/api/documenten/overeenkomst', {
-    //   method: 'POST',
-    //   headers: { Authorization: `Bearer ${token}` },
-    //   body: formData
-    // })
-    // const data = await res.json()
-    // if (!res.ok) throw new Error(data.error)
-
-    // Mock: simuleer upload delay
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    succes.value = 'Stageovereenkomst succesvol opgeladen! Je stage is gestart.'
-    setTimeout(() => router.push('/student/dashboard'), 2000)
-  } catch (err) {
-    error.value = err.message || 'Upload mislukt, probeer opnieuw.'
-  } finally {
-    uploading.value = false
-  }
 }
 </script>
 
@@ -146,65 +140,81 @@ async function uploaden() {
 
     <section class="content">
       <a class="back-link" @click="router.push('/student/dashboard')">← Terug naar mijn Dashboard</a>
-      <h1>Stageovereenkomst opladen</h1>
-      <p class="subtitle">Upload je ondertekende stageovereenkomst.</p>
+      <h1>Stageovereenkomst</h1>
+      <p class="subtitle">Bekijk en ondertekend je stageovereenkomst digitaal.</p>
 
-      <div class="info-banner">
-        <span class="info-icon">ℹ️</span>
-        <div>
-          <strong>Belangrijk</strong>
-          <p>De stageovereenkomst is cruciaal voor je verzekering. Zorg dat het document correct ondertekend is door alle partijen.</p>
-        </div>
-      </div>
+      <div v-if="loading" class="loading">Laden...</div>
+      <div v-else-if="error && !overeenkomst" class="error-msg">{{ error }}</div>
 
-      <div
-        class="upload-zone"
-        :class="{ dragging: isDragging, 'has-file': bestand }"
-        @dragover="onDragOver"
-        @dragleave="onDragLeave"
-        @drop="onDrop"
-        @click="!bestand && $refs.fileInput.click()"
-      >
-        <input
-          ref="fileInput"
-          type="file"
-          accept="application/pdf"
-          style="display: none"
-          @change="onFileInput"
-        />
+      <div v-else-if="overeenkomst">
+        <button class="preview-btn" @click="bekijkOvereenkomst">📄 Bekijk volledige overeenkomst</button>
 
-        <template v-if="!bestand">
-          <div class="upload-icon">📄</div>
-          <p class="upload-text">Sleep een PDF hier of klik om te bladeren</p>
-          <button class="choose-btn" @click.stop="$refs.fileInput.click()">Bestand kiezen</button>
-          <p class="upload-hint">Max 10 MB • Alleen PDF</p>
-        </template>
-
-        <template v-else>
-          <div class="file-preview">
-            <div class="file-icon">📄</div>
-            <div class="file-info">
-              <p class="file-name">{{ bestand.name }}</p>
-              <p class="file-size">{{ formatSize(bestand.size) }}</p>
+        <section class="document-card">
+          <h2>Overeenkomstgegevens</h2>
+          <div class="info-grid">
+            <div>
+              <span>Bedrijf</span>
+              <strong>{{ overeenkomst.bedrijfsnaam }}</strong>
             </div>
-            <button class="remove-btn" @click.stop="verwijderBestand">✕</button>
+            <div>
+              <span>Adres</span>
+              <strong>{{ overeenkomst.bedrijf_adres || '—' }}</strong>
+            </div>
+            <div>
+              <span>Periode</span>
+              <strong>{{ formatDatum(overeenkomst.startdatum) }} – {{ formatDatum(overeenkomst.einddatum) }}</strong>
+            </div>
           </div>
-        </template>
-      </div>
+          <div class="divider"></div>
+          <div>
+            <span>Opdrachtomschrijving</span>
+            <p>{{ overeenkomst.opdrachtomschrijving }}</p>
+          </div>
+        </section>
 
-      <div v-if="error" class="error-msg">{{ error }}</div>
-      <div v-if="succes" class="succes-msg">{{ succes }}</div>
+        <section class="status-card">
+          <h2>Ondertekeningsstatus</h2>
+          <div class="status-row">
+            <span class="status-label">Student</span>
+            <span class="status-badge" :class="studentHeeftGetekend ? 'done' : 'pending'">
+              {{ studentHeeftGetekend ? '✓ Getekend op ' + formatDatum(overeenkomst.student_getekend_op) : 'Nog niet getekend' }}
+            </span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Mentor</span>
+            <span class="status-badge" :class="mentorHeeftGetekend ? 'done' : 'pending'">
+              {{ mentorHeeftGetekend ? '✓ Getekend op ' + formatDatum(overeenkomst.mentor_getekend_op) : 'Nog niet getekend' }}
+            </span>
+          </div>
 
-      <div class="actions">
-        <button class="cancel-btn" @click="router.push('/student/dashboard')">Annuleren</button>
-        <button
-          class="submit-btn"
-          :disabled="uploading || !bestand"
-          @click="uploaden"
-        >
-          <span v-if="uploading">Opladen...</span>
-          <span v-else>✓ Stage starten</span>
-        </button>
+          <div v-if="volledigGetekend" class="volledig-banner">
+            <div>
+              ✅ Deze overeenkomst is volledig ondertekend. Je stage kan starten!
+            </div>
+            <a v-if="overeenkomst.pdf_url" :href="overeenkomst.pdf_url" target="_blank" class="pdf-btn">
+              📄 Download PDF
+            </a>
+          </div>
+        </section>
+
+        <section v-if="!studentHeeftGetekend" class="sign-card">
+          <h2>Jouw handtekening</h2>
+          <p class="sign-hint">Teken hieronder om de stageovereenkomst te bevestigen.</p>
+          <SignaturePad v-model="handtekening" />
+          <div v-if="error" class="error-msg">{{ error }}</div>
+          <div class="actions">
+            <button class="submit-btn" :disabled="opslaan" @click="ondertekenen">
+              <span v-if="opslaan">Opslaan...</span>
+              <span v-else>✓ Ondertekenen</span>
+            </button>
+          </div>
+        </section>
+
+        <section v-else class="sign-card done-card">
+          <h2>Jouw handtekening</h2>
+          <img :src="overeenkomst.student_handtekening" alt="Handtekening student" class="signature-preview" />
+          <div v-if="succes" class="succes-msg">{{ succes }}</div>
+        </section>
       </div>
     </section>
   </main>
@@ -232,42 +242,45 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .content h1 { margin: 0 0 6px; font-size: 26px; font-weight: 800; }
 .subtitle { margin: 0 0 24px; color: #64748b; font-size: 14px; }
 
-.info-banner { display: flex; gap: 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 14px; padding: 16px 20px; margin-bottom: 24px; }
-.info-icon { font-size: 20px; flex-shrink: 0; }
-.info-banner strong { display: block; font-size: 14px; font-weight: 700; color: #1e40af; margin-bottom: 4px; }
-.info-banner p { margin: 0; font-size: 13px; color: #1e3a8a; line-height: 1.5; }
+.loading { text-align: center; padding: 60px; color: #64748b; }
 
-.upload-zone { background: white; border: 2px dashed #cbd5e1; border-radius: 18px; padding: 48px 32px; text-align: center; cursor: pointer; transition: 0.2s ease; margin-bottom: 20px; }
-.upload-zone:hover, .upload-zone.dragging { border-color: #991b1b; background: #fff5f5; }
-.upload-zone.has-file { cursor: default; border-style: solid; border-color: #a7f3d0; background: #f0fdf4; }
-.upload-icon { font-size: 40px; margin-bottom: 12px; }
-.upload-text { margin: 0 0 16px; font-size: 15px; color: #334155; font-weight: 600; }
-.choose-btn { border: none; background: #991b1b; color: white; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; margin-bottom: 12px; }
-.choose-btn:hover { background: #7f1d1d; }
-.upload-hint { margin: 0; font-size: 12px; color: #94a3b8; }
+.preview-btn { border: 1px solid #991b1b; background: white; color: #991b1b; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 20px; }
+.preview-btn:hover { background: #991b1b; color: white; }
 
-.file-preview { display: flex; align-items: center; gap: 16px; text-align: left; }
-.file-icon { font-size: 36px; flex-shrink: 0; }
-.file-info { flex: 1; }
-.file-name { margin: 0 0 4px; font-size: 14px; font-weight: 700; color: #111827; word-break: break-all; }
-.file-size { margin: 0; font-size: 12px; color: #64748b; }
-.remove-btn { border: none; background: #fef2f2; color: #991b1b; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 14px; font-weight: 700; flex-shrink: 0; }
-.remove-btn:hover { background: #fee2e2; }
+.document-card, .status-card, .sign-card { background: white; border: 1px solid #e5e7eb; border-radius: 18px; padding: 24px; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(15,23,42,0.04); }
+.document-card h2, .status-card h2, .sign-card h2 { margin: 0 0 18px; font-size: 17px; font-weight: 800; }
 
-.error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
-.succes-msg { background: #ecfdf5; border: 1px solid #a7f3d0; color: #15803d; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+.info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.info-grid span, .document-card > div > span { display: block; color: #64748b; text-transform: uppercase; font-size: 11px; font-weight: 800; margin-bottom: 6px; }
+.info-grid strong { font-size: 14px; }
+.divider { height: 1px; background: #e5e7eb; margin: 20px 0; }
+.document-card p { margin: 0; color: #334155; line-height: 1.6; font-size: 14px; }
 
-.actions { display: flex; justify-content: space-between; align-items: center; }
-.cancel-btn { border: 1px solid #cbd5e1; background: white; color: #334155; padding: 12px 22px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
-.cancel-btn:hover { background: #f8fafc; }
-.submit-btn { border: none; background: #15803d; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; transition: 0.2s ease; }
+.status-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+.status-row:last-of-type { border-bottom: none; }
+.status-label { font-weight: 700; font-size: 14px; }
+.status-badge { font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 999px; }
+.status-badge.done { background: #dcfce7; color: #166534; }
+.status-badge.pending { background: #fef3c7; color: #92400e; }
+.volledig-banner { margin-top: 14px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; padding: 14px 18px; border-radius: 12px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pdf-btn { background: #047857; color: white; padding: 8px 16px; border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.pdf-btn:hover { background: #065f46; }
+
+.sign-hint { margin: 0 0 14px; color: #64748b; font-size: 13px; }
+.signature-preview { max-width: 300px; border: 1px solid #e5e7eb; border-radius: 8px; background: white; padding: 8px; }
+
+.actions { margin-top: 16px; display: flex; justify-content: flex-end; }
+.submit-btn { border: none; background: #15803d; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .submit-btn:hover:not(:disabled) { background: #166534; }
 .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 600; margin: 16px 0; }
+.succes-msg { background: #ecfdf5; border: 1px solid #a7f3d0; color: #15803d; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 700; margin-top: 14px; }
 
 @media (max-width: 700px) {
   .topbar { padding: 0 20px; }
   nav { display: none; }
   .content { padding: 24px 16px 40px; }
-  .upload-zone { padding: 32px 20px; }
+  .info-grid { grid-template-columns: 1fr; }
 }
 </style>

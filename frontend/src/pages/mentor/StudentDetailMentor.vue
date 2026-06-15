@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import SignaturePad from '../../components/SignaturePad.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -13,6 +14,11 @@ const student = ref(null)
 const stage = ref(null)
 const logboeken = ref([])
 const mentor = ref(null)
+const overeenkomst = ref(null)
+const handtekening = ref('')
+const opslaan = ref(false)
+const overeenkomstError = ref('')
+const overeenkomstSucces = ref('')
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
@@ -36,6 +42,13 @@ onMounted(async () => {
     student.value = data.student
     stage.value = data.stage
     logboeken.value = data.logboeken
+
+    // Stageovereenkomst ophalen
+    const overRes = await fetch('http://localhost:3000/api/stageovereenkomsten/mentor', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const overData = await overRes.json()
+    overeenkomst.value = overData.overeenkomsten?.find(o => o.student_id === studentId) || null
   } catch (err) {
     error.value = 'Verbindingsfout met server'
   } finally {
@@ -50,6 +63,11 @@ function initialen(voornaam, achternaam) {
 function formatDatum(datum) {
   if (!datum) return ''
   return new Date(datum).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function formatDatumKort(datum) {
+  if (!datum) return '—'
+  return new Date(datum).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function statusKlasse(status) {
@@ -72,6 +90,56 @@ function statusLabel(status) {
 
 function goToAftekenen(log) {
   router.push(`/mentor/week/${studentId}/${log.week_number}`)
+}
+
+const studentHeeftGetekend = computed(() => !!overeenkomst.value?.student_handtekening)
+const mentorHeeftGetekend = computed(() => !!overeenkomst.value?.mentor_handtekening)
+const volledigGetekend = computed(() => overeenkomst.value?.status === 'volledig_getekend')
+
+function bekijkOvereenkomst() {
+  const token = localStorage.getItem('token')
+  fetch(`http://localhost:3000/api/stageovereenkomsten/${overeenkomst.value.id}/preview-pdf`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then(res => res.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    })
+    .catch(() => {
+      overeenkomstError.value = 'Kon overeenkomst niet openen'
+    })
+}
+
+async function ondertekenen() {
+  if (!handtekening.value) {
+    overeenkomstError.value = 'Plaats eerst je handtekening.'
+    return
+  }
+  overeenkomstError.value = ''
+  opslaan.value = true
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch(`http://localhost:3000/api/stageovereenkomsten/${overeenkomst.value.id}/tekenen-mentor`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ handtekening: handtekening.value })
+    })
+    const result = await res.json()
+    if (!res.ok) {
+      overeenkomstError.value = result.error || 'Kon handtekening niet opslaan'
+      return
+    }
+    overeenkomst.value = result.overeenkomst
+    overeenkomstSucces.value = 'Stageovereenkomst ondertekend!'
+  } catch (err) {
+    overeenkomstError.value = 'Verbindingsfout met server'
+  } finally {
+    opslaan.value = false
+  }
 }
 
 async function logout() {
@@ -157,6 +225,61 @@ async function logout() {
         </div>
       </section>
 
+      <!-- Stageovereenkomst -->
+      <section class="card" v-if="overeenkomst">
+        <div class="card-header">
+          <h2>Stageovereenkomst</h2>
+          <p>Ondertekening van de stageovereenkomst</p>
+        </div>
+        <div class="overeenkomst-body">
+          <button class="preview-btn" @click="bekijkOvereenkomst">📄 Bekijk volledige overeenkomst</button>
+
+          <div class="status-row">
+            <span class="status-label">Student</span>
+            <span class="badge" :class="studentHeeftGetekend ? 'green' : 'orange'">
+              {{ studentHeeftGetekend ? '✓ Getekend op ' + formatDatumKort(overeenkomst.student_getekend_op) : 'Nog niet getekend' }}
+            </span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Mentor (jij)</span>
+            <span class="badge" :class="mentorHeeftGetekend ? 'green' : 'orange'">
+              {{ mentorHeeftGetekend ? '✓ Getekend op ' + formatDatumKort(overeenkomst.mentor_getekend_op) : 'Nog niet getekend' }}
+            </span>
+          </div>
+
+          <div v-if="volledigGetekend" class="volledig-banner">
+            <div>✅ Volledig ondertekend. Stage kan starten!</div>
+            <a v-if="overeenkomst.pdf_url" :href="overeenkomst.pdf_url" target="_blank" class="pdf-btn">📄 Download PDF</a>
+          </div>
+
+          <div v-if="!mentorHeeftGetekend" class="sign-section">
+            <h3>Jouw handtekening</h3>
+            <p class="sign-hint">Teken hieronder om de stageovereenkomst te bevestigen.</p>
+            <SignaturePad v-model="handtekening" />
+            <div v-if="overeenkomstError" class="error-msg">{{ overeenkomstError }}</div>
+            <div class="actions">
+              <button class="primary-btn" :disabled="opslaan" @click="ondertekenen">
+                <span v-if="opslaan">Opslaan...</span>
+                <span v-else>✓ Ondertekenen</span>
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="sign-section">
+            <h3>Jouw handtekening</h3>
+            <img :src="overeenkomst.mentor_handtekening" alt="Handtekening mentor" class="signature-preview" />
+            <div v-if="overeenkomstSucces" class="succes-msg">{{ overeenkomstSucces }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" v-else>
+        <div class="card-header">
+          <h2>Stageovereenkomst</h2>
+          <p>Nog geen stageovereenkomst beschikbaar voor deze student.</p>
+        </div>
+      </section>
+
       <section class="card">
         <div class="card-header">
           <div>
@@ -237,6 +360,26 @@ td { padding: 20px 28px; border-top: 1px solid #f1f5f9; font-size: 14px; color: 
 .icon-btn { border: 1px solid #991b1b; background: white; color: #991b1b; padding: 7px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 13px; }
 .icon-btn:hover { background: #991b1b; color: white; }
 .geen-actie { color: #94a3b8; }
+
+.overeenkomst-body { padding: 24px 28px; }
+.preview-btn { border: 1px solid #991b1b; background: white; color: #991b1b; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; }
+.preview-btn:hover { background: #991b1b; color: white; }
+.status-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+.status-row:last-of-type { border-bottom: none; }
+.status-label { font-weight: 700; font-size: 14px; }
+.volledig-banner { margin-top: 14px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; padding: 14px 18px; border-radius: 12px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pdf-btn { background: #047857; color: white; padding: 8px 16px; border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.pdf-btn:hover { background: #065f46; }
+.sign-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9; }
+.sign-section h3 { margin: 0 0 6px; font-size: 15px; font-weight: 800; }
+.sign-hint { margin: 0 0 14px; color: #64748b; font-size: 13px; }
+.signature-preview { max-width: 300px; border: 1px solid #e5e7eb; border-radius: 8px; background: white; padding: 8px; }
+.actions { margin-top: 16px; display: flex; justify-content: flex-end; }
+.primary-btn { border: none; background: #15803d; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.primary-btn:hover:not(:disabled) { background: #166534; }
+.primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.succes-msg { background: #ecfdf5; border: 1px solid #a7f3d0; color: #15803d; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 700; margin-top: 14px; }
+
 @media (max-width: 900px) {
   .topbar { padding: 0 20px; } nav { display: none; }
   .page-header, .card { margin-left: 20px; margin-right: 20px; }
