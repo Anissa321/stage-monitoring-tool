@@ -5,12 +5,12 @@ import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 
-const logboekId = route.query.id || null
+const logboekId = ref(route.query.id || null)
 const readonly = ref(false)
 
 const form = ref({
   datum: new Date().toISOString().split('T')[0],
-  week_number: 24,
+  week_number: 13,
   taken: '',
   uren: 8,
   reflectie: '',
@@ -55,13 +55,32 @@ async function logout() {
 }
 
 onMounted(async () => {
-  if (logboekId) {
-    const token = localStorage.getItem('token')
+  const token = localStorage.getItem('token')
+  if (!token) {
+    router.push('/login')
+    return
+  }
+
+  if (logboekId.value) {
     const res = await fetch('http://localhost:3000/api/logboeken/mijn', {
       headers: { Authorization: `Bearer ${token}` }
     })
+
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('role')
+      localStorage.removeItem('user')
+      router.push('/login')
+      return
+    }
+
     const data = await res.json()
-    const logboek = data.logboeken?.find(l => l.id == logboekId)
+    const logboek = data.logboeken?.find(l => l.id == logboekId.value)
+
+    if (!logboek) {
+      router.push('/student/logboek')
+      return
+    }
 
     if (logboek) {
       form.value.datum = logboek.datum
@@ -95,10 +114,15 @@ async function verstuurLogboek(status) {
   isLoading.value = true
   try {
     const token = localStorage.getItem('token')
-    const url = logboekId
-      ? `http://localhost:3000/api/logboeken/${logboekId}`
+    if (!token) {
+      router.push('/login')
+      return
+    }
+
+    const url = logboekId.value
+      ? `http://localhost:3000/api/logboeken/${logboekId.value}`
       : 'http://localhost:3000/api/logboeken'
-    const method = logboekId ? 'PUT' : 'POST'
+    const method = logboekId.value ? 'PUT' : 'POST'
 
     const res = await fetch(url, {
       method,
@@ -120,11 +144,25 @@ async function verstuurLogboek(status) {
         }))
       })
     })
+
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('role')
+      localStorage.removeItem('user')
+      router.push('/login')
+      return
+    }
+
     const data = await res.json()
     if (!res.ok) {
       error.value = data.error || 'Logboek kon niet opgeslagen worden'
       return
     }
+
+    if (!logboekId.value && data.logboek?.id) {
+      logboekId.value = data.logboek.id
+    }
+
     router.push('/student/logboek')
   } catch (err) {
     console.error(err)
@@ -163,9 +201,9 @@ function formatTitelDatum(datum) {
       </nav>
 
       <div class="profile">
-        <span>Anissa</span>
+        <span>Student</span>
         <button class="logout-btn" @click="logout">Uitloggen</button>
-        <div class="avatar">A</div>
+        <div class="avatar">S</div>
       </div>
     </header>
 

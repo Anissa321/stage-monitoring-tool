@@ -49,8 +49,8 @@ function initialen() {
         <span>Stage Monitor</span>
       </div>
       <nav>
-        <a class="active">Dashboard</a>
-        <a>Competenties</a>
+        <a class="active" @click="router.push('/admin/dashboard')">Dashboard</a>
+        <a @click="router.push('/admin/competenties')">Competenties</a>
       </nav>
       <div class="profile">
         <span>{{ voornaam() }}</span>
@@ -82,7 +82,7 @@ function initialen() {
         </div>
       </div>
       <div class="actions">
-        <div class="action-card">
+        <div class="action-card" @click="router.push('/admin/competenties')">
           <div class="action-icon">🎯</div>
           <div>
             <h3>Competenties beheren</h3>
@@ -130,9 +130,9 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .card-header h2 { margin: 0; font-size: 18px; }
 .card-header p { margin: 6px 0 0; color: #64748b; font-size: 14px; }
 .actions { padding: 24px 28px; }
-.action-card { width: 280px; border: 2px solid #991b1b; border-radius: 18px; padding: 22px; cursor: pointer; transition: 0.25s ease; }
+.action-card { width: 280px; border: 2px solid #991b1b; border-radius: 18px; padding: 22px; cursor: pointer; transition: 0.25s ease; display: flex; align-items: center; gap: 16px; }
 .action-card:hover { background: #fff7f7; }
-.action-icon { width: 44px; height: 44px; background: #fee2e2; border-radius: 50%; display: grid; place-items: center; margin-bottom: 16px; }
+.action-icon { width: 44px; height: 44px; background: #fee2e2; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; }
 .action-card h3 { margin: 0 0 6px; font-size: 16px; }
 .action-card p { margin: 0; color: #64748b; font-size: 13px; }
 .status-row { padding: 24px 28px; display: flex; gap: 30px; flex-wrap: wrap; }
