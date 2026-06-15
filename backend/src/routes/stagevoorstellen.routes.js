@@ -123,6 +123,24 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
   }
 })
 
+// GET /api/stagevoorstellen/docenten — lijst van alle docenten (voor commissie dropdown)
+router.get('/docenten', authMiddleware, requireRole('stagecommissie'), async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('id, voornaam, achternaam, email')
+      .eq('rol', 'docent')
+      .order('voornaam', { ascending: true })
+
+    if (error) return res.status(500).json({ error: 'Kon docenten niet ophalen' })
+
+    res.json({ docenten: data })
+  } catch (err) {
+    console.error('Docenten ophalen error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
 // GET /api/stagevoorstellen/commissie — stagecommissie ziet alle voorstellen
 router.get('/commissie', authMiddleware, requireRole('stagecommissie'), async (req, res) => {
   try {
@@ -161,7 +179,7 @@ router.get('/commissie', authMiddleware, requireRole('stagecommissie'), async (r
 router.put('/:id/beoordelen', authMiddleware, requireRole('stagecommissie'), async (req, res) => {
   try {
     const { id } = req.params
-    const { status, feedback_aanpassen, feedback_positief, mentor_naam, mentor_mail } = req.body
+    const { status, feedback_aanpassen, feedback_positief, mentor_naam, mentor_mail, docent_id } = req.body
 
     if (!status || !['goedgekeurd', 'afgekeurd', 'aanpassen'].includes(status)) {
       return res.status(400).json({ error: 'Status moet goedgekeurd, afgekeurd of aanpassen zijn' })
@@ -171,9 +189,13 @@ router.put('/:id/beoordelen', authMiddleware, requireRole('stagecommissie'), asy
       return res.status(400).json({ error: 'Mentor naam en email zijn verplicht bij goedkeuring' })
     }
 
+    if (status === 'goedgekeurd' && !docent_id) {
+      return res.status(400).json({ error: 'Begeleidende docent is verplicht bij goedkeuring' })
+    }
+
     const { data, error } = await supabaseAdmin
       .from('stagevoorstellen')
-      .update({ status, feedback_aanpassen, feedback_positief, mentor_naam, mentor_mail })
+      .update({ status, feedback_aanpassen, feedback_positief, mentor_naam, mentor_mail, docent_id })
       .eq('id', id)
       .select()
       .single()
@@ -232,6 +254,18 @@ router.put('/:id/beoordelen', authMiddleware, requireRole('stagecommissie'), asy
 
       if (koppelError) {
         console.error('Mentor-student koppeling error:', koppelError)
+      }
+
+      // Koppel docent aan student
+      const { error: docentKoppelError } = await supabaseAdmin
+        .from('docent_studenten')
+        .insert({
+          docent_id,
+          student_id: data.student_id
+        })
+
+      if (docentKoppelError) {
+        console.error('Docent-student koppeling error:', docentKoppelError)
       }
 
       mentorCredentials = {
@@ -309,7 +343,8 @@ router.put('/:id/reset', authMiddleware, requireRole('student'), async (req, res
         feedback_positief: null,
         mentor_naam: null,
         mentor_mail: null,
-        mentor_id: null
+        mentor_id: null,
+        docent_id: null
       })
       .eq('id', id)
       .eq('student_id', req.user.id)
@@ -321,6 +356,12 @@ router.put('/:id/reset', authMiddleware, requireRole('student'), async (req, res
     // Verwijder mentor-student koppeling
     await supabaseAdmin
       .from('mentor_studenten')
+      .delete()
+      .eq('student_id', req.user.id)
+
+    // Verwijder docent-student koppeling
+    await supabaseAdmin
+      .from('docent_studenten')
       .delete()
       .eq('student_id', req.user.id)
 

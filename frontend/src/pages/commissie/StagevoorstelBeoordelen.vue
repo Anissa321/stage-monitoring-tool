@@ -17,15 +17,24 @@ const toonMentorForm = ref(false)
 const mentorNaam = ref('')
 const mentorMail = ref('')
 const mentorCredentials = ref(null)
+const docenten = ref([])
+const geselecteerdeDocent = ref('')
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/stagevoorstellen/commissie', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const data = await res.json()
+    const [voorstelRes, docentenRes] = await Promise.all([
+      fetch('http://localhost:3000/api/stagevoorstellen/commissie', {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch('http://localhost:3000/api/stagevoorstellen/docenten', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ])
+    const data = await voorstelRes.json()
+    const docentenData = await docentenRes.json()
     voorstel.value = data.stagevoorstellen?.find(v => v.id == voorstelId) || null
+    docenten.value = docentenData.docenten || []
   } catch (err) {
     error.value = 'Verbindingsfout met server'
   } finally {
@@ -68,6 +77,10 @@ async function beoordeel(status) {
     error.value = 'Vul mentor naam en email in'
     return
   }
+  if (status === 'goedgekeurd' && !geselecteerdeDocent.value) {
+    error.value = 'Selecteer een begeleidende docent'
+    return
+  }
   error.value = ''
   const token = localStorage.getItem('token')
   try {
@@ -82,7 +95,8 @@ async function beoordeel(status) {
         feedback_aanpassen: feedbackAanpassen.value || null,
         feedback_positief: feedbackPositief.value || null,
         mentor_naam: mentorNaam.value || null,
-        mentor_mail: mentorMail.value || null
+        mentor_mail: mentorMail.value || null,
+        docent_id: geselecteerdeDocent.value || null
       })
     })
     const data = await res.json()
@@ -231,11 +245,18 @@ function goBack() {
         <h2>Beslissing</h2>
 
         <div v-if="toonMentorForm" class="feedback-form">
-          <h3 style="margin: 0 0 16px; font-size: 15px;">Mentor gegevens invullen</h3>
+          <h3 style="margin: 0 0 16px; font-size: 15px;">Mentor & docent gegevens invullen</h3>
           <label>Naam mentor (verplicht)</label>
           <input v-model="mentorNaam" type="text" placeholder="bv. Jan Janssens" />
           <label>Email mentor (verplicht)</label>
           <input v-model="mentorMail" type="email" placeholder="bv. jan@bedrijf.be" />
+          <label>Begeleidende docent (verplicht)</label>
+          <select v-model="geselecteerdeDocent">
+            <option value="" disabled>Selecteer een docent</option>
+            <option v-for="docent in docenten" :key="docent.id" :value="docent.id">
+              {{ docent.voornaam }} {{ docent.achternaam }} ({{ docent.email }})
+            </option>
+          </select>
           <div class="feedback-actions">
             <button class="cancel-btn" @click="toonMentorForm = false">Annuleren</button>
             <button class="approve" style="padding: 10px 20px;" @click="beoordeel('goedgekeurd')">✓ Goedkeuren & account aanmaken</button>
@@ -310,9 +331,9 @@ strong { display: block; margin-top: 6px; }
 .reject:hover { background: #ef4444; color: white; }
 .feedback-form { display: flex; flex-direction: column; gap: 12px; }
 .feedback-form label { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; }
-.feedback-form textarea, .feedback-form input { border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; font-size: 14px; font-family: inherit; }
+.feedback-form textarea, .feedback-form input, .feedback-form select { border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; font-size: 14px; font-family: inherit; }
 .feedback-form textarea { min-height: 80px; resize: vertical; }
-.feedback-form textarea:focus, .feedback-form input:focus { outline: none; border-color: #991b1b; }
+.feedback-form textarea:focus, .feedback-form input:focus, .feedback-form select:focus { outline: none; border-color: #991b1b; }
 .feedback-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
 .cancel-btn { border: 1px solid #cbd5e1; background: white; color: #334155; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; }
 .error-msg { margin-top: 16px; color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 16px; font-weight: 600; }
