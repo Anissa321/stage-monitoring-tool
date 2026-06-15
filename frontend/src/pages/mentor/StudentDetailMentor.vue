@@ -135,6 +135,12 @@ async function ondertekenen() {
     }
     overeenkomst.value = result.overeenkomst
     overeenkomstSucces.value = 'Stageovereenkomst ondertekend!'
+
+    if (overeenkomst.value.status === 'volledig_getekend') {
+      const statusMap = JSON.parse(localStorage.getItem('overeenkomstenMentor') || '{}')
+      statusMap[studentId] = true
+      localStorage.setItem('overeenkomstenMentor', JSON.stringify(statusMap))
+    }
   } catch (err) {
     overeenkomstError.value = 'Verbindingsfout met server'
   } finally {

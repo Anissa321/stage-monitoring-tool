@@ -68,6 +68,14 @@ const router = createRouter({
   routes
 })
 
+// Routes die ALTIJD toegankelijk zijn voor student, ook zonder getekende overeenkomst
+const studentToegestaanZonderOvereenkomst = [
+  '/student/dashboard',
+  '/student/documenten',
+  '/student/stagevoorstel',
+  '/student/stagevoorstel/detail'
+]
+
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
@@ -88,6 +96,25 @@ router.beforeEach((to, from, next) => {
   if (to.path.startsWith('/mentor') && role !== 'mentor') { next('/login'); return }
   if (to.path.startsWith('/commissie') && role !== 'stagecommissie') { next('/login'); return }
   if (to.path.startsWith('/admin') && role !== 'administratie') { next('/login'); return }
+
+  // Blokkering: student moet stageovereenkomst getekend hebben voor toegang tot andere pagina's
+  if (role === 'student' && to.path.startsWith('/student')) {
+    const getekend = localStorage.getItem('overeenkomstGetekend') === 'true'
+    if (!getekend && !studentToegestaanZonderOvereenkomst.includes(to.path)) {
+      next('/student/documenten')
+      return
+    }
+  }
+
+  // Blokkering: mentor moet stageovereenkomst voor deze student getekend hebben voor toegang tot diens week-aftekenen
+  if (role === 'mentor' && to.path.startsWith('/mentor/week/')) {
+    const studentId = to.params.studentId
+    const statusMap = JSON.parse(localStorage.getItem('overeenkomstenMentor') || '{}')
+    if (!statusMap[studentId]) {
+      next('/mentor/stagiairs')
+      return
+    }
+  }
 
   next()
 })

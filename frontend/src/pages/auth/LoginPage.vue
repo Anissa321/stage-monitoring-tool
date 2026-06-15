@@ -133,6 +133,34 @@ async function handleLogin() {
     localStorage.setItem('role', data.user.rol)
     localStorage.setItem('user', JSON.stringify(data.user))
 
+    // Overeenkomst-status ophalen voor student/mentor
+    if (data.user.rol === 'student') {
+      try {
+        const overRes = await fetch('http://localhost:3000/api/stageovereenkomsten/mijn', {
+          headers: { Authorization: `Bearer ${data.session.access_token}` }
+        })
+        const overData = await overRes.json()
+        const getekend = overData.overeenkomst?.status === 'volledig_getekend'
+        localStorage.setItem('overeenkomstGetekend', getekend ? 'true' : 'false')
+      } catch {
+        localStorage.setItem('overeenkomstGetekend', 'false')
+      }
+    } else if (data.user.rol === 'mentor') {
+      try {
+        const overRes = await fetch('http://localhost:3000/api/stageovereenkomsten/mentor', {
+          headers: { Authorization: `Bearer ${data.session.access_token}` }
+        })
+        const overData = await overRes.json()
+        const statusMap = {}
+        overData.overeenkomsten?.forEach(o => {
+          statusMap[o.student_id] = o.status === 'volledig_getekend'
+        })
+        localStorage.setItem('overeenkomstenMentor', JSON.stringify(statusMap))
+      } catch {
+        localStorage.setItem('overeenkomstenMentor', '{}')
+      }
+    }
+
     switch (data.user.rol) {
       case 'student':
         router.push('/student')

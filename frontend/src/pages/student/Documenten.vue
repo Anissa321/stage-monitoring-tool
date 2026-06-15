@@ -94,6 +94,10 @@ async function ondertekenen() {
     }
     overeenkomst.value = result.overeenkomst
     succes.value = 'Stageovereenkomst ondertekend!'
+
+    if (overeenkomst.value.status === 'volledig_getekend') {
+      localStorage.setItem('overeenkomstGetekend', 'true')
+    }
   } catch (err) {
     error.value = 'Verbindingsfout met server'
   } finally {
