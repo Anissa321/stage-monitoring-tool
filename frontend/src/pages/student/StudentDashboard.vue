@@ -6,6 +6,7 @@ const router = useRouter()
 const data = ref(null)
 const voorstel = ref(null)
 const loading = ref(true)
+const resetting = ref(false)
  
 onMounted(async () => {
   const token = localStorage.getItem('token')
@@ -42,6 +43,25 @@ async function logout() {
   localStorage.removeItem('role')
   localStorage.removeItem('user')
   router.push('/login')
+}
+
+async function resetDemo() {
+  if (!confirm('Status terugzetten naar "ingediend" voor demo?')) return
+  resetting.value = true
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch(`http://localhost:3000/api/stagevoorstellen/${voorstel.value.id}/reset`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (res.ok) {
+      voorstel.value.status = 'ingediend'
+    }
+  } catch (err) {
+    console.error(err)
+  } finally {
+    resetting.value = false
+  }
 }
  
 function voornaam() { return data.value?.user?.voornaam || 'Student' }
@@ -94,16 +114,13 @@ function formatDatum(d) {
       <button class="primary-btn" @click="router.push('/student/stagevoorstel')">Stagevoorstel indienen</button>
     </section>
  
-    <!-- Status: ingediend (wacht op goedkeuring) -->
+    <!-- Status: ingediend -->
     <section v-else-if="voorstel?.status === 'ingediend'" class="status-card status-pending">
       <div class="status-row">
         <div class="status-icon">⏳</div>
         <div class="status-text">
           <h3>Wacht op goedkeuring</h3>
-          <p>
-            Je stagevoorstel is ingediend op {{ formatDatum(voorstel.indieningsdatum) }} en wordt beoordeeld door de stagecommissie.
-            Verwachte beoordeling binnen 5 werkdagen.
-          </p>
+          <p>Je stagevoorstel is ingediend op {{ formatDatum(voorstel.indieningsdatum) }} en wordt beoordeeld door de stagecommissie. Verwachte beoordeling binnen 5 werkdagen.</p>
         </div>
         <button class="secondary-btn" @click="router.push('/student/stagevoorstel/detail')">Bekijk voorstel</button>
       </div>
@@ -117,7 +134,10 @@ function formatDatum(d) {
           <h3>Voorstel goedgekeurd</h3>
           <p>De stagecommissie heeft je voorstel goedgekeurd. Laad nu de ondertekende overeenkomst op om je stage te kunnen starten.</p>
         </div>
-        <button class="secondary-btn success" @click="router.push('/student/documenten')">Overeenkomst opladen</button>
+        <div class="btn-group">
+          <button class="secondary-btn success" @click="router.push('/student/documenten')">Overeenkomst opladen</button>
+          <button class="reset-btn" :disabled="resetting" @click="resetDemo">🔄 Reset demo</button>
+        </div>
       </div>
     </section>
  
@@ -127,7 +147,7 @@ function formatDatum(d) {
         <div class="status-icon">❌</div>
         <div class="status-text">
           <h3>Voorstel afgekeurd</h3>
-          <p>De stagecommissie heeft je voorstel afgekeurd op {{ formatDatum(voorstel.indieningsdatum) }}. Je kan een volledig nieuw voorstel indienen met een andere opdracht of bij een ander bedrijf.</p>
+          <p>De stagecommissie heeft je voorstel afgekeurd. Je kan een volledig nieuw voorstel indienen.</p>
         </div>
         <button class="secondary-btn danger" @click="router.push('/student/stagevoorstel')">Nieuw voorstel indienen</button>
       </div>
@@ -143,7 +163,7 @@ function formatDatum(d) {
         <div class="status-icon">✏️</div>
         <div class="status-text">
           <h3>Aanpassingen vereist</h3>
-          <p>De stagecommissie heeft je voorstel bekeken en vraagt enkele aanpassingen. Bekijk de feedback hieronder en dien een aangepast voorstel in.</p>
+          <p>De stagecommissie heeft je voorstel bekeken en vraagt enkele aanpassingen.</p>
         </div>
         <button class="secondary-btn warning" @click="router.push('/student/stagevoorstel')">Voorstel aanpassen</button>
       </div>
@@ -212,7 +232,6 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .primary-btn { border: none; background: #991b1b; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s ease; }
 .primary-btn:hover { background: #7f1d1d; }
  
-/* Status cards */
 .status-card { margin: 0 64px 34px; border-radius: 18px; padding: 22px 26px; }
 .status-pending { background: #fffbeb; border: 1px solid #fde68a; }
 .status-approved { background: #ecfdf5; border: 1px solid #a7f3d0; }
@@ -225,11 +244,15 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .status-text h3 { margin: 0 0 4px; font-size: 16px; font-weight: 800; color: #111827; }
 .status-text p { margin: 0; font-size: 13px; color: #57534e; line-height: 1.5; }
  
+.btn-group { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .secondary-btn { border: none; background: #f59e0b; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: 0.2s ease; }
 .secondary-btn:hover { opacity: 0.9; }
 .secondary-btn.success { background: #059669; }
 .secondary-btn.danger { background: #dc2626; }
 .secondary-btn.warning { background: #ea580c; }
+.reset-btn { border: 1px solid #94a3b8; background: white; color: #64748b; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.reset-btn:hover { background: #f1f5f9; }
+.reset-btn:disabled { opacity: 0.5; cursor: not-allowed; }
  
 .feedback-box { margin-top: 18px; background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 16px 18px; }
 .feedback-box h4 { margin: 0 0 8px; font-size: 13px; font-weight: 800; color: #111827; }

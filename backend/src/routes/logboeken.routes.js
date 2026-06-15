@@ -257,10 +257,48 @@ router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) =>
     if (error) return res.status(500).json({ error: 'Kon logboeken niet ophalen' })
 
     const logboekIds = data.map(l => l.id)
+
     const { data: competenties } = await supabaseAdmin
       .from('logbook_competencies')
       .select('logbook_id, competence_name, selected, description')
       .in('logbook_id', logboekIds)
+      .eq('selected', true)
+
+    // Mentor feedback per week ophalen
+    const weekNummers = [...new Set(data.map(l => l.week_number))]
+    const { data: reviews } = await supabaseAdmin
+      .from('logbook_reviews')
+      .select('week_number, week_feedback, week_status, mentor_id, reviewed_at')
+      .eq('reviewer_role', 'mentor')
+      .in('week_number', weekNummers)
+      .order('reviewed_at', { ascending: false })
+
+    let mentorNamen = {}
+    if (reviews && reviews.length > 0) {
+      const mentorIds = [...new Set(reviews.filter(r => r.mentor_id).map(r => r.mentor_id))]
+      if (mentorIds.length > 0) {
+        const { data: mentors } = await supabaseAdmin
+          .from('profiles')
+          .select('id, voornaam, achternaam')
+          .in('id', mentorIds)
+        mentors?.forEach(m => {
+          mentorNamen[m.id] = `${m.voornaam} ${m.achternaam}`
+        })
+      }
+    }
+
+    const weekFeedbackMap = {}
+    if (reviews) {
+      reviews.forEach(r => {
+        if (!weekFeedbackMap[r.week_number]) {
+          weekFeedbackMap[r.week_number] = {
+            week_feedback: r.week_feedback || null,
+            week_status: r.week_status || null,
+            mentor_naam: r.mentor_id ? mentorNamen[r.mentor_id] || 'Mentor' : null
+          }
+        }
+      })
+    }
 
     const logboekenMetCompetenties = data.map(log => ({
       ...log,
@@ -269,7 +307,10 @@ router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) =>
             naam: c.competence_name,
             description: c.description || ''
           }))
-        : []
+        : [],
+      mentor_feedback: weekFeedbackMap[log.week_number]?.week_feedback || null,
+      mentor_week_status: weekFeedbackMap[log.week_number]?.week_status || null,
+      mentor_naam: weekFeedbackMap[log.week_number]?.mentor_naam || null
     }))
 
     res.json({ logboeken: logboekenMetCompetenties })
@@ -338,7 +379,6 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
       return res.status(400).json({ error: 'Datum en taken zijn verplicht' })
     }
 
-    // Voorkom dubbele rijen voor dezelfde datum
     const { data: bestaand } = await supabaseAdmin
       .from('logbooks')
       .select('id')

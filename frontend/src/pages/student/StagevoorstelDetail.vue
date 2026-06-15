@@ -34,16 +34,6 @@ function formatDatum(d) {
   if (!d) return '-'
   return new Date(d).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })
 }
-
-function statusLabel(status) {
-  const labels = {
-    ingediend: 'Wacht op goedkeuring',
-    goedgekeurd: 'Goedgekeurd',
-    afgekeurd: 'Afgekeurd',
-    aanpassen: 'Aanpassingen vereist'
-  }
-  return labels[status] || status
-}
 </script>
 
 <template>
@@ -107,6 +97,7 @@ function statusLabel(status) {
 
       <div v-if="!loading && !voorstel" class="info-card">
         <p>Er is nog geen stagevoorstel ingediend.</p>
+        <button class="submit-btn" @click="router.push('/student/stagevoorstel')">+ Stagevoorstel indienen</button>
       </div>
     </section>
   </main>
@@ -126,7 +117,7 @@ nav a:hover { background: #fee2e2; color: #991b1b; }
 
 .content { max-width: 900px; margin: 0 auto; padding: 32px 24px 60px; }
 .back-link { color: #991b1b; text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; }
-.content h1 { margin: 14px 0 22px; font-size: 26px; font-weight: 800; }
+h1 { margin: 14px 0 22px; font-size: 26px; font-weight: 800; }
 
 .status-banner { padding: 14px 20px; border-radius: 14px; font-weight: 700; margin-bottom: 22px; font-size: 14px; }
 .status-banner p { margin: 4px 0 0; font-weight: 400; font-size: 13px; color: #57534e; }
@@ -143,6 +134,9 @@ nav a:hover { background: #fee2e2; color: #991b1b; }
 .info-block .sub { margin: 2px 0 0; font-size: 13px; color: #64748b; }
 .info-block.full { border-top: 1px solid #f1f5f9; padding-top: 18px; }
 .info-block.full .main { font-weight: 400; line-height: 1.6; color: #334155; }
+
+.submit-btn { margin-top: 16px; border: none; background: #991b1b; color: white; padding: 12px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.submit-btn:hover { background: #7f1d1d; }
 
 @media (max-width: 700px) {
   .topbar { padding: 0 20px; }

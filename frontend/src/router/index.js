@@ -4,6 +4,7 @@ import LoginPage from '../pages/auth/LoginPage.vue'
 import StudentDashboard from '../pages/student/StudentDashboard.vue'
 import DocentDashboard from '../pages/docent/DocentDashboard.vue'
 import CommissieDashboard from '../pages/commissie/CommissieDashboard.vue'
+import CommissieOverzicht from '../pages/commissie/OverzichtBeoordeeldeStages.vue'
 import MentorDashboard from '../pages/mentor/MentorDashboard.vue'
 import MentorStagiairs from '../pages/mentor/MentorStagiairs.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
@@ -16,6 +17,11 @@ import StagevoorstelIndienen from '../pages/student/StagevoorstelIndienen.vue'
 import StagevoorstelDetail from '../pages/student/StagevoorstelDetail.vue'
 import StagevoorstelBeoordelen from '../pages/commissie/StagevoorstelBeoordelen.vue'
 import AdminCompetencies from '../pages/admin/AdminCompetencies.vue'
+import FeedbackGeven from '../pages/commissie/FeedbackGeven.vue'
+import CommissieAanvragen from '../pages/commissie/CommissieAanvragen.vue'
+import MijnStudenten from '../pages/docent/MijnStudenten.vue'
+
+
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'LoginPage', component: LoginPage },
@@ -26,13 +32,14 @@ const routes = [
   { path: '/student/logboek', name: 'LogboekOverzicht', component: LogboekOverzicht },
   { path: '/student/logboek-invullen', name: 'LogboekInvullen', component: LogboekInvullen },
   { path: '/student/stagevoorstel', name: 'StagevoorstelIndienen', component: StagevoorstelIndienen },
- { path: '/student/stagevoorstel/detail', name: 'StagevoorstelDetail', component: StagevoorstelDetail },
- 
+  { path: '/student/stagevoorstel/detail', name: 'StagevoorstelDetail', component: StagevoorstelDetail },
 
   // DOCENT
   { path: '/docent', redirect: '/docent/dashboard' },
   { path: '/docent/dashboard', name: 'DocentDashboard', component: DocentDashboard },
   { path: '/docent/logboek', name: 'DocentLogboek', component: LogboekBekijken },
+  { path: '/docent/studenten', name: 'MijnStudenten', component: MijnStudenten },
+
 
   // MENTOR
   { path: '/mentor', redirect: '/mentor/dashboard' },
@@ -42,9 +49,12 @@ const routes = [
   { path: '/mentor/week/:studentId/:weekNummer', name: 'WeekAftekenen', component: LogboekAftekenen },
 
   // COMMISSIE
-  { path: '/commissie', redirect: '/commissie/dashboard' },
-  { path: '/commissie/dashboard', name: 'CommissieDashboard', component: CommissieDashboard },
-  { path: '/commissie/stagevoorstel', name: 'StagevoorstelBeoordelen', component: StagevoorstelBeoordelen },
+{ path: '/commissie', redirect: '/commissie/dashboard' },
+{ path: '/commissie/dashboard', name: 'CommissieDashboard', component: CommissieDashboard },
+{ path: '/commissie/aanvragen', name: 'CommissieAanvragen', component: CommissieAanvragen },
+{ path: '/commissie/stagevoorstel/:id', name: 'StagevoorstelBeoordelen', component: StagevoorstelBeoordelen },
+{ path: '/commissie/overzicht', name: 'CommissieOverzicht', component: CommissieOverzicht },
+{ path: '/commissie/feedback-geven', name: 'FeedbackGeven', component: FeedbackGeven },
 
   // ADMIN
   { path: '/admin', redirect: '/admin/dashboard' },
