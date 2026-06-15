@@ -20,6 +20,7 @@ import AdminCompetencies from '../pages/admin/AdminCompetencies.vue'
 import FeedbackGeven from '../pages/commissie/FeedbackGeven.vue'
 import CommissieAanvragen from '../pages/commissie/CommissieAanvragen.vue'
 import MijnStudenten from '../pages/docent/MijnStudenten.vue'
+import Documenten from '../pages/student/Documenten.vue'
 
 
 const routes = [
@@ -33,13 +34,13 @@ const routes = [
   { path: '/student/logboek-invullen', name: 'LogboekInvullen', component: LogboekInvullen },
   { path: '/student/stagevoorstel', name: 'StagevoorstelIndienen', component: StagevoorstelIndienen },
   { path: '/student/stagevoorstel/detail', name: 'StagevoorstelDetail', component: StagevoorstelDetail },
+  { path: '/student/documenten', name: 'Documenten', component: Documenten },
 
   // DOCENT
   { path: '/docent', redirect: '/docent/dashboard' },
   { path: '/docent/dashboard', name: 'DocentDashboard', component: DocentDashboard },
   { path: '/docent/logboek', name: 'DocentLogboek', component: LogboekBekijken },
   { path: '/docent/studenten', name: 'MijnStudenten', component: MijnStudenten },
-
 
   // MENTOR
   { path: '/mentor', redirect: '/mentor/dashboard' },
@@ -49,12 +50,12 @@ const routes = [
   { path: '/mentor/week/:studentId/:weekNummer', name: 'WeekAftekenen', component: LogboekAftekenen },
 
   // COMMISSIE
-{ path: '/commissie', redirect: '/commissie/dashboard' },
-{ path: '/commissie/dashboard', name: 'CommissieDashboard', component: CommissieDashboard },
-{ path: '/commissie/aanvragen', name: 'CommissieAanvragen', component: CommissieAanvragen },
-{ path: '/commissie/stagevoorstel/:id', name: 'StagevoorstelBeoordelen', component: StagevoorstelBeoordelen },
-{ path: '/commissie/overzicht', name: 'CommissieOverzicht', component: CommissieOverzicht },
-{ path: '/commissie/feedback-geven', name: 'FeedbackGeven', component: FeedbackGeven },
+  { path: '/commissie', redirect: '/commissie/dashboard' },
+  { path: '/commissie/dashboard', name: 'CommissieDashboard', component: CommissieDashboard },
+  { path: '/commissie/aanvragen', name: 'CommissieAanvragen', component: CommissieAanvragen },
+  { path: '/commissie/stagevoorstel/:id', name: 'StagevoorstelBeoordelen', component: StagevoorstelBeoordelen },
+  { path: '/commissie/overzicht', name: 'CommissieOverzicht', component: CommissieOverzicht },
+  { path: '/commissie/feedback-geven', name: 'FeedbackGeven', component: FeedbackGeven },
 
   // ADMIN
   { path: '/admin', redirect: '/admin/dashboard' },

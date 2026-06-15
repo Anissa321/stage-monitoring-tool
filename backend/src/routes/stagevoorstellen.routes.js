@@ -12,9 +12,11 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
       .from('stagevoorstellen')
       .select('*')
       .eq('student_id', req.user.id)
-      .single()
+      .order('indieningsdatum', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       return res.status(500).json({ error: 'Kon stagevoorstel niet ophalen' })
     }
 
