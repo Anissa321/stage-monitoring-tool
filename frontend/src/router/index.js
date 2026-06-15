@@ -21,6 +21,8 @@ import FeedbackGeven from '../pages/commissie/FeedbackGeven.vue'
 import CommissieAanvragen from '../pages/commissie/CommissieAanvragen.vue'
 import MijnStudenten from '../pages/docent/MijnStudenten.vue'
 import Documenten from '../pages/student/Documenten.vue'
+import MijnEvaluatie from '../pages/student/MijnEvaluatie.vue'
+import EvaluatieRubriek from '../pages/student/EvaluatieRubriek.vue'
 
 
 const routes = [
@@ -35,6 +37,8 @@ const routes = [
   { path: '/student/stagevoorstel', name: 'StagevoorstelIndienen', component: StagevoorstelIndienen },
   { path: '/student/stagevoorstel/detail', name: 'StagevoorstelDetail', component: StagevoorstelDetail },
   { path: '/student/documenten', name: 'Documenten', component: Documenten },
+  { path: '/student/evaluatie', name: 'MijnEvaluatie', component: MijnEvaluatie },
+  { path: '/student/evaluatie/rubriek', name: 'EvaluatieRubriek', component: EvaluatieRubriek },
 
   // DOCENT
   { path: '/docent', redirect: '/docent/dashboard' },
