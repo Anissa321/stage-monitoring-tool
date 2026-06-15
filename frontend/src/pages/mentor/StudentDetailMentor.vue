@@ -43,7 +43,6 @@ onMounted(async () => {
     stage.value = data.stage
     logboeken.value = data.logboeken
 
-    // Stageovereenkomst ophalen
     const overRes = await fetch('http://localhost:3000/api/stageovereenkomsten/mentor', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -199,6 +198,9 @@ async function logout() {
               <span class="badge green">Op schema</span>
             </div>
           </div>
+          <button class="feedback-btn" @click="router.push(`/mentor/student/${studentId}/feedback`)">
+            + Tussentijdse feedback
+          </button>
         </div>
       </section>
 
@@ -231,7 +233,6 @@ async function logout() {
         </div>
       </section>
 
-      <!-- Stageovereenkomst -->
       <section class="card" v-if="overeenkomst">
         <div class="card-header">
           <h2>Stageovereenkomst</h2>
@@ -342,11 +343,13 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .page-header { padding: 30px 64px 20px; }
 .back-btn { border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; margin-bottom: 20px; font-size: 14px; padding: 0; }
 .back-btn:hover { color: #991b1b; }
-.title-row { display: flex; align-items: center; }
+.title-row { display: flex; justify-content: space-between; align-items: center; }
 .student-info { display: flex; align-items: center; gap: 20px; }
 .student-avatar-large { width: 72px; height: 72px; border-radius: 50%; background: #dbeafe; color: #1d4ed8; display: grid; place-items: center; font-weight: 800; font-size: 22px; }
 .student-info h1 { margin: 0; font-size: 28px; font-weight: 800; }
 .student-info p { margin: 4px 0 8px; color: #64748b; font-size: 14px; }
+.feedback-btn { border: none; background: #15803d; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.feedback-btn:hover { background: #166534; }
 .card { margin: 24px 64px; background: white; border-radius: 22px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 14px 30px rgba(15,23,42,0.05); }
 .card-header { padding: 24px 28px; border-bottom: 1px solid #f1f5f9; }
 .card-header h2 { margin: 0; font-size: 18px; }
@@ -366,7 +369,6 @@ td { padding: 20px 28px; border-top: 1px solid #f1f5f9; font-size: 14px; color: 
 .icon-btn { border: 1px solid #991b1b; background: white; color: #991b1b; padding: 7px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 13px; }
 .icon-btn:hover { background: #991b1b; color: white; }
 .geen-actie { color: #94a3b8; }
-
 .overeenkomst-body { padding: 24px 28px; }
 .preview-btn { border: 1px solid #991b1b; background: white; color: #991b1b; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; }
 .preview-btn:hover { background: #991b1b; color: white; }
@@ -385,11 +387,11 @@ td { padding: 20px 28px; border-top: 1px solid #f1f5f9; font-size: 14px; color: 
 .primary-btn:hover:not(:disabled) { background: #166534; }
 .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .succes-msg { background: #ecfdf5; border: 1px solid #a7f3d0; color: #15803d; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 700; margin-top: 14px; }
-
 @media (max-width: 900px) {
   .topbar { padding: 0 20px; } nav { display: none; }
   .page-header, .card { margin-left: 20px; margin-right: 20px; }
   .stage-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .title-row { flex-direction: column; align-items: flex-start; gap: 14px; }
   table { display: block; overflow-x: auto; }
 }
 </style>
