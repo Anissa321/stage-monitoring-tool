@@ -1,9 +1,12 @@
 <script setup>
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
+const studentId = route.params.id
 
 const student = {
+  id: studentId,
   naam: 'Anissa Canton',
   email: 'anissa.canton@student.ehb.be',
   opleiding: 'Toegepaste Informatica',
@@ -42,6 +45,10 @@ const recenteLogboeken = [
 function gaNaarLogboek(id) {
   router.push(`/docent/logboek-bekijken/${id}`)
 }
+
+function gaNaarBespreking() {
+  router.push(`/docent/studenten/${studentId}/bespreking`)
+}
 </script>
 
 <template>
@@ -53,9 +60,9 @@ function gaNaarLogboek(id) {
       </div>
 
       <nav>
-        <a>Dashboard</a>
-        <a class="active">Studenten</a>
-        <a>Evaluaties</a>
+        <a @click="router.push('/docent/dashboard')">Dashboard</a>
+        <a class="active" @click="router.push('/docent/studenten')">Studenten</a>
+        <a @click="router.push('/docent/evaluaties')">Evaluaties</a>
       </nav>
 
       <div class="profile">
@@ -65,49 +72,45 @@ function gaNaarLogboek(id) {
     </header>
 
     <section class="content">
-      <button class="back-btn">← Terug naar vorige pagina</button>
+      <button class="back-btn" @click="router.push('/docent/studenten')">← Terug naar vorige pagina</button>
 
-      <h1>Studentdossier</h1>
+      <div class="header-row">
+        <h1>Studentdossier</h1>
+        <button class="bespreking-btn" @click="gaNaarBespreking">+ Tussentijdse bespreking</button>
+      </div>
 
       <section class="student-card">
         <div class="student-left">
           <div class="avatar">AC</div>
-
           <div>
             <h2>{{ student.naam }}</h2>
             <p>{{ student.email }} • {{ student.opleiding }} • {{ student.jaar }}</p>
           </div>
         </div>
-
         <span class="status-pill">{{ student.status }}</span>
       </section>
 
       <section class="info-grid">
         <article class="info-card">
           <h3>Stage informatie</h3>
-
           <div class="info-columns">
             <div>
               <span>Bedrijf</span>
               <strong>{{ student.bedrijf }}</strong>
             </div>
-
             <div>
               <span>Mentor</span>
               <strong>{{ student.mentor }}</strong>
             </div>
-
             <div>
               <span>Periode</span>
               <strong>{{ student.periode }}</strong>
             </div>
-
             <div>
               <span>Locatie</span>
               <strong>{{ student.locatie }}</strong>
             </div>
           </div>
-
           <p class="assignment">
             <strong>Opdracht:</strong> {{ student.opdracht }}
           </p>
@@ -115,21 +118,17 @@ function gaNaarLogboek(id) {
 
         <article class="info-card">
           <h3>Voortgang</h3>
-
           <div class="progress-row">
             <span>Logboeken ingevuld</span>
             <strong>{{ student.logboekenIngevuld }} / {{ student.totaalDagen }} dagen</strong>
           </div>
-
           <div class="progress-bar">
             <div class="progress-fill"></div>
           </div>
-
           <div class="progress-row warning">
             <span>Evaluatie ingevuld</span>
             <strong>In afwachting</strong>
           </div>
-
           <div class="progress-row success">
             <span>Stageovereenkomst</span>
             <strong>Ondertekend</strong>
@@ -139,27 +138,15 @@ function gaNaarLogboek(id) {
 
       <section class="logbook-card">
         <h3>Recente logboeken</h3>
-
-        <div
-          v-for="logboek in recenteLogboeken"
-          :key="logboek.id"
-          class="logbook-row"
-        >
+        <div v-for="logboek in recenteLogboeken" :key="logboek.id" class="logbook-row">
           <div>
             <strong>{{ logboek.datum }}</strong>
             <p>{{ logboek.tekst }}</p>
           </div>
-
-          <span
-            class="log-status"
-            :class="{ danger: logboek.status === 'Aandacht nodig' }"
-          >
+          <span class="log-status" :class="{ danger: logboek.status === 'Aandacht nodig' }">
             {{ logboek.status }}
           </span>
-
-          <button @click="gaNaarLogboek(logboek.id)">
-            Bekijk +
-          </button>
+          <button @click="gaNaarLogboek(logboek.id)">Bekijk +</button>
         </div>
       </section>
     </section>
@@ -167,282 +154,54 @@ function gaNaarLogboek(id) {
 </template>
 
 <style scoped>
-* {
-  box-sizing: border-box;
-  font-family: Inter, sans-serif;
-}
-
-.page {
-  min-height: 100vh;
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-.topbar {
-  height: 64px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 44px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.brand,
-.profile,
-.student-left {
-  display: flex;
-  align-items: center;
-}
-
-.brand {
-  gap: 10px;
-  font-weight: 800;
-}
-
-.logo-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  background: #991b1b;
-  color: white;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-}
-
-nav {
-  display: flex;
-  gap: 24px;
-}
-
-nav a {
-  font-size: 13px;
-  font-weight: 700;
-  color: #64748b;
-  text-decoration: none;
-}
-
-nav a.active {
-  color: #991b1b;
-}
-
-.profile {
-  gap: 10px;
-  font-weight: 700;
-}
-
-.avatar-small {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  display: grid;
-  place-items: center;
-}
-
-.content {
-  padding: 34px 56px 48px;
-}
-
-.back-btn {
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-weight: 700;
-  cursor: pointer;
-  margin-bottom: 12px;
-}
-
-.back-btn:hover {
-  color: #991b1b;
-}
-
-h1 {
-  margin: 0 0 22px;
-  font-size: 28px;
-}
-
-.student-card,
-.info-card,
-.logbook-card {
-  background: white;
-  border-radius: 18px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
-}
-
-.student-card {
-  padding: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.student-left {
-  gap: 18px;
-}
-
-.avatar {
-  width: 62px;
-  height: 62px;
-  border-radius: 50%;
-  background: #fee2e2;
-  color: #991b1b;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-}
-
-.student-card h2 {
-  margin: 0 0 6px;
-}
-
-.student-card p {
-  margin: 0;
-  color: #64748b;
-}
-
-.status-pill {
-  background: #dcfce7;
-  color: #166534;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 12px;
-}
-
-.info-grid {
-  margin-top: 26px;
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 24px;
-}
-
-.info-card {
-  padding: 24px;
-}
-
-.info-card h3,
-.logbook-card h3 {
-  margin: 0 0 20px;
-}
-
-.info-columns {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-.info-columns span {
-  display: block;
-  color: #64748b;
-  font-size: 12px;
-  text-transform: uppercase;
-  font-weight: 800;
-}
-
-.info-columns strong {
-  display: block;
-  margin-top: 5px;
-}
-
-.assignment {
-  margin-top: 20px;
-  color: #475569;
-}
-
-.progress-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  color: #475569;
-}
-
-.progress-bar {
-  height: 9px;
-  background: #e2e8f0;
-  border-radius: 999px;
-  overflow: hidden;
-  margin-bottom: 18px;
-}
-
-.progress-fill {
-  height: 100%;
-  width: 80%;
-  background: #991b1b;
-}
-
-.warning strong {
-  color: #b45309;
-}
-
-.success strong {
-  color: #166534;
-}
-
-.logbook-card {
-  margin-top: 26px;
-  padding: 24px;
-}
-
-.logbook-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 18px;
-  align-items: center;
-  padding: 16px 0;
-  border-top: 1px solid #f1f5f9;
-}
-
-.logbook-row p {
-  margin: 5px 0 0;
-  color: #64748b;
-}
-
-.log-status {
-  background: #dcfce7;
-  color: #166534;
-  padding: 7px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.log-status.danger {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.logbook-row button {
-  border: none;
-  background: #991b1b;
-  color: white;
-  border-radius: 10px;
-  padding: 9px 14px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.logbook-row button:hover {
-  background: #7f1d1d;
-}
-
+* { box-sizing: border-box; font-family: Inter, sans-serif; }
+.page { min-height: 100vh; background: #f1f5f9; color: #0f172a; }
+.topbar { height: 64px; background: white; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; padding: 0 44px; position: sticky; top: 0; z-index: 10; }
+.brand, .profile, .student-left { display: flex; align-items: center; }
+.brand { gap: 10px; font-weight: 800; }
+.logo-circle { width: 32px; height: 32px; border-radius: 9px; background: #991b1b; color: white; display: grid; place-items: center; font-size: 12px; }
+nav { display: flex; gap: 24px; }
+nav a { font-size: 13px; font-weight: 700; color: #64748b; text-decoration: none; cursor: pointer; }
+nav a.active { color: #991b1b; }
+.profile { gap: 10px; font-weight: 700; }
+.avatar-small { width: 32px; height: 32px; border-radius: 50%; background: #f1f5f9; display: grid; place-items: center; }
+.content { padding: 34px 56px 48px; }
+.back-btn { border: none; background: transparent; color: #64748b; font-weight: 700; cursor: pointer; margin-bottom: 12px; }
+.back-btn:hover { color: #991b1b; }
+.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+.header-row h1 { margin: 0; font-size: 28px; }
+.bespreking-btn { border: none; background: #1d4ed8; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.bespreking-btn:hover { background: #1e40af; }
+.student-card, .info-card, .logbook-card { background: white; border-radius: 18px; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(15,23,42,0.04); }
+.student-card { padding: 24px; display: flex; justify-content: space-between; align-items: center; }
+.student-left { gap: 18px; }
+.avatar { width: 62px; height: 62px; border-radius: 50%; background: #fee2e2; color: #991b1b; display: grid; place-items: center; font-weight: 800; }
+.student-card h2 { margin: 0 0 6px; }
+.student-card p { margin: 0; color: #64748b; }
+.status-pill { background: #dcfce7; color: #166534; padding: 8px 14px; border-radius: 999px; font-weight: 800; font-size: 12px; }
+.info-grid { margin-top: 26px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; }
+.info-card { padding: 24px; }
+.info-card h3, .logbook-card h3 { margin: 0 0 20px; }
+.info-columns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.info-columns span { display: block; color: #64748b; font-size: 12px; text-transform: uppercase; font-weight: 800; }
+.info-columns strong { display: block; margin-top: 5px; }
+.assignment { margin-top: 20px; color: #475569; }
+.progress-row { display: flex; justify-content: space-between; margin-bottom: 10px; color: #475569; }
+.progress-bar { height: 9px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-bottom: 18px; }
+.progress-fill { height: 100%; width: 80%; background: #991b1b; }
+.warning strong { color: #b45309; }
+.success strong { color: #166534; }
+.logbook-card { margin-top: 26px; padding: 24px; }
+.logbook-row { display: grid; grid-template-columns: 1fr auto auto; gap: 18px; align-items: center; padding: 16px 0; border-top: 1px solid #f1f5f9; }
+.logbook-row p { margin: 5px 0 0; color: #64748b; }
+.log-status { background: #dcfce7; color: #166534; padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+.log-status.danger { background: #fef3c7; color: #92400e; }
+.logbook-row button { border: none; background: #991b1b; color: white; border-radius: 10px; padding: 9px 14px; font-weight: 800; cursor: pointer; }
+.logbook-row button:hover { background: #7f1d1d; }
 @media (max-width: 900px) {
-  .content {
-    padding: 24px 20px;
-  }
-
-  .info-grid,
-  .logbook-row {
-    grid-template-columns: 1fr;
-  }
-
-  nav {
-    display: none;
-  }
+  .content { padding: 24px 20px; }
+  .info-grid, .logbook-row { grid-template-columns: 1fr; }
+  nav { display: none; }
+  .header-row { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
 </style>
