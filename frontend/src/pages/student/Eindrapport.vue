@@ -1,175 +1,80 @@
-<template>
-  <main class="student-page">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo-circle">SM</div>
-        <span>Stage Monitor</span>
-      </div>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
-      <nav>
-        <a @click="router.push('/student/dashboard')">Dashboard</a>
-        <a>Logboek</a>
-        <a>Documenten</a>
-        <a class="active">Evaluatie</a>
-      </nav>
+const router = useRouter()
+const data = ref(null)
 
-      <div class="profile">
-        {{ rapport.student }}
-      </div>
-    </header>
+// Mock data — later vervangen door API
+// Wissel status tussen 'geslaagd' en 'niet_geslaagd' om beide versies te testen
+const eindrapport = ref({
+  status: 'geslaagd',
+  bedrijf: 'Acme Corp',
+  periode: 'februari — april 2026',
+  beoordeeld_door: 'Jan De Vries',
+  logboeken: '63 / 65 dagen',
+  aanwezigheid_pct: 97,
+  eindpresentatie: '17 / 20',
+  totaal_score: 16,
+  max_score: 20,
+  algemene_beoordeling: 'Uitstekend',
+  competenties: [
+    { naam: 'Vaktechnisch handelen', beschrijving: 'Technische kennis correct toepassen', gewicht: 30, score: 16, max: 20, gewogen: 4.8 },
+    { naam: 'Communicatie', beschrijving: 'Helder en effectief communiceren', gewicht: 25, score: 14, max: 20, gewogen: 3.5 },
+    { naam: 'Probleemoplossing', beschrijving: 'Analyseren en creatief oplossen', gewicht: 25, score: 17, max: 20, gewogen: 4.25 },
+    { naam: 'Teamwork & samenwerking', beschrijving: 'Effectief samenwerken in team', gewicht: 20, score: 15, max: 20, gewogen: 3.0 }
+  ],
+  sterke_punten: [
+    'Sterke technische skills, snelle adoptie van nieuwe tech',
+    'Neemt zelfstandig initiatief',
+    'Goede communicatie met team en stakeholders',
+    'Levert kwalitatief werk binnen deadlines',
+    'Positieve feedback van mentor over werktraject'
+  ],
+  verbeterpunten: [
+    'Meer aandacht voor architectuurkeuzes',
+    'Code reviews actiever bijwonen',
+    'Logboek consistenter dagelijks invullen',
+    'Verdere groei in schaalbare code-design',
+    'Presentatieskills verfijnen'
+  ],
+  herkansing: {
+    academiejaar: '2026-2027',
+    stappen: [
+      { titel: 'Maak afspraak met je docent', beschrijving: 'Bespreek de evaluatie en het herkansingstraject met Jan De Vries voor 30 juni 2026.' },
+      { titel: 'Schrijf je in voor herkansing', beschrijving: 'Inschrijving via EduMaFlex voor 1 september 2026. Vraag begeleiding aan de stagecommissie.' },
+      { titel: 'Bereid je nieuwe stage voor', beschrijving: 'Stagestart in academiejaar 2026-2027. Werk vooraf aan verbeterpunten met je docent.' }
+    ]
+  }
+})
 
-    <section class="page-header">
-      <button class="back-btn" @click="router.push('/student/dashboard')">
-        ← Terug naar dashboard
-      </button>
+const isGeslaagd = computed(() => eindrapport.value.status === 'geslaagd')
 
-      <div class="title-row">
-        <div>
-          <h1>Mijn eindrapport</h1>
-          <p>Stage afgerond bij {{ rapport.bedrijf }} • {{ rapport.periode }}</p>
-        </div>
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch('http://localhost:3000/api/dashboards/student', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    data.value = await res.json()
+  } catch (err) {
+    console.error(err)
+  }
+})
 
-        <span :class="['status-badge', geslaagd ? 'green' : 'red']">
-          {{ geslaagd ? '✓ Afgerond' : '× Niet geslaagd' }}
-        </span>
-      </div>
-    </section>
+function voornaam() { return data.value?.user?.voornaam || 'Student' }
 
-    <section :class="['alert', geslaagd ? 'success' : 'danger']">
-      {{ geslaagd
-        ? '🎉 Proficiat! Je hebt je stage succesvol afgerond.'
-        : '⚠ Je stage werd niet als geslaagd beoordeeld. Herkansing is mogelijk.'
-      }}
-    </section>
-
-    <section class="result-card">
-      <div :class="['score-circle', geslaagd ? 'score-green' : 'score-red']">
-        <strong>{{ scoreOp20 }}</strong>
-        <span>/ 20</span>
-      </div>
-
-      <div>
-        <h2>{{ geslaagd ? 'Geslaagd met onderscheiding' : 'Niet geslaagd' }}</h2>
-        <p>Eindscore berekend op basis van behaalde punten uit de rubriek.</p>
-
-        <div class="result-stats">
-          <div>
-            <span>Totaalscore</span>
-            <strong>{{ totaalScore }} / {{ maxScore }}</strong>
-          </div>
-
-          <div>
-            <span>Aanwezigheid</span>
-            <strong>{{ rapport.aanwezigheid }}%</strong>
-          </div>
-
-          <div>
-            <span>Logboeken</span>
-            <strong>{{ rapport.logboeken }}</strong>
-          </div>
-        </div>
-      </div>
-
-      <div class="rating">
-        <span>Overall beoordeling</span>
-        <strong>{{ geslaagd ? 'Voldoende' : 'Onvoldoende' }}</strong>
-        <p>Beoordeeld door {{ rapport.docent }}</p>
-      </div>
-    </section>
-  </main>
-</template>
-
-<style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-* {
-  box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
+async function logout() {
+  const token = localStorage.getItem('token')
+  try {
+    await fetch('http://localhost:3000/api/auth/logout', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  } catch (err) {}
+  localStorage.removeItem('token')
+  localStorage.removeItem('role')
+  localStorage.removeItem('user')
+  router.push('/login')
 }
-
-.student-page {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-  color: #111827;
-}
-
-.topbar {
-  height: 72px;
-  background: rgba(255,255,255,0.95);
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 64px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 800;
-  color: #991b1b;
-}
-
-.logo-circle {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #991b1b;
-  color: white;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-}
-
-nav {
-  display: flex;
-  gap: 8px;
-}
-
-nav a {
-  text-decoration: none;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 10px 18px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-nav a:hover,
-nav a.active {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.profile {
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
-}
-
-.page-header {
-  margin: 36px 64px 20px;
-}
-
-h1 {
-  margin: 0;
-  font-size: 32px;
-  font-weight: 800;
-}
-
-.page-header p {
-  margin: 8px 0 0;
-  color: #64748b;
-}
-
-@media (max-width: 900px) {
-  .topbar { padding: 0 20px; }
-  nav { display: none; }
-  .page-header { margin-left: 20px; margin-right: 20px; }
-}
-</style>
+</script>
