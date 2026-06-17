@@ -49,6 +49,10 @@ function gaNaarLogboek(id) {
 function gaNaarBespreking() {
   router.push(`/docent/studenten/${studentId}/bespreking`)
 }
+
+function gaNaarEindrapport() {
+  router.push(`/docent/studenten/${studentId}/eindrapport`)
+}
 </script>
 
 <template>
@@ -76,7 +80,10 @@ function gaNaarBespreking() {
 
       <div class="header-row">
         <h1>Studentdossier</h1>
-        <button class="bespreking-btn" @click="gaNaarBespreking">+ Tussentijdse bespreking</button>
+        <div class="header-acties">
+          <button class="eindrapport-btn" @click="gaNaarEindrapport">📄 Bekijk eindrapport</button>
+          <button class="bespreking-btn" @click="gaNaarBespreking">+ Tussentijdse bespreking</button>
+        </div>
       </div>
 
       <section class="student-card">
@@ -170,8 +177,11 @@ nav a.active { color: #991b1b; }
 .back-btn:hover { color: #991b1b; }
 .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
 .header-row h1 { margin: 0; font-size: 28px; }
+.header-acties { display: flex; gap: 12px; }
 .bespreking-btn { border: none; background: #1d4ed8; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .bespreking-btn:hover { background: #1e40af; }
+.eindrapport-btn { border: 1px solid #cbd5e1; background: white; color: #334155; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.eindrapport-btn:hover { background: #f8fafc; }
 .student-card, .info-card, .logbook-card { background: white; border-radius: 18px; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(15,23,42,0.04); }
 .student-card { padding: 24px; display: flex; justify-content: space-between; align-items: center; }
 .student-left { gap: 18px; }
@@ -203,5 +213,6 @@ nav a.active { color: #991b1b; }
   .info-grid, .logbook-row { grid-template-columns: 1fr; }
   nav { display: none; }
   .header-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .header-acties { flex-direction: column; width: 100%; }
 }
 </style>

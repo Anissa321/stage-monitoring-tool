@@ -8,7 +8,7 @@ const data = ref(null)
 // Mock data — later vervangen door API
 // Wissel status tussen 'geslaagd' en 'niet_geslaagd' om beide versies te testen
 const eindrapport = ref({
-  status: 'geslaagd',
+  status: 'niet_geslaagd',
   bedrijf: 'Acme Corp',
   periode: 'februari — april 2026',
   beoordeeld_door: 'Jan De Vries',
