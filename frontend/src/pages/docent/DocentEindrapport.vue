@@ -88,23 +88,6 @@ onMounted(async () => {
       </div>
     </header>
 
-    <template>
-  <main class="page">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo-circle">SM</div>
-        <span>Stage Monitor</span>
-      </div>
-      <nav>
-        <a @click="router.push('/docent/dashboard')">Dashboard</a>
-        <a @click="router.push('/docent/studenten')">Studenten</a>
-        <a class="active">Evaluaties</a>
-      </nav>
-      <div class="profile">
-        <span>{{ docent?.voornaam || 'Docent' }}</span>
-      </div>
-    </header>
-
     <section class="content">
       <a class="back-link" @click="router.push(`/docent/studenten/${studentId}`)">← Terug naar studentdossier</a>
 
