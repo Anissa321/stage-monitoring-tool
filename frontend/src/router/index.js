@@ -23,6 +23,8 @@ import MijnStudenten from '../pages/docent/MijnStudenten.vue'
 import Documenten from '../pages/student/Documenten.vue'
 import TussentijdseFeedback from '../pages/mentor/TussentijdseFeedback.vue'
 import EvaluatieRubriek from '../pages/student/EvaluatieRubriek.vue'
+import Eindrapport from '../pages/student/Eindrapport.vue'
+
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'LoginPage', component: LoginPage },
@@ -36,6 +38,7 @@ const routes = [
   { path: '/student/stagevoorstel/detail', name: 'StagevoorstelDetail', component: StagevoorstelDetail },
   { path: '/student/documenten', name: 'Documenten', component: Documenten },
   { path: '/student/evaluatie', name: 'EvaluatieRubriek', component: EvaluatieRubriek },
+  { path: '/student/eindrapport', name: 'Eindrapport', component: Eindrapport },
 
   // DOCENT
   { path: '/docent', redirect: '/docent/dashboard' },
