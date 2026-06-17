@@ -46,4 +46,27 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+function initialen(naam) {
+  const delen = naam.split(' ')
+  return (delen[0]?.[0] || '') + (delen[1]?.[0] || '')
+}
+ 
+function statusLabel(status) {
+  if (status === 'in_behandeling') return '⏳ In behandeling'
+  if (status === 'eindrapport_klaar') return '✓ Eindrapport klaar'
+  if (status === 'tussentijds') return '🔵 Tussentijds bezig'
+  return status
+}
+ 
+function statusKlasse(status) {
+  if (status === 'in_behandeling') return 'badge oranje'
+  if (status === 'eindrapport_klaar') return 'badge groen'
+  if (status === 'tussentijds') return 'badge blauw'
+  return 'badge'
+}
+ 
+function gaNaarEindrapport(item) {
+  router.push(`/docent/studenten/${item.student_id}/eindrapport`)
+}
 </script>
