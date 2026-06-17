@@ -84,3 +84,63 @@ async function logout() {
   router.push('/login')
 }
 </script>
+
+<template>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-circle">SM</div>
+        <span>Stage Monitor</span>
+      </div>
+      <nav>
+        <a @click="router.push('/mentor/dashboard')">Dashboard</a>
+        <a @click="router.push('/mentor/stagiairs')">Stagiairs</a>
+        <a class="active" @click="router.push('/mentor/evaluaties')">Evaluaties</a>
+      </nav>
+      <div class="profile">
+        <span>{{ mentor?.voornaam }} {{ mentor?.achternaam }}</span>
+        <button class="logout-btn" @click="logout">Uitloggen</button>
+      </div>
+    </header>
+
+    <section class="content">
+      <h1>Evaluaties</h1>
+      <p class="subtitle">Status van evaluaties per stagiair</p>
+
+      <div v-if="loading" class="loading">Laden...</div>
+
+      <div v-else class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Stagiair</th>
+              <th>Bedrijf</th>
+              <th>Tussentijds</th>
+              <th>Eindscore</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in evaluaties" :key="item.student_id" class="eval-row" @click="gaNaarEvaluatie(item)">
+              <td>
+                <div class="student-cel">
+                  <div class="avatar-small">{{ initialen(item.student_naam) }}</div>
+                  <strong>{{ item.student_naam }}</strong>
+                </div>
+              </td>
+              <td>{{ item.bedrijf }}</td>
+              <td>{{ item.tussentijds_score }}</td>
+              <td>{{ item.eindscore }}</td>
+              <td><span :class="statusKlasse(item.status)">{{ statusLabel(item.status) }}</span></td>
+              <td class="cel-arrow">→</td>
+            </tr>
+            <tr v-if="!evaluaties.length">
+              <td colspan="6" class="leeg">Geen stagiairs gekoppeld.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</template>
