@@ -20,6 +20,18 @@ const rapport = ref({
     { naam: 'Communicatie', beschrijving: 'Helder en professioneel communiceren', gewicht: 25, score: 14, gewogen: 3.5 },
     { naam: 'Probleemoplossing', beschrijving: 'Analyseren en creatief oplossen', gewicht: 25, score: 17, gewogen: 4.25 },
     { naam: 'Teamwork & samenwerking', beschrijving: 'Effectief samenwerken in team', gewicht: 20, score: 15, gewogen: 3.0 }
+  ],
+  sterkePunten: [
+    'Sterke technische skills, leerde adoptie van nieuwe tech',
+    'Neemt zelfstandig initiatief',
+    'Goede communicatie met team en stakeholders',
+    'Levert kwalitatief werk binnen deadlines'
+  ],
+  verbeterpunten: [
+    'Meer aandacht voor architectuurkeuzes',
+    'Code reviews actiever bijwonen',
+    'Logboek consistenter dagelijks invullen',
+    'Presentatieskills verfijnen'
   ]
 })
 
@@ -142,6 +154,64 @@ function goBack() {
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <section class="feedback-grid">
+      <article class="feedback-card">
+        <h3>✅ Sterke punten</h3>
+        <ul>
+          <li v-for="punt in rapport.sterkePunten" :key="punt">{{ punt }}</li>
+        </ul>
+      </article>
+
+      <article class="feedback-card warning">
+        <h3>📝 Verbeterpunten</h3>
+        <ul>
+          <li v-for="punt in rapport.verbeterpunten" :key="punt">{{ punt }}</li>
+        </ul>
+      </article>
+    </section>
+
+    <section v-if="!geslaagd" class="card next-steps">
+      <h2>Volgende stappen</h2>
+      <p>Je hebt de mogelijkheid om je stage opnieuw te lopen in academiejaar 2026-2027.</p>
+
+      <div class="steps">
+        <div>
+          <strong>1</strong>
+          <span>Maak afspraak met je docent</span>
+        </div>
+
+        <div>
+          <strong>2</strong>
+          <span>Schrijf je in voor herkansing</span>
+        </div>
+
+        <div>
+          <strong>3</strong>
+          <span>Bereid je nieuwe stage voor</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="signatures">
+      <div>
+        <span>Student</span>
+        <strong>{{ rapport.student }}</strong>
+        <p>Ondertekend op 28 april 2026</p>
+      </div>
+
+      <div>
+        <span>Docent</span>
+        <strong>{{ rapport.docent }}</strong>
+        <p>✓ Goedgekeurd</p>
+      </div>
+
+      <div>
+        <span>Mentor</span>
+        <strong>{{ rapport.mentor }}</strong>
+        <p>✓ Goedgekeurd</p>
+      </div>
     </section>
   </main>
 </template>
