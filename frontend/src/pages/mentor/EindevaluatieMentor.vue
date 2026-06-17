@@ -133,3 +133,103 @@ function annuleren() {
   router.push(`/mentor/student/${studentId}`)
 }
 </script>
+
+<template>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-circle">SM</div>
+        <span>Stage Monitor</span>
+      </div>
+      <nav>
+        <a @click="router.push('/mentor/dashboard')">Dashboard</a>
+        <a @click="router.push('/mentor/stagiairs')">Stagiairs</a>
+        <a class="active" @click="router.push('/mentor/evaluaties')">Evaluaties</a>
+      </nav>
+      <div class="profile">
+        <span>Sven Janssens</span>
+      </div>
+    </header>
+
+    <section class="content">
+      <a class="back-link" @click="router.push(`/mentor/student/${studentId}`)">← Terug naar studentdossier</a>
+
+      <div class="titel-rij">
+        <div>
+          <h1>Eindevaluatie — Mentor</h1>
+          <p class="subtitle">Voor {{ student.naam }} • {{ student.bedrijf }} • Stage 2026</p>
+        </div>
+        <span class="status-pill">⏳ In behandeling</span>
+      </div>
+
+      <div class="info-banner">
+        <span>ℹ️</span>
+        <p>De competenties zijn dynamisch geladen. Wijzigingen in de opleidingsstructuur worden automatisch overgenomen.</p>
+      </div>
+
+      <!-- VERGRENDELD: tussentijdse evaluatie nog niet gedaan -->
+      <template v-if="!tussentijdsAfgerond">
+        <h2 class="sectie-titel">Competenties</h2>
+        <div class="locked-card">
+          <div class="lock-icon">🔒</div>
+          <h3>Eindevaluatie nog niet beschikbaar</h3>
+          <p>Een tussentijdse evaluatie is nog niet ingevuld. Doorloop eerst de tussentijdse evaluatie per competentie.</p>
+        </div>
+        <div class="actions">
+          <button class="cancel-btn" @click="annuleren">Annuleren</button>
+          <button class="primary-btn" @click="gaNaarTussentijds">Ga naar tussentijdse evaluatie →</button>
+        </div>
+      </template>
+
+      <!-- OPEN: invul-pagina -->
+      <template v-else>
+        <div class="totaal-bar">
+          <span class="totaal-label">Klik op een niveau per competentie om te beoordelen</span>
+          <span class="totaal-punten">Eindscore: {{ totaalScore }} / {{ maxScore }}</span>
+        </div>
+
+        <div v-for="comp in competenties" :key="comp.naam" class="competentie-card">
+          <div class="comp-top">
+            <h3>{{ comp.naam }}</h3>
+            <p>{{ comp.beschrijving }}</p>
+          </div>
+
+          <div class="niveaus-rij" :class="'kolommen-' + comp.niveaus.length">
+            <button
+              v-for="(niveau, idx) in comp.niveaus"
+              :key="niveau.label"
+              class="niveau-blok"
+              :class="{ geselecteerd: comp.geselecteerd === idx }"
+              @click="selecteerNiveau(comp, idx)"
+            >
+              <span class="niveau-punten">{{ niveau.punten }} pnt</span>
+              <span class="niveau-label">{{ niveau.label }}</span>
+              <p class="niveau-beschrijving">{{ niveau.beschrijving }}</p>
+            </button>
+          </div>
+
+          <div class="feedback-veld">
+            <label>💬 Feedback voor deze competentie</label>
+            <textarea v-model="comp.feedback" rows="2" placeholder="Optionele toelichting bij je keuze..."></textarea>
+          </div>
+        </div>
+
+        <div class="opmerking-card">
+          <label>Globale opmerking</label>
+          <textarea v-model="globaleOpmerking" rows="3" placeholder="Optionele algemene opmerking bij de eindevaluatie..."></textarea>
+        </div>
+
+        <div v-if="error" class="error-msg">{{ error }}</div>
+        <div v-if="succes" class="succes-msg">{{ succes }}</div>
+
+        <div class="actions">
+          <button class="cancel-btn" @click="annuleren">Annuleren</button>
+          <button class="submit-btn" :disabled="loading" @click="evaluatieAfronden">
+            <span v-if="loading">Afronden...</span>
+            <span v-else>✓ Evaluatie afronden</span>
+          </button>
+        </div>
+      </template>
+    </section>
+  </main>
+</template>
