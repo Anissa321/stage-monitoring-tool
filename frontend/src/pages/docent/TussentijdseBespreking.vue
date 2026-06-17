@@ -1,15 +1,12 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 const studentId = route.params.id
 
-const student = ref({
-  naam: 'Anissa Canton',
-  bedrijf: 'Acme Corp'
-})
+const student = ref({ naam: 'Anissa Canton', bedrijf: 'Acme Corp' })
 
 const form = ref({
   datum: '',
@@ -77,6 +74,37 @@ const competenties = ref([
     ]
   }
 ])
+
+function vulScoresIn(evaluatie) {
+  const scores = [
+    evaluatie.communicatie_score,
+    evaluatie.probleemoplossing_score,
+    evaluatie.teamwork_score,
+    evaluatie.vaktechnisch_score
+  ]
+  scores.forEach((score, i) => {
+    if (score !== null && score !== undefined) {
+      const idx = competenties.value[i].niveaus.findIndex(n => n.punten === score)
+      if (idx !== -1) competenties.value[i].geselecteerd = idx
+    }
+  })
+}
+
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch(`http://localhost:3000/api/tussentijdse-evaluaties/student/${studentId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    if (data.evaluatie) {
+      evaluatieIngevuld.value = true
+      vulScoresIn(data.evaluatie)
+    }
+  } catch (err) {
+    console.error(err)
+  }
+})
 
 function totaalScore() {
   return competenties.value.reduce((sum, c) => {

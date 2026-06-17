@@ -1,12 +1,12 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 const studentId = route.params.id
 
-const student = ref({ naam: 'Anissa Canton', bedrijf: 'Acme Corp' })
+const student = ref({ naam: '', bedrijf: '' })
 
 const form = ref({
   datum: '',
@@ -23,6 +23,7 @@ const aanwezigen = ref([
 const competenties = ref([
   {
     naam: 'Communicatie',
+    key: 'communicatie_score',
     beschrijving: 'Helder en effectief communiceren met team, mentor en stakeholders, zowel mondeling als schriftelijk',
     geselecteerd: null,
     niveaus: [
@@ -34,6 +35,7 @@ const competenties = ref([
   },
   {
     naam: 'Probleemoplossing',
+    key: 'probleemoplossing_score',
     beschrijving: 'Analyseren, redeneren en creatieve oplossingen vinden voor praktijkproblemen',
     geselecteerd: null,
     niveaus: [
@@ -45,6 +47,7 @@ const competenties = ref([
   },
   {
     naam: 'Teamwork & samenwerking',
+    key: 'teamwork_score',
     beschrijving: 'Effectief samenwerken in team en bijdrage aan groepsdynamiek en werksfeer',
     geselecteerd: null,
     niveaus: [
@@ -56,6 +59,7 @@ const competenties = ref([
   },
   {
     naam: 'Vaktechnisch handelen',
+    key: 'vaktechnisch_score',
     beschrijving: 'Technische kennis correct toepassen in praktijksituaties — 5 niveaus voor extra nuance',
     geselecteerd: null,
     niveaus: [
@@ -71,6 +75,41 @@ const competenties = ref([
 const loading = ref(false)
 const error = ref('')
 const succes = ref('')
+
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+  try {
+    // Haal bestaande evaluatie op indien aanwezig
+    const res = await fetch(`http://localhost:3000/api/tussentijdse-evaluaties/student/${studentId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    if (data.evaluatie) {
+      const e = data.evaluatie
+      form.value.datum = e.datum || ''
+      form.value.tijdVan = e.tijd_van || '14:00'
+      form.value.tijdTot = e.tijd_tot || '15:00'
+      form.value.locatie = e.locatie || ''
+
+      // Zet geselecteerde niveaus op basis van opgeslagen scores
+      const scoreMap = {
+        communicatie_score: 0,
+        probleemoplossing_score: 1,
+        teamwork_score: 2,
+        vaktechnisch_score: 3
+      }
+      for (const [key, idx] of Object.entries(scoreMap)) {
+        const score = e[key]
+        if (score !== null && score !== undefined) {
+          const niveauIdx = competenties.value[idx].niveaus.findIndex(n => n.punten === score)
+          if (niveauIdx !== -1) competenties.value[idx].geselecteerd = niveauIdx
+        }
+      }
+    }
+  } catch (err) {
+    console.error(err)
+  }
+})
 
 function selecteerNiveau(comp, idx) {
   comp.geselecteerd = idx
@@ -102,8 +141,34 @@ async function registreren() {
   }
   error.value = ''
   loading.value = true
+
+  const token = localStorage.getItem('token')
   try {
-    await new Promise(resolve => setTimeout(resolve, 800))
+    const res = await fetch('http://localhost:3000/api/tussentijdse-evaluaties', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        student_id: studentId,
+        datum: form.value.datum,
+        tijd_van: form.value.tijdVan,
+        tijd_tot: form.value.tijdTot,
+        locatie: form.value.locatie,
+        communicatie_score: competenties.value[0].niveaus[competenties.value[0].geselecteerd].punten,
+        probleemoplossing_score: competenties.value[1].niveaus[competenties.value[1].geselecteerd].punten,
+        teamwork_score: competenties.value[2].niveaus[competenties.value[2].geselecteerd].punten,
+        vaktechnisch_score: competenties.value[3].niveaus[competenties.value[3].geselecteerd].punten
+      })
+    })
+
+    const result = await res.json()
+    if (!res.ok) {
+      error.value = result.error || 'Kon evaluatie niet opslaan'
+      return
+    }
+
     succes.value = 'Tussentijdse evaluatie geregistreerd!'
     setTimeout(() => router.push(`/mentor/student/${studentId}`), 1500)
   } catch (err) {

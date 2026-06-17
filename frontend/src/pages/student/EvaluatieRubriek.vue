@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const data = ref(null)
-const evaluatie = ref(null) // null = nog niet ingevuld door mentor
+const evaluatieIngevuld = ref(false)
 
 const competenties = ref([
   {
@@ -54,13 +54,39 @@ const competenties = ref([
   }
 ])
 
+function vulScoresIn(evaluatie) {
+  const scores = [
+    evaluatie.communicatie_score,
+    evaluatie.probleemoplossing_score,
+    evaluatie.teamwork_score,
+    evaluatie.vaktechnisch_score
+  ]
+  scores.forEach((score, i) => {
+    if (score !== null && score !== undefined) {
+      const idx = competenties.value[i].niveaus.findIndex(n => n.punten === score)
+      if (idx !== -1) competenties.value[i].geselecteerd = idx
+    }
+  })
+}
+
 onMounted(async () => {
   const token = localStorage.getItem('token')
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
-    const res = await fetch('http://localhost:3000/api/dashboards/student', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    data.value = await res.json()
+    const [dashRes, evalRes] = await Promise.all([
+      fetch('http://localhost:3000/api/dashboards/student', {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch(`http://localhost:3000/api/tussentijdse-evaluaties/student/${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ])
+    data.value = await dashRes.json()
+    const evalData = await evalRes.json()
+    if (evalData.evaluatie) {
+      evaluatieIngevuld.value = true
+      vulScoresIn(evalData.evaluatie)
+    }
   } catch (err) {
     console.error(err)
   }
@@ -83,8 +109,6 @@ function totaalScore() {
 function maxScore() {
   return competenties.value.reduce((sum, c) => sum + c.niveaus[c.niveaus.length - 1].punten, 0)
 }
-
-const evaluatieIngevuld = ref(false) // later vervangen door echte API-check
 
 async function logout() {
   const token = localStorage.getItem('token')
