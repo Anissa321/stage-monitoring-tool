@@ -1,3 +1,43 @@
+<<<<<<< HEAD
+=======
+<script setup>
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const rapport = ref({
+  student: 'Anissa Canton',
+  bedrijf: 'Acme Corp',
+  periode: 'februari – april 2026',
+  docent: 'Jan De Vries',
+  mentor: 'Sven Janssens',
+  logboeken: '63 / 65 dagen',
+  aanwezigheid: 97,
+  competenties: [
+    { naam: 'Communicatie', behaaldePunten: 19, maxPunten: 25 },
+    { naam: 'Probleemoplossing', behaaldePunten: 19, maxPunten: 25 },
+    { naam: 'Teamwork & samenwerking', behaaldePunten: 15, maxPunten: 20 },
+    { naam: 'Vaktechnisch handelen', behaaldePunten: 23, maxPunten: 30 }
+  ]
+})
+
+const totaalScore = computed(() =>
+  rapport.value.competenties.reduce((sum, comp) => sum + comp.behaaldePunten, 0)
+)
+
+const maxScore = computed(() =>
+  rapport.value.competenties.reduce((sum, comp) => sum + comp.maxPunten, 0)
+)
+
+const scoreOp20 = computed(() =>
+  Math.round((totaalScore.value / maxScore.value) * 20)
+)
+
+const geslaagd = computed(() => scoreOp20.value >= 10)
+</script>
+
+>>>>>>> e51c9df (fix: eindrapport)
 <template>
   <main class="student-page">
     <header class="topbar">
@@ -5,6 +45,7 @@
         <div class="logo-circle">SM</div>
         <span>Stage Monitor</span>
       </div>
+<<<<<<< HEAD
       <nav>
         <a>Dashboard</a>
         <a>Logboek</a>
@@ -24,6 +65,82 @@
 <script setup>
 </script>
 
+=======
+
+      <nav>
+        <a @click="router.push('/student/dashboard')">Dashboard</a>
+        <a>Logboek</a>
+        <a>Documenten</a>
+        <a class="active">Evaluatie</a>
+      </nav>
+
+      <div class="profile">
+        {{ rapport.student }}
+      </div>
+    </header>
+
+    <section class="page-header">
+      <button class="back-btn" @click="router.push('/student/dashboard')">
+        ← Terug naar dashboard
+      </button>
+
+      <div class="title-row">
+        <div>
+          <h1>Mijn eindrapport</h1>
+          <p>Stage afgerond bij {{ rapport.bedrijf }} • {{ rapport.periode }}</p>
+        </div>
+
+        <span :class="['status-badge', geslaagd ? 'green' : 'red']">
+          {{ geslaagd ? '✓ Afgerond' : '× Niet geslaagd' }}
+        </span>
+      </div>
+    </section>
+
+    <section :class="['alert', geslaagd ? 'success' : 'danger']">
+      {{ geslaagd
+        ? '🎉 Proficiat! Je hebt je stage succesvol afgerond.'
+        : '⚠ Je stage werd niet als geslaagd beoordeeld. Herkansing is mogelijk.'
+      }}
+    </section>
+
+    <section class="result-card">
+      <div :class="['score-circle', geslaagd ? 'score-green' : 'score-red']">
+        <strong>{{ scoreOp20 }}</strong>
+        <span>/ 20</span>
+      </div>
+
+      <div>
+        <h2>{{ geslaagd ? 'Geslaagd met onderscheiding' : 'Niet geslaagd' }}</h2>
+        <p>Eindscore berekend op basis van behaalde punten uit de rubriek.</p>
+
+        <div class="result-stats">
+          <div>
+            <span>Totaalscore</span>
+            <strong>{{ totaalScore }} / {{ maxScore }}</strong>
+          </div>
+
+          <div>
+            <span>Aanwezigheid</span>
+            <strong>{{ rapport.aanwezigheid }}%</strong>
+          </div>
+
+          <div>
+            <span>Logboeken</span>
+            <strong>{{ rapport.logboeken }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="rating">
+        <span>Overall beoordeling</span>
+        <strong>{{ geslaagd ? 'Voldoende' : 'Onvoldoende' }}</strong>
+        <p>Beoordeeld door {{ rapport.docent }}</p>
+      </div>
+    </section>
+  </main>
+</template>
+
+>>>>>>> e51c9df (fix: eindrapport)
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
