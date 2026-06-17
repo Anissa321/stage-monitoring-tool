@@ -187,6 +187,15 @@ function annuleren() {
       <!-- Eén grote tabel zoals figma -->
       <div class="rubriek-tabel-wrap">
         <table class="rubriek-tabel">
+          <colgroup>
+            <col class="col-criteria" />
+            <col class="col-niveau-vast" />
+            <col class="col-niveau-vast" />
+            <col class="col-niveau-vast" />
+            <col class="col-niveau-vast" />
+            <col class="col-niveau-vast" />
+            <col class="col-punten" />
+          </colgroup>
           <thead>
             <tr>
               <th class="col-criteria">Criteria</th>
@@ -277,6 +286,7 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .rubriek-tabel { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .rubriek-tabel thead th { background: #f8fafc; color: #94a3b8; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 14px 16px; border-bottom: 1px solid #e5e7eb; }
 .col-criteria { width: 220px; }
+.col-niveau-vast { width: 19%; }
 .col-punten { width: 90px; text-align: right; }
 
 .comp-rij { border-top: 1px solid #f1f5f9; vertical-align: top; }
