@@ -28,6 +28,7 @@ import DocentStudentDetail from '../pages/docent/DocentStudentDetail.vue'
 import TussentijdseBespreking from '../pages/docent/TussentijdseBespreking.vue'
 import DocentEindrapport from '../pages/docent/DocentEindrapport.vue'
 import DocentEvaluaties from '../pages/docent/DocentEvaluaties.vue'
+import MentorEvaluaties from '../pages/mentor/MentorEvaluaties.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -62,6 +63,7 @@ const routes = [
   { path: '/mentor/student/:id', name: 'StudentDetailMentor', component: StudentDetailMentor },
   { path: '/mentor/week/:studentId/:weekNummer', name: 'WeekAftekenen', component: LogboekAftekenen },
   { path: '/mentor/student/:id/feedback', name: 'TussentijdseFeedback', component: TussentijdseFeedback },
+  { path: '/mentor/evaluaties', name: 'MentorEvaluaties', component: MentorEvaluaties },
 
   // COMMISSIE
   { path: '/commissie', redirect: '/commissie/dashboard' },
