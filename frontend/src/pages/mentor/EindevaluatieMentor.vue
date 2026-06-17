@@ -68,4 +68,68 @@ const competenties = ref([
     ]
   }
 ])
+
+const globaleOpmerking = ref('')
+const loading = ref(false)
+const error = ref('')
+const succes = ref('')
+
+function selecteerNiveau(comp, idx) {
+  comp.geselecteerd = idx
+}
+
+const totaalScore = computed(() => {
+  return competenties.value.reduce((sum, c) => {
+    if (c.geselecteerd === null) return sum
+    return sum + c.niveaus[c.geselecteerd].punten
+  }, 0)
+})
+
+const maxScore = computed(() => {
+  return competenties.value.reduce((sum, c) => sum + c.niveaus[c.niveaus.length - 1].punten, 0)
+})
+
+function alleIngevuld() {
+  return competenties.value.every(c => c.geselecteerd !== null)
+}
+
+async function evaluatieAfronden() {
+  if (!alleIngevuld()) {
+    error.value = 'Vul een score in voor elke competentie.'
+    return
+  }
+  error.value = ''
+  loading.value = true
+  try {
+    // TODO: vervang door echte API call
+    // const token = localStorage.getItem('token')
+    // const payload = {
+    //   student_id: studentId,
+    //   opmerking: globaleOpmerking.value,
+    //   competenties: competenties.value.map(c => ({
+    //     naam: c.naam,
+    //     niveau: c.niveaus[c.geselecteerd].label,
+    //     punten: c.niveaus[c.geselecteerd].punten,
+    //     feedback: c.feedback
+    //   })),
+    //   totaal_score: totaalScore.value
+    // }
+    // await fetch('http://localhost:3000/api/eindevaluaties/mentor', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    //   body: JSON.stringify(payload)
+    // })
+    await new Promise(resolve => setTimeout(resolve, 800))
+    succes.value = 'Eindevaluatie afgerond!'
+    setTimeout(() => router.push(`/mentor/student/${studentId}`), 1500)
+  } catch (err) {
+    error.value = 'Verbindingsfout met server.'
+  } finally {
+    loading.value = false
+  }
+}
+
+function annuleren() {
+  router.push(`/mentor/student/${studentId}`)
+}
 </script>
