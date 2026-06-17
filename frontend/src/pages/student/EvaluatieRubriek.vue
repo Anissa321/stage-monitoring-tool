@@ -4,32 +4,65 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const data = ref(null)
-const competenties = ref([])
 const evaluatieIngevuld = ref(false)
 
-async function laadCompetencies() {
-  const token = localStorage.getItem('token')
-  const res = await fetch('http://localhost:3000/api/evaluatie-competenties', {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  const result = await res.json()
-  competenties.value = result.competenties.map(c => ({
-    ...c,
+const competenties = ref([
+  {
+    naam: 'Communicatie',
+    beschrijving: 'Helder en effectief communiceren met team, mentor en stakeholders, zowel mondeling als schriftelijk',
     geselecteerd: null,
-    niveaus: c.evaluatie_niveaus
-  }))
-}
+    niveaus: [
+      { label: 'Onvoldoende', punten: 0, beschrijving: 'Communiceert onduidelijk of onvolledig, mondeling en schriftelijk. Uitleg is moeilijk te volgen of mist context. Toont weinig initiatief tot overleg bij onduidelijkheden.' },
+      { label: 'Voldoende', punten: 13, beschrijving: 'Communiceert correct na aansporing of vraag. Berichten zijn begrijpelijk maar kunnen scherper en beknopter. Vraagt om hulp wanneer nodig op het juiste moment.' },
+      { label: 'Goed', punten: 19, beschrijving: 'Communiceert helder en zelfstandig met team en mentor. Schriftelijke en mondelinge boodschappen zijn gestructureerd en doelgericht. Kiest het juiste kanaal per situatie.' },
+      { label: 'Uitstekend', punten: 25, beschrijving: 'Stuurt overleg proactief en neemt initiatief in moeilijke gesprekken. Rapporteert helder, beknopt en volledig. Past stijl en toon aan op publiek en context.' }
+    ]
+  },
+  {
+    naam: 'Probleemoplossing',
+    beschrijving: 'Analyseren, redeneren en creatieve oplossingen vinden voor praktijkproblemen',
+    geselecteerd: null,
+    niveaus: [
+      { label: 'Onvoldoende', punten: 0, beschrijving: 'Lost problemen niet zelfstandig op. Herkent uitdagingen pas wanneer ze escaleren. Vraagt zelden om hulp en stelt geen verhelderende vragen.' },
+      { label: 'Voldoende', punten: 13, beschrijving: 'Lost eenvoudige problemen op met begeleiding. Analyseert oppervlakkig en kiest soms voor de eerste oplossing zonder afweging. Documenteert oplossingen achteraf.' },
+      { label: 'Goed', punten: 19, beschrijving: 'Analyseert problemen zelfstandig en systematisch. Weegt meerdere oplossingen tegen elkaar af en kiest gemotiveerd. Documenteert keuzes en deelt redenering met het team.' },
+      { label: 'Uitstekend', punten: 25, beschrijving: 'Vindt creatieve, structurele oplossingen. Herkent oorzaken in plaats van symptomen. Helpt anderen bij hun problemen en anticipeert op toekomstige knelpunten.' }
+    ]
+  },
+  {
+    naam: 'Teamwork & samenwerking',
+    beschrijving: 'Effectief samenwerken in team en bijdrage aan groepsdynamiek en werksfeer',
+    geselecteerd: null,
+    niveaus: [
+      { label: 'Onvoldoende', punten: 0, beschrijving: 'Werkt moeilijk samen. Weinig bijdrage tijdens overleg of standups. Mist deadlines of dwingt teamleden om bij te springen. Reageert niet constructief op feedback.' },
+      { label: 'Voldoende', punten: 10, beschrijving: 'Draait mee in het team. Voert eigen taken correct uit en respecteert basisafspraken. Bijdrage tijdens overleg is beperkt maar respectvol.' },
+      { label: 'Goed', punten: 15, beschrijving: 'Werkt actief en betrouwbaar samen. Neemt taken op zich en respecteert deadlines. Communiceert tijdig over voortgang en ondersteunt teamleden bij vragen.' },
+      { label: 'Uitstekend', punten: 20, beschrijving: 'Versterkt het team door initiatief en mentoring. Verbindt collega\'s en bevordert kennisdeling. Lost conflicten constructief op en draagt bij aan een veilige werksfeer.' }
+    ]
+  },
+  {
+    naam: 'Vaktechnisch handelen',
+    beschrijving: 'Technische kennis correct toepassen in praktijksituaties — 5 niveaus voor extra nuance',
+    geselecteerd: null,
+    niveaus: [
+      { label: 'Onvoldoende', punten: 0, beschrijving: 'Past technische kennis onvoldoende toe in praktijksituaties. Maakt herhaalde basisfouten en herkent ze niet zelfstandig. Heeft veel begeleiding nodig.' },
+      { label: 'Beperkt', punten: 8, beschrijving: 'Past basiskennis toe met fouten. Herkent eigen fouten niet altijd en corrigeert met begeleiding. Leert traag bij nieuwe technologieën of tools.' },
+      { label: 'Voldoende', punten: 15, beschrijving: 'Past basiskennis correct toe met begeleiding. Voert standaardtaken volgens instructie uit. Stelt vragen wanneer nodig en past best practices toe.' },
+      { label: 'Goed', punten: 23, beschrijving: 'Past technische kennis zelfstandig en correct toe. Pikt nieuwe tools en frameworks vlot op. Levert kwalitatief werk dat voldoet aan teamstandaarden.' },
+      { label: 'Uitstekend', punten: 30, beschrijving: 'Beheerst technieken uitstekend en experimenteert met nieuwe technologie. Deelt kennis via documentatie, demo\'s of code reviews. Werkt als referentie binnen het team.' }
+    ]
+  }
+])
 
 function vulScoresIn(evaluatie) {
-  const veldnamen = [
-    'communicatie_score',
-    'probleemoplossing_score',
-    'teamwork_score',
-    'vaktechnisch_score'
+  const scores = [
+    evaluatie.communicatie_score,
+    evaluatie.probleemoplossing_score,
+    evaluatie.teamwork_score,
+    evaluatie.vaktechnisch_score
   ]
-  veldnamen.forEach((veld, i) => {
-    const score = evaluatie[veld]
-    if (score !== null && score !== undefined && competenties.value[i]) {
+  scores.forEach((score, i) => {
+    if (score !== null && score !== undefined) {
       const idx = competenties.value[i].niveaus.findIndex(n => n.punten === score)
       if (idx !== -1) competenties.value[i].geselecteerd = idx
     }
@@ -40,8 +73,6 @@ onMounted(async () => {
   const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
-    await laadCompetencies()
-
     const [dashRes, evalRes] = await Promise.all([
       fetch('http://localhost:3000/api/dashboards/student', {
         headers: { Authorization: `Bearer ${token}` }
@@ -171,6 +202,20 @@ async function logout() {
         </div>
       </div>
     </section>
+    <section class="eindrapport-card">
+  <div>
+    <span class="eindrapport-label">Finale evaluatie</span>
+    <h2>Eindrapport</h2>
+    <p>
+      Bekijk je finale stagebeoordeling met totaalscore, competentiescores,
+      feedback en resultaat.
+    </p>
+  </div>
+
+  <button class="eindrapport-btn" @click="router.push('/student/eindrapport')">
+    Bekijk eindrapport →
+  </button>
+</section>
   </main>
 </template>
 
@@ -235,5 +280,62 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
   nav { display: none; }
   .content { padding: 24px 16px 40px; }
   .rubriek-tabel-wrap { overflow-x: auto; }
+}
+
+.eindrapport-card {
+  margin-top: 24px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.eindrapport-label {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.eindrapport-card h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.eindrapport-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  max-width: 640px;
+}
+
+.eindrapport-btn {
+  border: none;
+  background: #991b1b;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.eindrapport-btn:hover {
+  background: #7f1d1d;
+}
+
+@media (max-width: 900px) {
+  .eindrapport-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
 }
 </style>
