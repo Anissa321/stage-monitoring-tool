@@ -8,13 +8,6 @@ const studentId = route.params.id
 
 const student = ref({ naam: '', bedrijf: '' })
 
-const form = ref({
-  datum: '',
-  tijdVan: '14:00',
-  tijdTot: '15:00',
-  locatie: ''
-})
-
 const aanwezigen = ref([
   { initialen: 'AC', naam: 'Anissa Canton', kleur: '#dbeafe', tekstkleur: '#1d4ed8' },
   { initialen: 'SJ', naam: 'Sven Janssens', kleur: '#dcfce7', tekstkleur: '#15803d' }
@@ -79,19 +72,12 @@ const succes = ref('')
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    // Haal bestaande evaluatie op indien aanwezig
     const res = await fetch(`http://localhost:3000/api/tussentijdse-evaluaties/student/${studentId}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
     if (data.evaluatie) {
       const e = data.evaluatie
-      form.value.datum = e.datum || ''
-      form.value.tijdVan = e.tijd_van || '14:00'
-      form.value.tijdTot = e.tijd_tot || '15:00'
-      form.value.locatie = e.locatie || ''
-
-      // Zet geselecteerde niveaus op basis van opgeslagen scores
       const scoreMap = {
         communicatie_score: 0,
         probleemoplossing_score: 1,
@@ -131,10 +117,6 @@ function alleIngevuld() {
 }
 
 async function registreren() {
-  if (!form.value.datum) {
-    error.value = 'Vul de datum in.'
-    return
-  }
   if (!alleIngevuld()) {
     error.value = 'Selecteer een niveau voor elke competentie.'
     return
@@ -152,10 +134,6 @@ async function registreren() {
       },
       body: JSON.stringify({
         student_id: studentId,
-        datum: form.value.datum,
-        tijd_van: form.value.tijdVan,
-        tijd_tot: form.value.tijdTot,
-        locatie: form.value.locatie,
         communicatie_score: competenties.value[0].niveaus[competenties.value[0].geselecteerd].punten,
         probleemoplossing_score: competenties.value[1].niveaus[competenties.value[1].geselecteerd].punten,
         teamwork_score: competenties.value[2].niveaus[competenties.value[2].geselecteerd].punten,
@@ -205,47 +183,6 @@ function annuleren() {
       <a class="back-link" @click="router.push(`/mentor/student/${studentId}`)">← Terug naar studentdossier</a>
       <h1>Tussentijdse evaluatie</h1>
       <p class="subtitle">Voor {{ student.naam }} • {{ student.bedrijf }}</p>
-
-      <div class="meta-card">
-        <div class="meta-grid">
-          <div class="meta-veld">
-            <label>Datum</label>
-            <div class="input-icon-wrap">
-              <span>📅</span>
-              <input v-model="form.datum" type="date" />
-            </div>
-          </div>
-          <div class="meta-veld">
-            <label>Tijd</label>
-            <div class="input-icon-wrap">
-              <span>🕐</span>
-              <input v-model="form.tijdVan" type="time" />
-              <span class="separator">—</span>
-              <input v-model="form.tijdTot" type="time" />
-            </div>
-          </div>
-          <div class="meta-veld">
-            <label>Locatie</label>
-            <div class="input-icon-wrap">
-              <span>📍</span>
-              <input v-model="form.locatie" type="text" placeholder="bv. Op kantoor Acme Corp" />
-            </div>
-          </div>
-          <div class="meta-veld">
-            <label>Aanwezigen</label>
-            <div class="aanwezigen-rij">
-              <div
-                v-for="a in aanwezigen"
-                :key="a.initialen"
-                class="avatar-cirkel"
-                :style="{ background: a.kleur, color: a.tekstkleur }"
-                :title="a.naam"
-              >{{ a.initialen }}</div>
-            </div>
-            <p class="aanwezigen-namen">{{ aanwezigen.map(a => a.naam.split(' ')[0]).join(', ') }}</p>
-          </div>
-        </div>
-      </div>
 
       <h2 class="rubriek-titel">Competenties</h2>
 
@@ -323,16 +260,6 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .content h1 { margin: 0 0 4px; font-size: 26px; font-weight: 800; }
 .subtitle { margin: 0 0 24px; color: #64748b; font-size: 14px; }
 
-.meta-card { background: white; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; margin-bottom: 28px; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
-.meta-grid { display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 1fr; gap: 20px; }
-.meta-veld label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-.input-icon-wrap { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; }
-.input-icon-wrap input { border: none; background: transparent; font-size: 13px; color: #334155; font-family: inherit; outline: none; width: 100%; }
-.separator { color: #94a3b8; font-weight: 600; }
-.aanwezigen-rij { display: flex; gap: 6px; margin-bottom: 4px; }
-.avatar-cirkel { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; }
-.aanwezigen-namen { margin: 0; font-size: 11px; color: #64748b; }
-
 .rubriek-titel { font-size: 18px; font-weight: 800; margin: 0 0 14px; }
 
 .rubriek-tabel-wrap { background: white; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(15,23,42,0.04); margin-bottom: 24px; }
@@ -377,7 +304,6 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 @media (max-width: 1100px) {
   .topbar { padding: 0 20px; }
   nav { display: none; }
-  .meta-grid { grid-template-columns: 1fr 1fr; }
   .rubriek-tabel-wrap { overflow-x: auto; }
   .content { padding: 24px 16px 40px; }
   .actions { flex-direction: column; gap: 12px; }
