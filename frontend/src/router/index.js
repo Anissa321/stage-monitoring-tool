@@ -24,7 +24,8 @@ import Documenten from '../pages/student/Documenten.vue'
 import TussentijdseFeedback from '../pages/mentor/TussentijdseFeedback.vue'
 import EvaluatieRubriek from '../pages/student/EvaluatieRubriek.vue'
 import Eindrapport from '../pages/student/Eindrapport.vue'
-
+import DocentStudentDetail from '../pages/docent/DocentStudentDetail.vue'
+import TussentijdseBespreking from '../pages/docent/TussentijdseBespreking.vue'
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'LoginPage', component: LoginPage },
@@ -45,6 +46,8 @@ const routes = [
   { path: '/docent/dashboard', name: 'DocentDashboard', component: DocentDashboard },
   { path: '/docent/logboek', name: 'DocentLogboek', component: LogboekBekijken },
   { path: '/docent/studenten', name: 'MijnStudenten', component: MijnStudenten },
+  { path: '/docent/studenten/:id', name: 'DocentStudentDetail', component: DocentStudentDetail },
+  { path: '/docent/studenten/:id/bespreking', name: 'TussentijdseBespreking', component: TussentijdseBespreking },
 
   // MENTOR
   { path: '/mentor', redirect: '/mentor/dashboard' },
