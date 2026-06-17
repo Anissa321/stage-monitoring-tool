@@ -237,19 +237,19 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .col-niveau-vast { width: 19%; }
 .col-punten { width: 90px; text-align: right; }
 
-.comp-rij { border-top: 1px solid #f1f5f9; vertical-align: top; }
-.cel-criteria { padding: 18px 16px; }
+.comp-rij { border-top: 1px solid #f1f5f9; vertical-align: top; height: 1px; }
+.cel-criteria { padding: 18px 16px; height: inherit; }
 .cel-criteria strong { display: block; font-size: 14px; font-weight: 800; margin-bottom: 6px; }
 .cel-criteria p { margin: 0; font-size: 11px; color: #64748b; line-height: 1.5; }
 
-.cel-niveau { padding: 12px; border-left: 1px solid #f1f5f9; vertical-align: top; transition: 0.15s ease; }
+.cel-niveau { padding: 12px; border-left: 1px solid #f1f5f9; vertical-align: top; transition: 0.15s ease; height: inherit; }
 .cel-niveau.vervaagd { opacity: 0.45; }
 .cel-niveau.geselecteerd { background: #ecfdf5; box-shadow: inset 0 0 0 2px #15803d; }
-.cel-niveau.cel-leeg { background: #fafafa; }
+.cel-niveau.cel-leeg { background: transparent; }
 .niveau-punten { display: block; font-size: 11px; font-weight: 800; color: #991b1b; margin-bottom: 2px; }
 .cel-niveau.geselecteerd .niveau-punten { color: #15803d; }
 .niveau-label { display: block; font-size: 12px; font-weight: 800; color: #111827; margin-bottom: 4px; }
-.niveau-beschrijving { margin: 0; font-size: 10px; color: #64748b; line-height: 1.5; }
+.niveau-beschrijving { margin: 0; font-size: 10px; color: #64748b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 
 .cel-punten { padding: 18px 16px; text-align: right; font-size: 14px; font-weight: 800; color: #111827; border-left: 1px solid #f1f5f9; }
 .nog-geen { color: #cbd5e1; font-weight: 600; }

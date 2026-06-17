@@ -297,12 +297,12 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .cel-niveau { padding: 12px; cursor: pointer; border-left: 1px solid #f1f5f9; transition: 0.15s ease; vertical-align: top; }
 .cel-niveau:hover { background: #f8fafc; }
 .cel-niveau.geselecteerd { background: #fef2f2; }
-.cel-niveau.cel-leeg { cursor: default; background: #fafafa; }
-.cel-niveau.cel-leeg:hover { background: #fafafa; }
+.cel-niveau.cel-leeg { background: transparent; cursor: default; }
+.cel-niveau.cel-leeg:hover { background: transparent; }
 .niveau-punten { display: block; font-size: 11px; font-weight: 800; color: #991b1b; margin-bottom: 2px; }
 .cel-niveau.geselecteerd .niveau-punten { color: #7f1d1d; }
 .niveau-label { display: block; font-size: 12px; font-weight: 800; color: #111827; margin-bottom: 4px; }
-.niveau-beschrijving { margin: 0; font-size: 10px; color: #64748b; line-height: 1.5; }
+.niveau-beschrijving { margin: 0; font-size: 10px; color: #64748b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .cel-niveau.geselecteerd { box-shadow: inset 0 0 0 2px #991b1b; }
 
 .cel-punten { padding: 18px 16px; text-align: right; font-size: 14px; font-weight: 800; color: #111827; border-left: 1px solid #f1f5f9; }
