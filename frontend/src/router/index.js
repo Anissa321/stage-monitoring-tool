@@ -21,13 +21,8 @@ import FeedbackGeven from '../pages/commissie/FeedbackGeven.vue'
 import CommissieAanvragen from '../pages/commissie/CommissieAanvragen.vue'
 import MijnStudenten from '../pages/docent/MijnStudenten.vue'
 import Documenten from '../pages/student/Documenten.vue'
-import MijnEvaluatie from '../pages/student/MijnEvaluatie.vue'
-import EvaluatieRubriek from '../pages/student/EvaluatieRubriek.vue'
-import DocentStudentDetail from '../pages/docent/DocentStudentDetail.vue'
-import TussentijdseBespreking from '../pages/docent/TussentijdseBespreking.vue'
 import TussentijdseFeedback from '../pages/mentor/TussentijdseFeedback.vue'
-
-
+import EvaluatieRubriek from '../pages/student/EvaluatieRubriek.vue'
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'LoginPage', component: LoginPage },
@@ -40,16 +35,13 @@ const routes = [
   { path: '/student/stagevoorstel', name: 'StagevoorstelIndienen', component: StagevoorstelIndienen },
   { path: '/student/stagevoorstel/detail', name: 'StagevoorstelDetail', component: StagevoorstelDetail },
   { path: '/student/documenten', name: 'Documenten', component: Documenten },
-  { path: '/student/evaluatie', name: 'MijnEvaluatie', component: MijnEvaluatie },
-  { path: '/student/evaluatie/rubriek', name: 'EvaluatieRubriek', component: EvaluatieRubriek },
+  { path: '/student/evaluatie', name: 'EvaluatieRubriek', component: EvaluatieRubriek },
 
   // DOCENT
   { path: '/docent', redirect: '/docent/dashboard' },
   { path: '/docent/dashboard', name: 'DocentDashboard', component: DocentDashboard },
   { path: '/docent/logboek', name: 'DocentLogboek', component: LogboekBekijken },
   { path: '/docent/studenten', name: 'MijnStudenten', component: MijnStudenten },
-  { path: '/docent/studenten/:id', name: 'DocentStudentDetail', component: DocentStudentDetail },
-  { path: '/docent/studenten/:id/bespreking', name: 'TussentijdseBespreking', component: TussentijdseBespreking },
 
   // MENTOR
   { path: '/mentor', redirect: '/mentor/dashboard' },
@@ -58,6 +50,7 @@ const routes = [
   { path: '/mentor/student/:id', name: 'StudentDetailMentor', component: StudentDetailMentor },
   { path: '/mentor/week/:studentId/:weekNummer', name: 'WeekAftekenen', component: LogboekAftekenen },
   { path: '/mentor/student/:id/feedback', name: 'TussentijdseFeedback', component: TussentijdseFeedback },
+  
 
   // COMMISSIE
   { path: '/commissie', redirect: '/commissie/dashboard' },
@@ -78,6 +71,7 @@ const router = createRouter({
   routes
 })
 
+// Routes die ALTIJD toegankelijk zijn voor student, ook zonder getekende overeenkomst
 const studentToegestaanZonderOvereenkomst = [
   '/student/dashboard',
   '/student/documenten',
@@ -106,6 +100,7 @@ router.beforeEach((to, from, next) => {
   if (to.path.startsWith('/commissie') && role !== 'stagecommissie') { next('/login'); return }
   if (to.path.startsWith('/admin') && role !== 'administratie') { next('/login'); return }
 
+  // Blokkering: student moet stageovereenkomst getekend hebben voor toegang tot andere pagina's
   if (role === 'student' && to.path.startsWith('/student')) {
     const getekend = localStorage.getItem('overeenkomstGetekend') === 'true'
     if (!getekend && !studentToegestaanZonderOvereenkomst.includes(to.path)) {
@@ -114,6 +109,7 @@ router.beforeEach((to, from, next) => {
     }
   }
 
+  // Blokkering: mentor moet stageovereenkomst voor deze student getekend hebben voor toegang tot diens week-aftekenen
   if (role === 'mentor' && to.path.startsWith('/mentor/week/')) {
     const studentId = to.params.studentId
     const statusMap = JSON.parse(localStorage.getItem('overeenkomstenMentor') || '{}')

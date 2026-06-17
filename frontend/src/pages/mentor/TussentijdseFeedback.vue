@@ -184,56 +184,44 @@ function annuleren() {
 
       <h2 class="rubriek-titel">Competenties</h2>
 
-      <!-- Eén grote tabel zoals figma -->
       <div class="rubriek-tabel-wrap">
-        <table class="rubriek-tabel">
-          <colgroup>
-            <col class="col-criteria" />
-            <col class="col-niveau-vast" />
-            <col class="col-niveau-vast" />
-            <col class="col-niveau-vast" />
-            <col class="col-niveau-vast" />
-            <col class="col-niveau-vast" />
-            <col class="col-punten" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th class="col-criteria">Criteria</th>
-              <th class="col-beoordelingen" colspan="5">Beoordelingen — klik op een niveau</th>
-              <th class="col-punten">Punten</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="comp in competenties" :key="comp.naam" class="comp-rij">
-              <td class="cel-criteria">
-                <strong>{{ comp.naam }}</strong>
-                <p>{{ comp.beschrijving }}</p>
-              </td>
-              <td
-                v-for="(niveau, idx) in comp.niveaus"
-                :key="niveau.label"
-                class="cel-niveau"
-                :class="{ geselecteerd: comp.geselecteerd === idx }"
-                @click="selecteerNiveau(comp, idx)"
-              >
-                <span class="niveau-punten">{{ niveau.punten }} ptn</span>
-                <span class="niveau-label">{{ niveau.label }}</span>
-                <p class="niveau-beschrijving">{{ niveau.beschrijving }}</p>
-              </td>
-              <td v-for="n in (5 - comp.niveaus.length)" :key="'leeg'+n" class="cel-niveau cel-leeg"></td>
-              <td class="cel-punten">
-                <span v-if="comp.geselecteerd !== null">{{ comp.niveaus[comp.geselecteerd].punten }} / {{ comp.niveaus[comp.niveaus.length-1].punten }}</span>
-                <span v-else class="nog-geen">—</span>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr>
-              <td :colspan="6" class="totaal-label">Tussentijdse score</td>
-              <td class="totaal-waarde">{{ totaalScore() }} / {{ maxScore() }}</td>
-            </tr>
-          </tfoot>
-        </table>
+        <div class="rubriek-header">
+          <span class="rh-criteria">Criteria</span>
+          <span class="rh-beoordelingen">Beoordelingen</span>
+          <span class="rh-punten">Punten</span>
+        </div>
+
+        <div v-for="comp in competenties" :key="comp.naam" class="comp-rij">
+          <div class="cel-criteria">
+            <strong>{{ comp.naam }}</strong>
+            <p>{{ comp.beschrijving }}</p>
+          </div>
+          <div class="niveaus-wrap">
+            <div
+              v-for="(niveau, idx) in comp.niveaus"
+              :key="niveau.label"
+              class="cel-niveau"
+              :class="{ geselecteerd: comp.geselecteerd === idx }"
+              :style="{ width: (100 / comp.niveaus.length) + '%' }"
+              @click="selecteerNiveau(comp, idx)"
+            >
+              <span class="niveau-punten">{{ niveau.punten }} ptn</span>
+              <span class="niveau-label">{{ niveau.label }}</span>
+              <p class="niveau-beschrijving">{{ niveau.beschrijving }}</p>
+            </div>
+          </div>
+          <div class="cel-punten">
+            <span v-if="comp.geselecteerd !== null">
+              {{ comp.niveaus[comp.geselecteerd].punten }} / {{ comp.niveaus[comp.niveaus.length - 1].punten }}
+            </span>
+            <span v-else class="nog-geen">—</span>
+          </div>
+        </div>
+
+        <div class="totaal-rij">
+          <span class="totaal-label">Tussentijdse score</span>
+          <span class="totaal-waarde">{{ totaalScore() }} / {{ maxScore() }}</span>
+        </div>
       </div>
 
       <div v-if="error" class="error-msg">{{ error }}</div>
@@ -283,34 +271,33 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .rubriek-titel { font-size: 18px; font-weight: 800; margin: 0 0 14px; }
 
 .rubriek-tabel-wrap { background: white; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(15,23,42,0.04); margin-bottom: 24px; }
-.rubriek-tabel { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.rubriek-tabel thead th { background: #f8fafc; color: #94a3b8; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 14px 16px; border-bottom: 1px solid #e5e7eb; }
-.col-criteria { width: 220px; }
-.col-niveau-vast { width: 19%; }
-.col-punten { width: 90px; text-align: right; }
 
-.comp-rij { border-top: 1px solid #f1f5f9; vertical-align: top; }
-.cel-criteria { padding: 18px 16px; }
+.rubriek-header { display: flex; align-items: center; background: #f8fafc; border-bottom: 1px solid #e5e7eb; padding: 12px 16px; }
+.rh-criteria { width: 200px; flex-shrink: 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+.rh-beoordelingen { flex: 1; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+.rh-punten { width: 90px; flex-shrink: 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right; }
+
+.comp-rij { display: flex; align-items: stretch; border-top: 1px solid #f1f5f9; }
+.cel-criteria { width: 200px; flex-shrink: 0; padding: 18px 16px; border-right: 1px solid #f1f5f9; }
 .cel-criteria strong { display: block; font-size: 14px; font-weight: 800; margin-bottom: 6px; }
 .cel-criteria p { margin: 0; font-size: 11px; color: #64748b; line-height: 1.5; }
 
-.cel-niveau { padding: 12px; cursor: pointer; border-left: 1px solid #f1f5f9; transition: 0.15s ease; vertical-align: top; }
+.niveaus-wrap { flex: 1; display: flex; }
+.cel-niveau { padding: 12px; cursor: pointer; border-left: 1px solid #f1f5f9; transition: 0.15s ease; }
 .cel-niveau:hover { background: #f8fafc; }
-.cel-niveau.geselecteerd { background: #fef2f2; }
-.cel-niveau.cel-leeg { background: transparent; cursor: default; }
-.cel-niveau.cel-leeg:hover { background: transparent; }
+.cel-niveau.geselecteerd { background: #fef2f2; box-shadow: inset 0 0 0 2px #991b1b; }
+
 .niveau-punten { display: block; font-size: 11px; font-weight: 800; color: #991b1b; margin-bottom: 2px; }
 .cel-niveau.geselecteerd .niveau-punten { color: #7f1d1d; }
 .niveau-label { display: block; font-size: 12px; font-weight: 800; color: #111827; margin-bottom: 4px; }
 .niveau-beschrijving { margin: 0; font-size: 10px; color: #64748b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.cel-niveau.geselecteerd { box-shadow: inset 0 0 0 2px #991b1b; }
 
-.cel-punten { padding: 18px 16px; text-align: right; font-size: 14px; font-weight: 800; color: #111827; border-left: 1px solid #f1f5f9; }
+.cel-punten { width: 90px; flex-shrink: 0; padding: 18px 16px; text-align: right; font-size: 14px; font-weight: 800; color: #111827; border-left: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: flex-end; }
 .nog-geen { color: #cbd5e1; font-weight: 600; }
 
-tfoot td { padding: 16px; border-top: 2px solid #e5e7eb; }
-.totaal-label { text-align: right; font-size: 13px; font-weight: 700; color: #64748b; }
-.totaal-waarde { text-align: right; font-size: 16px; font-weight: 800; color: #991b1b; border-left: 1px solid #f1f5f9; }
+.totaal-rij { display: flex; justify-content: flex-end; align-items: center; gap: 24px; padding: 16px; border-top: 2px solid #e5e7eb; }
+.totaal-label { font-size: 13px; font-weight: 700; color: #64748b; }
+.totaal-waarde { font-size: 16px; font-weight: 800; color: #991b1b; min-width: 90px; text-align: right; }
 
 .error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
 .succes-msg { background: #ecfdf5; border: 1px solid #a7f3d0; color: #15803d; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
@@ -327,7 +314,7 @@ tfoot td { padding: 16px; border-top: 2px solid #e5e7eb; }
   nav { display: none; }
   .meta-grid { grid-template-columns: 1fr 1fr; }
   .rubriek-tabel-wrap { overflow-x: auto; }
-  .rubriek-tabel { min-width: 900px; }
+  .content { padding: 24px 16px 40px; }
   .actions { flex-direction: column; gap: 12px; }
 }
 </style>
