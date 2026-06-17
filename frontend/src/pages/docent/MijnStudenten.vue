@@ -61,7 +61,7 @@ function gaNaarStudent(student) {
       <nav>
         <a @click="router.push('/docent/dashboard')">Dashboard</a>
         <a class="active" @click="router.push('/docent/studenten')">Stagiairs</a>
-        <a @click="router.push('/docent/evaluaties')">Evaluaties</a>
+        <a class="active" @click="router.push('/docent/evaluaties')">Evaluaties</a>
       </nav>
       <div class="profile">
         <span>{{ voornaam() }}</span>

@@ -81,7 +81,7 @@ onMounted(async () => {
       <nav>
         <a @click="router.push('/docent/dashboard')">Dashboard</a>
         <a @click="router.push('/docent/studenten')">Studenten</a>
-        <a class="active">Evaluaties</a>
+        <a class="active" @click="router.push('/docent/evaluaties')">Evaluaties</a>
       </nav>
       <div class="profile">
         <span>{{ docent?.voornaam || 'Docent' }}</span>
