@@ -10,7 +10,23 @@ const loading = ref(false)
 const succes = ref('')
 const error = ref('')
 
-const competenties = ref([])
+const mentorCompetencies = ref([])
+const studentCompetencies = ref([])
+
+const beschrijvingVelden = [
+  'communicatie_beschrijving',
+  'probleemoplossing_beschrijving',
+  'teamwork_beschrijving',
+  'vaktechnisch_beschrijving'
+]
+
+const scoreVelden = [
+  'communicatie_score',
+  'probleemoplossing_score',
+  'teamwork_score',
+  'vaktechnisch_score'
+]
+
 const beschrijvingen = ref({})
 
 async function laadCompetencies() {
@@ -26,13 +42,7 @@ async function laadCompetencies() {
   }))
 }
 
-function vulScoresIn(competentiesArray, evaluatie) {
-  const veldnamen = [
-    'communicatie_score',
-    'probleemoplossing_score',
-    'teamwork_score',
-    'vaktechnisch_score'
-  ]
+function vulScoresIn(competentiesArray, evaluatie, veldnamen) {
   veldnamen.forEach((veld, i) => {
     const score = evaluatie[veld]
     if (score !== null && score !== undefined && competentiesArray[i]) {
@@ -42,23 +52,16 @@ function vulScoresIn(competentiesArray, evaluatie) {
   })
 }
 
-const beschrijvingVelden = [
-  'communicatie_beschrijving',
-  'probleemoplossing_beschrijving',
-  'teamwork_beschrijving',
-  'vaktechnisch_beschrijving'
-]
-
 onMounted(async () => {
   const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
     const basis = await laadCompetencies()
-    competenties.value = basis
+    mentorCompetencies.value = basis.map(c => ({ ...c, niveaus: [...c.niveaus] }))
+    studentCompetencies.value = basis.map(c => ({ ...c, geselecteerd: null, niveaus: [...c.niveaus] }))
 
-    // Init beschrijvingen
-    basis.forEach((_, i) => {
-      beschrijvingen.value[beschrijvingVelden[i]] = ''
+    beschrijvingVelden.forEach(veld => {
+      beschrijvingen.value[veld] = ''
     })
 
     const [dashRes, mentorEvalRes, studentEvalRes] = await Promise.all([
@@ -78,16 +81,15 @@ onMounted(async () => {
     const mentorEvalData = await mentorEvalRes.json()
     if (mentorEvalData.evaluatie) {
       mentorEvaluatieIngevuld.value = true
-      vulScoresIn(competenties.value, mentorEvalData.evaluatie)
+      vulScoresIn(mentorCompetencies.value, mentorEvalData.evaluatie, scoreVelden)
     }
 
     const studentEvalData = await studentEvalRes.json()
     if (studentEvalData.evaluatie) {
       zelfevaluatieIngediend.value = true
+      vulScoresIn(studentCompetencies.value, studentEvalData.evaluatie, scoreVelden)
       beschrijvingVelden.forEach(veld => {
-        if (studentEvalData.evaluatie[veld]) {
-          beschrijvingen.value[veld] = studentEvalData.evaluatie[veld]
-        }
+        beschrijvingen.value[veld] = studentEvalData.evaluatie[veld] || ''
       })
     }
   } catch (err) {
@@ -95,34 +97,53 @@ onMounted(async () => {
   }
 })
 
-function totaalScore() {
-  return competenties.value.reduce((sum, c) => {
+function selecteerNiveau(comp, idx) {
+  if (!mentorEvaluatieIngevuld.value) return
+  comp.geselecteerd = idx
+}
+
+function mentorTotaal() {
+  return mentorCompetencies.value.reduce((sum, c) => {
+    if (c.geselecteerd === null) return sum
+    return sum + c.niveaus[c.geselecteerd].punten
+  }, 0)
+}
+
+function studentTotaal() {
+  return studentCompetencies.value.reduce((sum, c) => {
     if (c.geselecteerd === null) return sum
     return sum + c.niveaus[c.geselecteerd].punten
   }, 0)
 }
 
 function maxScore() {
-  return competenties.value.reduce((sum, c) => sum + c.niveaus[c.niveaus.length - 1].punten, 0)
+  return mentorCompetencies.value.reduce((sum, c) => sum + c.niveaus[c.niveaus.length - 1].punten, 0)
 }
 
 function alleIngevuld() {
-  return beschrijvingVelden.every(veld => beschrijvingen.value[veld]?.trim())
+  const scoresIngevuld = studentCompetencies.value.every(c => c.geselecteerd !== null)
+  const beschrijvingenIngevuld = beschrijvingVelden.every(veld => beschrijvingen.value[veld]?.trim())
+  return scoresIngevuld && beschrijvingenIngevuld
 }
 
 async function indienen() {
   if (!alleIngevuld()) {
-    error.value = 'Vul een beschrijving in voor elke competentie.'
+    error.value = 'Selecteer een niveau en vul een beschrijving in voor elke competentie.'
     return
   }
   error.value = ''
   loading.value = true
   const token = localStorage.getItem('token')
   try {
+    const scores = {}
+    studentCompetencies.value.forEach((c, i) => {
+      if (scoreVelden[i]) scores[scoreVelden[i]] = c.niveaus[c.geselecteerd].punten
+    })
+
     const res = await fetch('http://localhost:3000/api/student-evaluaties', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(beschrijvingen.value)
+      body: JSON.stringify({ ...scores, ...beschrijvingen.value })
     })
     const result = await res.json()
     if (!res.ok) { error.value = result.error || 'Kon zelfevaluatie niet opslaan'; return }
@@ -181,11 +202,11 @@ async function logout() {
     <section class="content">
       <a class="back-link" @click="router.push('/student/dashboard')">← Terug naar dashboard</a>
       <h1>Tussentijdse evaluatie</h1>
-      <p class="subtitle">Bekijk de beoordeling van je mentor en beschrijf je eigen vorderingen</p>
+      <p class="subtitle">Bekijk de beoordeling van je mentor en vul je zelfevaluatie in</p>
 
       <div class="info-banner">
         <span>ℹ️</span>
-        <p>Hieronder zie je de scores die je mentor heeft gegeven. Daarna kan je per competentie beschrijven wat jij denkt te hebben bereikt.</p>
+        <p>Bovenaan zie je de scores van je mentor. Daarna selecteer je zelf een niveau per competentie en schrijf je een korte beschrijving van je vorderingen.</p>
       </div>
 
       <!-- Mentor nog niet ingevuld -->
@@ -194,17 +215,27 @@ async function logout() {
         <p>Je mentor heeft nog geen tussentijdse evaluatie ingevuld. Je kan je zelfevaluatie pas invullen nadat de mentor dit heeft gedaan.</p>
       </div>
 
-      <!-- DEEL 1: MENTOR RUBRIEK (read-only) -->
-      <h2 class="rubriek-titel">📋 Evaluatie door mentor</h2>
+      <!-- Legenda -->
+      <div class="legenda">
+        <div class="legenda-item">
+          <div class="legenda-kleur rood"></div>
+          <span>Beoordeling mentor</span>
+        </div>
+        <div class="legenda-item">
+          <div class="legenda-kleur blauw"></div>
+          <span>Jouw zelfevaluatie</span>
+        </div>
+      </div>
 
+      <!-- DEEL 1: MENTOR RUBRIEK -->
+      <h2 class="rubriek-titel">📋 Evaluatie door mentor</h2>
       <div class="rubriek-tabel-wrap">
         <div class="rubriek-header">
           <span class="rh-criteria">Criteria</span>
           <span class="rh-beoordelingen">Beoordelingen</span>
           <span class="rh-punten">Punten</span>
         </div>
-
-        <div v-for="comp in competenties" :key="comp.naam" class="comp-rij">
+        <div v-for="comp in mentorCompetencies" :key="'mentor-' + comp.naam" class="comp-rij">
           <div class="cel-criteria">
             <strong>{{ comp.naam }}</strong>
             <p>{{ comp.beschrijving }}</p>
@@ -214,56 +245,86 @@ async function logout() {
               v-for="(niveau, idx) in comp.niveaus"
               :key="niveau.label"
               class="cel-niveau"
-              :class="{ geselecteerd: comp.geselecteerd === idx }"
+              :class="{ 'geselecteerd-rood': comp.geselecteerd === idx }"
               :style="{ width: (100 / comp.niveaus.length) + '%' }"
             >
-              <span class="niveau-punten">{{ niveau.punten }} ptn</span>
+              <span class="niveau-punten rood-punten">{{ niveau.punten }} ptn</span>
               <span class="niveau-label">{{ niveau.label }}</span>
               <p class="niveau-beschrijving">{{ niveau.beschrijving }}</p>
             </div>
           </div>
           <div class="cel-punten">
-            <span v-if="comp.geselecteerd !== null">
+            <span v-if="comp.geselecteerd !== null" class="punten-rood">
               {{ comp.niveaus[comp.geselecteerd].punten }} / {{ comp.niveaus[comp.niveaus.length - 1].punten }}
             </span>
             <span v-else class="nog-geen">—</span>
           </div>
         </div>
-
         <div class="totaal-rij">
           <span class="totaal-label">Score mentor</span>
-          <span class="totaal-waarde">{{ totaalScore() }} / {{ maxScore() }}</span>
+          <span class="totaal-waarde punten-rood">{{ mentorTotaal() }} / {{ maxScore() }}</span>
         </div>
       </div>
 
-      <!-- DEEL 2: ZELFEVALUATIE TEKSTVELDEN -->
+      <!-- DEEL 2: STUDENT ZELFEVALUATIE -->
       <h2 class="rubriek-titel" style="margin-top: 40px;">✍️ Jouw zelfevaluatie</h2>
-      <p class="subtitle">Beschrijf per competentie wat jij denkt te hebben bereikt tijdens de stage.</p>
 
       <div v-if="!mentorEvaluatieIngevuld" class="geblokkeerd-banner">
         🔒 Beschikbaar nadat de mentor zijn evaluatie heeft ingediend.
       </div>
 
-      <div v-else class="zelfevaluatie-wrap">
-        <div v-if="zelfevaluatieIngediend" class="succes-banner">
-          ✅ Je zelfevaluatie is ingediend. Je kan je beschrijvingen nog aanpassen.
+      <div v-else>
+        <div v-if="zelfevaluatieIngediend && !succes" class="succes-banner">
+          ✅ Je zelfevaluatie is ingediend. Je kan het nog aanpassen.
         </div>
 
-        <div
-          v-for="(comp, i) in competenties"
-          :key="'zelf-' + comp.naam"
-          class="zelfevaluatie-item"
-        >
-          <div class="zelfevaluatie-header">
-            <strong>{{ comp.naam }}</strong>
-            <span class="zelfevaluatie-hint">Beschrijf je vorderingen voor deze competentie</span>
+        <div class="rubriek-tabel-wrap">
+          <div class="rubriek-header">
+            <span class="rh-criteria">Criteria</span>
+            <span class="rh-beoordelingen">Beoordelingen</span>
+            <span class="rh-punten">Punten</span>
           </div>
-          <textarea
-            v-model="beschrijvingen[beschrijvingVelden[i]]"
-            class="zelfevaluatie-textarea"
-            :placeholder="`Wat heb je bereikt op vlak van ${comp.naam.toLowerCase()}? Geef concrete voorbeelden uit de stage...`"
-            rows="4"
-          ></textarea>
+          <div v-for="(comp, i) in studentCompetencies" :key="'student-' + comp.naam" class="comp-rij-uitgebreid">
+            <div class="comp-rij">
+              <div class="cel-criteria">
+                <strong>{{ comp.naam }}</strong>
+                <p>{{ comp.beschrijving }}</p>
+              </div>
+              <div class="niveaus-wrap">
+                <div
+                  v-for="(niveau, idx) in comp.niveaus"
+                  :key="niveau.label"
+                  class="cel-niveau klikbaar"
+                  :class="{ 'geselecteerd-blauw': comp.geselecteerd === idx }"
+                  :style="{ width: (100 / comp.niveaus.length) + '%' }"
+                  @click="selecteerNiveau(comp, idx)"
+                >
+                  <span class="niveau-punten blauw-punten">{{ niveau.punten }} ptn</span>
+                  <span class="niveau-label">{{ niveau.label }}</span>
+                  <p class="niveau-beschrijving">{{ niveau.beschrijving }}</p>
+                </div>
+              </div>
+              <div class="cel-punten">
+                <span v-if="comp.geselecteerd !== null" class="punten-blauw">
+                  {{ comp.niveaus[comp.geselecteerd].punten }} / {{ comp.niveaus[comp.niveaus.length - 1].punten }}
+                </span>
+                <span v-else class="nog-geen">—</span>
+              </div>
+            </div>
+            <div class="beschrijving-rij">
+              <label class="beschrijving-label">Jouw beschrijving voor {{ comp.naam }}</label>
+              <textarea
+                v-model="beschrijvingen[beschrijvingVelden[i]]"
+                class="beschrijving-textarea"
+                :placeholder="`Beschrijf je vorderingen op vlak van ${comp.naam.toLowerCase()}...`"
+                rows="3"
+              ></textarea>
+            </div>
+          </div>
+          <div class="totaal-rij">
+            <span class="totaal-label">Jouw score</span>
+            <span class="totaal-waarde punten-blauw">{{ studentTotaal() }} / {{ maxScore() }}</span>
+          </div>
         </div>
 
         <div v-if="error" class="error-msg">{{ error }}</div>
@@ -314,47 +375,59 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .content h1 { margin: 0 0 6px; font-size: 26px; font-weight: 800; }
 .subtitle { margin: 0 0 20px; color: #64748b; font-size: 14px; }
 
-.info-banner { display: flex; gap: 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; color: #1e40af; line-height: 1.6; }
+.info-banner { display: flex; gap: 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; color: #1e40af; }
 .info-banner p { margin: 0; }
 .wacht-banner { display: flex; gap: 12px; background: #fefce8; border: 1px solid #fde68a; border-radius: 12px; padding: 14px 18px; margin-bottom: 24px; font-size: 13px; color: #854d0e; }
 .wacht-banner p { margin: 0; }
 .geblokkeerd-banner { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin-bottom: 24px; font-size: 13px; color: #64748b; font-weight: 600; }
 .succes-banner { background: #ecfdf5; border: 1px solid #a7f3d0; color: #15803d; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; font-size: 14px; font-weight: 700; }
 
+.legenda { display: flex; gap: 20px; margin-bottom: 20px; }
+.legenda-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; }
+.legenda-kleur { width: 16px; height: 16px; border-radius: 4px; }
+.legenda-kleur.rood { background: #fee2e2; border: 2px solid #991b1b; }
+.legenda-kleur.blauw { background: #dbeafe; border: 2px solid #1d4ed8; }
+
 .rubriek-titel { font-size: 18px; font-weight: 800; margin: 0 0 14px; }
 .rubriek-tabel-wrap { background: white; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(15,23,42,0.04); margin-bottom: 24px; }
 .rubriek-header { display: flex; align-items: center; background: #f8fafc; border-bottom: 1px solid #e5e7eb; padding: 12px 16px; }
 .rh-criteria { width: 200px; flex-shrink: 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
 .rh-beoordelingen { flex: 1; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
-.rh-punten { width: 90px; flex-shrink: 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right; }
+.rh-punten { width: 90px; flex-shrink: 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; text-align: right; }
 
-.comp-rij { display: flex; align-items: stretch; border-top: 1px solid #f1f5f9; }
+.comp-rij-uitgebreid { border-top: 1px solid #f1f5f9; }
+.comp-rij { display: flex; align-items: stretch; }
 .cel-criteria { width: 200px; flex-shrink: 0; padding: 18px 16px; border-right: 1px solid #f1f5f9; }
 .cel-criteria strong { display: block; font-size: 14px; font-weight: 800; margin-bottom: 6px; }
 .cel-criteria p { margin: 0; font-size: 11px; color: #64748b; line-height: 1.5; }
 .niveaus-wrap { flex: 1; display: flex; }
-.cel-niveau { padding: 12px; cursor: default; border-left: 1px solid #f1f5f9; }
-.cel-niveau.geselecteerd { background: #fef2f2; box-shadow: inset 0 0 0 2px #991b1b; }
-.niveau-punten { display: block; font-size: 11px; font-weight: 800; color: #991b1b; margin-bottom: 2px; }
+.cel-niveau { padding: 12px; border-left: 1px solid #f1f5f9; cursor: default; }
+.cel-niveau.klikbaar { cursor: pointer; transition: background 0.15s; }
+.cel-niveau.klikbaar:hover { background: #eff6ff; }
+.cel-niveau.geselecteerd-rood { background: #fef2f2; box-shadow: inset 0 0 0 2px #991b1b; }
+.cel-niveau.geselecteerd-blauw { background: #eff6ff; box-shadow: inset 0 0 0 2px #1d4ed8; }
+.niveau-punten { display: block; font-size: 11px; font-weight: 800; margin-bottom: 2px; }
+.rood-punten { color: #991b1b; }
+.blauw-punten { color: #1d4ed8; }
 .niveau-label { display: block; font-size: 12px; font-weight: 800; color: #111827; margin-bottom: 4px; }
 .niveau-beschrijving { margin: 0; font-size: 10px; color: #64748b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.cel-punten { width: 90px; flex-shrink: 0; padding: 18px 16px; text-align: right; font-size: 14px; font-weight: 800; color: #111827; border-left: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: flex-end; }
+.cel-punten { width: 90px; flex-shrink: 0; padding: 18px 16px; text-align: right; font-size: 14px; font-weight: 800; border-left: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: flex-end; }
 .nog-geen { color: #cbd5e1; font-weight: 600; }
+.punten-rood { color: #991b1b; }
+.punten-blauw { color: #1d4ed8; }
+
+.beschrijving-rij { padding: 12px 16px 16px; border-top: 1px solid #f1f5f9; background: #fafcff; }
+.beschrijving-label { display: block; font-size: 11px; font-weight: 700; color: #1d4ed8; text-transform: uppercase; margin-bottom: 8px; }
+.beschrijving-textarea { width: 100%; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: inherit; resize: vertical; color: #334155; line-height: 1.5; background: white; }
+.beschrijving-textarea:focus { outline: none; border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(29,78,216,0.1); }
+
 .totaal-rij { display: flex; justify-content: flex-end; align-items: center; gap: 24px; padding: 16px; border-top: 2px solid #e5e7eb; }
 .totaal-label { font-size: 13px; font-weight: 700; color: #64748b; }
-.totaal-waarde { font-size: 16px; font-weight: 800; color: #991b1b; min-width: 90px; text-align: right; }
+.totaal-waarde { font-size: 16px; font-weight: 800; min-width: 90px; text-align: right; }
 
-.zelfevaluatie-wrap { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
-.zelfevaluatie-item { background: white; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
-.zelfevaluatie-header { margin-bottom: 12px; }
-.zelfevaluatie-header strong { display: block; font-size: 15px; font-weight: 800; margin-bottom: 4px; }
-.zelfevaluatie-hint { font-size: 12px; color: #64748b; }
-.zelfevaluatie-textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; font-size: 14px; font-family: inherit; resize: vertical; color: #334155; line-height: 1.6; }
-.zelfevaluatie-textarea:focus { outline: none; border-color: #991b1b; box-shadow: 0 0 0 3px rgba(153,27,27,0.1); }
-
-.actions { display: flex; justify-content: flex-end; }
-.submit-btn { border: none; background: #15803d; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
-.submit-btn:hover:not(:disabled) { background: #166534; }
+.actions { display: flex; justify-content: flex-end; margin-bottom: 32px; }
+.submit-btn { border: none; background: #1d4ed8; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.submit-btn:hover:not(:disabled) { background: #1e40af; }
 .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
