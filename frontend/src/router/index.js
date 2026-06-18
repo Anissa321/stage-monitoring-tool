@@ -30,6 +30,7 @@ import DocentEindrapport from '../pages/docent/DocentEindrapport.vue'
 import DocentEvaluaties from '../pages/docent/DocentEvaluaties.vue'
 import MentorEvaluaties from '../pages/mentor/MentorEvaluaties.vue'
 import EindevaluatieMentor from '../pages/mentor/EindevaluatieMentor.vue'
+import AdminGebruikers from '../pages/admin/AdminGebruikers.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -55,7 +56,6 @@ const routes = [
   { path: '/docent/studenten/:id/bespreking', name: 'TussentijdseBespreking', component: TussentijdseBespreking },
   { path: '/docent/studenten/:id/eindrapport', name: 'DocentEindrapport', component: DocentEindrapport },
   { path: '/docent/evaluaties', name: 'DocentEvaluaties', component: DocentEvaluaties },
-  
 
   // MENTOR
   { path: '/mentor', redirect: '/mentor/dashboard' },
@@ -78,7 +78,8 @@ const routes = [
   // ADMIN
   { path: '/admin', redirect: '/admin/dashboard' },
   { path: '/admin/dashboard', name: 'AdminDashboard', component: AdminDashboard },
-  { path: '/admin/competenties', name: 'AdminCompetencies', component: AdminCompetencies }
+  { path: '/admin/competenties', name: 'AdminCompetencies', component: AdminCompetencies },
+  { path: '/admin/gebruikers', name: 'AdminGebruikers', component: AdminGebruikers }
 ]
 
 const router = createRouter({
@@ -86,7 +87,6 @@ const router = createRouter({
   routes
 })
 
-// Routes die ALTIJD toegankelijk zijn voor student, ook zonder getekende overeenkomst
 const studentToegestaanZonderOvereenkomst = [
   '/student/dashboard',
   '/student/documenten',
@@ -115,7 +115,6 @@ router.beforeEach((to, from, next) => {
   if (to.path.startsWith('/commissie') && role !== 'stagecommissie') { next('/login'); return }
   if (to.path.startsWith('/admin') && role !== 'administratie') { next('/login'); return }
 
-  // Blokkering: student moet stageovereenkomst getekend hebben voor toegang tot andere pagina's
   if (role === 'student' && to.path.startsWith('/student')) {
     const getekend = localStorage.getItem('overeenkomstGetekend') === 'true'
     if (!getekend && !studentToegestaanZonderOvereenkomst.includes(to.path)) {
@@ -124,7 +123,6 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  // Blokkering: mentor moet stageovereenkomst voor deze student getekend hebben voor toegang tot diens week-aftekenen
   if (role === 'mentor' && to.path.startsWith('/mentor/week/')) {
     const studentId = to.params.studentId
     const statusMap = JSON.parse(localStorage.getItem('overeenkomstenMentor') || '{}')
