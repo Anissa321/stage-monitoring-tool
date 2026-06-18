@@ -11,6 +11,71 @@ function formatDatum(datum) {
   return new Date(datum).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+// Berekent het week-nummer van de stage op basis van startdatum
+function berekenWeekNummer(datum, startdatum) {
+  const start = new Date(startdatum)
+  const dag = new Date(datum)
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000
+  const week = Math.ceil((dag - start) / msPerWeek) + 1
+  return week < 1 ? 1 : week
+}
+
+// Genereert lege logboeken (status niet_ingevuld) voor elke weekdag (ma-vr)
+// tussen startdatum en einddatum van de stage. Bestaande logboeken worden niet overschreven.
+async function genereerLogboeken(studentId, startdatum, einddatum) {
+  try {
+    const start = new Date(startdatum)
+    const eind = new Date(einddatum)
+
+    if (isNaN(start) || isNaN(eind) || start > eind) {
+      console.error('genereerLogboeken: ongeldige periode', startdatum, einddatum)
+      return
+    }
+
+    // Bestaande logboeken van deze student ophalen om duplicaten te vermijden
+    const { data: bestaande } = await supabaseAdmin
+      .from('logbooks')
+      .select('datum')
+      .eq('student_id', studentId)
+
+    const bestaandeDatums = new Set((bestaande || []).map(l => l.datum))
+
+    const nieuweRijen = []
+    const cursor = new Date(start)
+
+    while (cursor <= eind) {
+      const dagVanWeek = cursor.getDay() // 0 = zondag, 6 = zaterdag
+      const isWeekdag = dagVanWeek >= 1 && dagVanWeek <= 5
+
+      if (isWeekdag) {
+        const datumStr = cursor.toISOString().split('T')[0]
+        if (!bestaandeDatums.has(datumStr)) {
+          nieuweRijen.push({
+            student_id: studentId,
+            datum: datumStr,
+            week_number: berekenWeekNummer(datumStr, startdatum),
+            status: 'niet_ingevuld'
+          })
+        }
+      }
+
+      cursor.setDate(cursor.getDate() + 1)
+    }
+
+    if (nieuweRijen.length > 0) {
+      const { error } = await supabaseAdmin
+        .from('logbooks')
+        .insert(nieuweRijen)
+
+      if (error) {
+        console.error('genereerLogboeken: kon logboeken niet aanmaken', error)
+      }
+    }
+  } catch (err) {
+    console.error('genereerLogboeken error:', err)
+  }
+}
+
 // Bouwt de PDF content (gedeeld door preview en finale versie)
 function bouwPdfContent(doc, overeenkomst, student, { metHandtekeningen }) {
   doc.fontSize(18).font('Helvetica-Bold').text('Stageovereenkomst', { align: 'center' })
@@ -251,7 +316,7 @@ router.put('/:id/tekenen-student', authMiddleware, requireRole('student'), async
 
     const { data: bestaand } = await supabaseAdmin
       .from('stageovereenkomsten')
-      .select('id, student_id, mentor_handtekening')
+      .select('id, student_id, mentor_handtekening, startdatum, einddatum')
       .eq('id', id)
       .eq('student_id', req.user.id)
       .single()
@@ -276,6 +341,7 @@ router.put('/:id/tekenen-student', authMiddleware, requireRole('student'), async
     let pdfUrl = data.pdf_url
     if (nieuweStatus === 'volledig_getekend') {
       pdfUrl = await genereerEnUploadPdf(id)
+      await genereerLogboeken(bestaand.student_id, bestaand.startdatum, bestaand.einddatum)
     }
 
     res.json({ overeenkomst: { ...data, pdf_url: pdfUrl } })
@@ -340,7 +406,7 @@ router.put('/:id/tekenen-mentor', authMiddleware, requireRole('mentor'), async (
 
     const { data: bestaand } = await supabaseAdmin
       .from('stageovereenkomsten')
-      .select('id, student_id, student_handtekening')
+      .select('id, student_id, student_handtekening, startdatum, einddatum')
       .eq('id', id)
       .single()
 
@@ -367,6 +433,7 @@ router.put('/:id/tekenen-mentor', authMiddleware, requireRole('mentor'), async (
     let pdfUrl = data.pdf_url
     if (nieuweStatus === 'volledig_getekend') {
       pdfUrl = await genereerEnUploadPdf(id)
+      await genereerLogboeken(bestaand.student_id, bestaand.startdatum, bestaand.einddatum)
     }
 
     res.json({ overeenkomst: { ...data, pdf_url: pdfUrl } })
