@@ -6,12 +6,22 @@ const router = useRouter()
 const route = useRoute()
 const studentId = route.params.id
 
-const student = ref({ naam: 'Anissa Canton', bedrijf: 'Acme Corp' })
+const student = ref(null)
 const loading = ref(false)
 const error = ref('')
 const succes = ref('')
-const evaluatieIngevuld = ref(false)
+const mentorEvaluatieIngevuld = ref(false)
+const studentEvaluatieIngevuld = ref(false)
 const competenties = ref([])
+const studentBeschrijvingen = ref({})
+const docentNaam = ref('')
+
+const beschrijvingVelden = [
+  'communicatie_beschrijving',
+  'probleemoplossing_beschrijving',
+  'teamwork_beschrijving',
+  'vaktechnisch_beschrijving'
+]
 
 async function laadCompetencies() {
   const token = localStorage.getItem('token')
@@ -47,14 +57,42 @@ onMounted(async () => {
   try {
     await laadCompetencies()
 
-    const res = await fetch(`http://localhost:3000/api/tussentijdse-evaluaties/student/${studentId}`, {
+    const [studentRes, mentorEvalRes, studentEvalRes] = await Promise.all([
+      fetch(`http://localhost:3000/api/dashboards/mentor/student/${studentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch(`http://localhost:3000/api/tussentijdse-evaluaties/student/${studentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch(`http://localhost:3000/api/student-evaluaties/student/${studentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ])
+
+    const studentData = await studentRes.json()
+    if (studentData.student) {
+      student.value = studentData.student
+    }
+
+    const mentorEvalData = await mentorEvalRes.json()
+    if (mentorEvalData.evaluatie) {
+      mentorEvaluatieIngevuld.value = true
+      vulScoresIn(mentorEvalData.evaluatie)
+    }
+
+    const studentEvalData = await studentEvalRes.json()
+    if (studentEvalData.evaluatie) {
+      studentEvaluatieIngevuld.value = true
+      beschrijvingVelden.forEach(veld => {
+        studentBeschrijvingen.value[veld] = studentEvalData.evaluatie[veld] || ''
+      })
+    }
+
+    const meRes = await fetch('http://localhost:3000/api/auth/me', {
       headers: { Authorization: `Bearer ${token}` }
     })
-    const data = await res.json()
-    if (data.evaluatie) {
-      evaluatieIngevuld.value = true
-      vulScoresIn(data.evaluatie)
-    }
+    const meData = await meRes.json()
+    docentNaam.value = `${meData.user?.voornaam || ''} ${meData.user?.achternaam || ''}`
   } catch (err) {
     console.error(err)
   }
@@ -71,8 +109,9 @@ function maxScore() {
   return competenties.value.reduce((sum, c) => sum + c.niveaus[c.niveaus.length - 1].punten, 0)
 }
 
-function annuleren() {
-  router.push(`/docent/studenten/${studentId}`)
+function studentNaam() {
+  if (!student.value) return '...'
+  return `${student.value.voornaam} ${student.value.achternaam}`
 }
 </script>
 
@@ -89,19 +128,20 @@ function annuleren() {
         <a @click="router.push('/docent/evaluaties')">Evaluaties</a>
       </nav>
       <div class="profile">
-        <span>Jan</span>
-        <div class="avatar-klein">J</div>
+        <span>{{ docentNaam }}</span>
+        <div class="avatar-klein">{{ docentNaam[0] || 'D' }}</div>
       </div>
     </header>
 
     <section class="content">
       <a class="back-link" @click="router.push(`/docent/studenten/${studentId}`)">← Terug naar studentdossier</a>
       <h1>Tussentijdse evaluatie</h1>
-      <p class="subtitle">Voor {{ student.naam }} • {{ student.bedrijf }}</p>
+      <p class="subtitle">Voor {{ studentNaam() }}</p>
 
-      <h2 class="sectie-titel">Evaluatie mentor</h2>
+      <!-- DEEL 1: MENTOR EVALUATIE -->
+      <h2 class="sectie-titel">📋 Evaluatie door mentor</h2>
 
-      <div v-if="!evaluatieIngevuld" class="wacht-banner">
+      <div v-if="!mentorEvaluatieIngevuld" class="wacht-banner">
         <span>⏳</span>
         <p>De mentor heeft nog geen tussentijdse evaluatie ingevuld voor deze student.</p>
       </div>
@@ -140,16 +180,36 @@ function annuleren() {
         </div>
 
         <div class="totaal-rij">
-          <span class="totaal-label">Tussentijdse score</span>
+          <span class="totaal-label">Score mentor</span>
           <span class="totaal-waarde">{{ totaalScore() }} / {{ maxScore() }}</span>
         </div>
       </div>
 
-      <div v-if="error" class="error-msg">{{ error }}</div>
-      <div v-if="succes" class="succes-msg">{{ succes }}</div>
+      <!-- DEEL 2: STUDENT ZELFEVALUATIE -->
+      <h2 class="sectie-titel" style="margin-top: 40px;">✍️ Zelfevaluatie student</h2>
+
+      <div v-if="!studentEvaluatieIngevuld" class="wacht-banner">
+        <span>⏳</span>
+        <p>De student heeft nog geen zelfevaluatie ingediend.</p>
+      </div>
+
+      <div v-else class="zelfevaluatie-wrap">
+        <div
+          v-for="(comp, i) in competenties"
+          :key="'zelf-' + comp.naam"
+          class="zelfevaluatie-item"
+        >
+          <div class="zelfevaluatie-header">
+            <strong>{{ comp.naam }}</strong>
+          </div>
+          <p class="zelfevaluatie-tekst">
+            {{ studentBeschrijvingen[beschrijvingVelden[i]] || '—' }}
+          </p>
+        </div>
+      </div>
 
       <div class="actions">
-        <button class="cancel-btn" @click="annuleren">← Terug</button>
+        <button class="cancel-btn" @click="router.push(`/docent/studenten/${studentId}`)">← Terug</button>
       </div>
     </section>
   </main>
@@ -174,10 +234,9 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .back-link:hover { color: #991b1b; }
 .content h1 { margin: 0 0 4px; font-size: 26px; font-weight: 800; }
 .subtitle { margin: 0 0 24px; color: #64748b; font-size: 14px; }
-
 .sectie-titel { font-size: 18px; font-weight: 800; margin: 0 0 16px; }
 
-.wacht-banner { display: flex; gap: 12px; background: #fefce8; border: 1px solid #fde68a; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; color: #854d0e; line-height: 1.6; }
+.wacht-banner { display: flex; gap: 12px; background: #fefce8; border: 1px solid #fde68a; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; color: #854d0e; }
 .wacht-banner p { margin: 0; }
 
 .rubriek-tabel-wrap { background: white; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(15,23,42,0.04); margin-bottom: 28px; }
@@ -193,7 +252,6 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .cel-niveau { padding: 12px; border-left: 1px solid #f1f5f9; cursor: default; }
 .cel-niveau.geselecteerd { background: #fef2f2; box-shadow: inset 0 0 0 2px #991b1b; }
 .niveau-punten { display: block; font-size: 11px; font-weight: 800; color: #991b1b; margin-bottom: 2px; }
-.cel-niveau.geselecteerd .niveau-punten { color: #7f1d1d; }
 .niveau-label { display: block; font-size: 12px; font-weight: 800; color: #111827; margin-bottom: 4px; }
 .niveau-beschrijving { margin: 0; font-size: 10px; color: #64748b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .cel-punten { width: 90px; flex-shrink: 0; padding: 18px 16px; text-align: right; font-size: 14px; font-weight: 800; color: #111827; border-left: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: flex-end; }
@@ -202,10 +260,13 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .totaal-label { font-size: 13px; font-weight: 700; color: #64748b; }
 .totaal-waarde { font-size: 16px; font-weight: 800; color: #991b1b; min-width: 90px; text-align: right; }
 
-.error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
-.succes-msg { background: #ecfdf5; border: 1px solid #a7f3d0; color: #15803d; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+.zelfevaluatie-wrap { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+.zelfevaluatie-item { background: white; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
+.zelfevaluatie-header { margin-bottom: 10px; }
+.zelfevaluatie-header strong { font-size: 15px; font-weight: 800; color: #0f172a; }
+.zelfevaluatie-tekst { margin: 0; font-size: 14px; color: #334155; line-height: 1.7; white-space: pre-wrap; }
 
-.actions { display: flex; justify-content: flex-start; align-items: center; }
+.actions { display: flex; justify-content: flex-start; }
 .cancel-btn { border: 1px solid #cbd5e1; background: white; color: #334155; padding: 12px 22px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .cancel-btn:hover { background: #f8fafc; }
 
