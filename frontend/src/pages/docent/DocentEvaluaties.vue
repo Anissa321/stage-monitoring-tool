@@ -71,6 +71,65 @@ function gaNaarEindrapport(item) {
 }
 </script>
 
+<template>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-circle">SM</div>
+        <span>Stage Monitor</span>
+      </div>
+      <nav>
+        <a @click="router.push('/docent/dashboard')">Dashboard</a>
+        <a @click="router.push('/docent/studenten')">Studenten</a>
+        <a class="active" @click="router.push('/docent/evaluaties')">Evaluaties</a>
+      </nav>
+      <div class="profile">
+        <span>{{ docent?.voornaam || 'Docent' }}</span>
+      </div>
+    </header>
+
+    <section class="content">
+      <h1>Evaluaties</h1>
+      <p class="subtitle">Status van evaluaties per student</p>
+
+      <div v-if="loading" class="loading">Laden...</div>
+
+      <div v-else class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Bedrijf</th>
+              <th>Tussentijds</th>
+              <th>Eindscore</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in evaluaties" :key="item.student_id" class="eval-row" @click="gaNaarEindrapport(item)">
+              <td>
+                <div class="student-cel">
+                  <div class="avatar-small">{{ initialen(item.student_naam) }}</div>
+                  <strong>{{ item.student_naam }}</strong>
+                </div>
+              </td>
+              <td>{{ item.bedrijf }}</td>
+              <td>{{ item.tussentijds_score }}</td>
+              <td>{{ item.eindscore }}</td>
+              <td><span :class="statusKlasse(item.status)">{{ statusLabel(item.status) }}</span></td>
+              <td class="cel-arrow">→</td>
+            </tr>
+            <tr v-if="!evaluaties.length">
+              <td colspan="6" class="leeg">Geen studenten gekoppeld.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</template>
+
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
