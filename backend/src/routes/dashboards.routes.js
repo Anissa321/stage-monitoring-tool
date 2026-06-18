@@ -147,6 +147,71 @@ router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) =>
   }
 })
 
+// GET /api/dashboards/docent/student/:studentId
+router.get('/docent/student/:studentId', authMiddleware, requireRole('docent'), async (req, res) => {
+  try {
+    const { studentId } = req.params
+
+    const { data: koppeling } = await supabaseAdmin
+      .from('docent_studenten')
+      .select('student_id')
+      .eq('docent_id', req.user.id)
+      .eq('student_id', studentId)
+      .single()
+
+    if (!koppeling) return res.status(403).json({ error: 'Student niet gevonden' })
+
+    const { data: student } = await supabaseAdmin
+      .from('profiles')
+      .select('id, voornaam, achternaam, email')
+      .eq('id', studentId)
+      .single()
+
+    const { data: stage } = await supabaseAdmin
+      .from('stages')
+      .select('id, company_name, start_date, end_date, status')
+      .eq('student_id', studentId)
+      .single()
+
+    const { data: mentorKoppeling } = await supabaseAdmin
+      .from('mentor_studenten')
+      .select('mentor_id')
+      .eq('student_id', studentId)
+      .single()
+
+    let mentorNaam = null
+    if (mentorKoppeling) {
+      const { data: mentorProfiel } = await supabaseAdmin
+        .from('profiles')
+        .select('voornaam, achternaam')
+        .eq('id', mentorKoppeling.mentor_id)
+        .single()
+      if (mentorProfiel) mentorNaam = `${mentorProfiel.voornaam} ${mentorProfiel.achternaam}`
+    }
+
+    const { data: logboeken } = await supabaseAdmin
+      .from('logbooks')
+      .select('id, datum, status, tasks, week_number')
+      .eq('student_id', studentId)
+      .order('datum', { ascending: false })
+
+    res.json({
+      student,
+      stage: stage ? {
+        company_name: stage.company_name,
+        startdatum: stage.start_date,
+        einddatum: stage.end_date,
+        status: stage.status,
+        mentor_naam: mentorNaam
+      } : null,
+      logboeken: logboeken || []
+    })
+  } catch (err) {
+    console.error('Docent student detail error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
 // GET /api/dashboards/mentor
 router.get('/mentor', authMiddleware, requireRole('mentor'), async (req, res) => {
   try {
@@ -222,7 +287,6 @@ router.get('/mentor/student/:studentId', authMiddleware, requireRole('mentor'), 
       .eq('id', studentId)
       .single()
 
-    // Correcte kolomnamen voor stages tabel
     const { data: stage } = await supabaseAdmin
       .from('stages')
       .select('id, company_name, start_date, end_date, status')
