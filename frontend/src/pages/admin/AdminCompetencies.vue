@@ -159,6 +159,7 @@ function initialen() {
         <a @click="router.push('/admin/dashboard')">Dashboard</a>
         <a class="active">Competenties</a>
         <a @click="router.push('/admin/gebruikers')">Gebruikers</a>
+        <a @click="router.push('/admin/koppelingen')">Koppelingen</a>
       </nav>
       <div class="profile">
         <span>{{ voornaam() }}</span>

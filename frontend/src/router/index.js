@@ -31,7 +31,7 @@ import DocentEvaluaties from '../pages/docent/DocentEvaluaties.vue'
 import MentorEvaluaties from '../pages/mentor/MentorEvaluaties.vue'
 import EindevaluatieMentor from '../pages/mentor/EindevaluatieMentor.vue'
 import AdminGebruikers from '../pages/admin/AdminGebruikers.vue'
-
+import AdminKoppelingen from '../pages/admin/AdminKoppelingen.vue'
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'LoginPage', component: LoginPage },
@@ -79,7 +79,8 @@ const routes = [
   { path: '/admin', redirect: '/admin/dashboard' },
   { path: '/admin/dashboard', name: 'AdminDashboard', component: AdminDashboard },
   { path: '/admin/competenties', name: 'AdminCompetencies', component: AdminCompetencies },
-  { path: '/admin/gebruikers', name: 'AdminGebruikers', component: AdminGebruikers }
+  { path: '/admin/gebruikers', name: 'AdminGebruikers', component: AdminGebruikers },
+  { path: '/admin/koppelingen', name: 'AdminKoppelingen', component: AdminKoppelingen }
 ]
 
 const router = createRouter({
