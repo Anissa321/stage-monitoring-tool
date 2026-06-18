@@ -11,6 +11,8 @@ import tussentijdseEvaluatiesRoutes from './routes/tussentijdseEvaluaties.routes
 import evaluatieCompetentiesRoutes from './routes/evaluatieCompetencies.routes.js'
 import gebruikersRoutes from './routes/gebruikers.routes.js'
 import studentEvaluatiesRoutes from './routes/studentEvaluaties.routes.js'
+import tussentijdseRapportenRoutes from './routes/tussentijdseRapporten.routes.js'
+
 dotenv.config()
 
 const app = express()
@@ -39,6 +41,7 @@ app.use('/api/tussentijdse-evaluaties', tussentijdseEvaluatiesRoutes)
 app.use('/api/evaluatie-competenties', evaluatieCompetentiesRoutes)
 app.use('/api/gebruikers', gebruikersRoutes)
 app.use('/api/student-evaluaties', studentEvaluatiesRoutes)
+app.use('/api/tussentijdse-rapporten', tussentijdseRapportenRoutes)
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint niet gevonden' })
