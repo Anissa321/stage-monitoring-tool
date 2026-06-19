@@ -32,6 +32,7 @@ import MentorEvaluaties from '../pages/mentor/MentorEvaluaties.vue'
 import EindevaluatieMentor from '../pages/mentor/EindevaluatieMentor.vue'
 import AdminGebruikers from '../pages/admin/AdminGebruikers.vue'
 import AdminKoppelingen from '../pages/admin/AdminKoppelingen.vue'
+
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'LoginPage', component: LoginPage },
