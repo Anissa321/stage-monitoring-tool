@@ -7,7 +7,7 @@ const logboeken = ref([])
 const loading = ref(true)
 const error = ref('')
 const user = ref(null)
-const uitgeklapt = ref({})
+const huidigeWeekIndex = ref(null)
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
@@ -29,6 +29,8 @@ onMounted(async () => {
     }
     logboeken.value = data.logboeken
     user.value = dashData.user
+
+    bepaalHuidigeWeek()
   } catch (err) {
     error.value = 'Verbindingsfout met server'
   } finally {
@@ -36,7 +38,7 @@ onMounted(async () => {
   }
 })
 
-const weken = computed(() => {
+const alleWeken = computed(() => {
   const groepen = {}
   logboeken.value.forEach(log => {
     const week = log.week_number
@@ -66,7 +68,7 @@ const weken = computed(() => {
       }
 
       return {
-        weekNr,
+        weekNr: Number(weekNr),
         logs: sortedLogs,
         totaalUren,
         nietIngevuld,
@@ -77,11 +79,47 @@ const weken = computed(() => {
         signaalTekst
       }
     })
-    .sort((a, b) => b.weekNr - a.weekNr)
+    .sort((a, b) => a.weekNr - b.weekNr)
 })
 
-function toggleWeek(weekNr) {
-  uitgeklapt.value[weekNr] = !uitgeklapt.value[weekNr]
+const huidigeWeek = computed(() => {
+  if (huidigeWeekIndex.value === null || !alleWeken.value.length) return null
+  return alleWeken.value[huidigeWeekIndex.value] || null
+})
+
+const kanVorige = computed(() => huidigeWeekIndex.value > 0)
+const kanVolgende = computed(() => huidigeWeekIndex.value < alleWeken.value.length - 1)
+
+function vorigeWeek() {
+  if (kanVorige.value) huidigeWeekIndex.value--
+}
+
+function volgendeWeek() {
+  if (kanVolgende.value) huidigeWeekIndex.value++
+}
+
+function springNaarWeek(weekNr) {
+  const index = alleWeken.value.findIndex(w => w.weekNr === Number(weekNr))
+  if (index !== -1) huidigeWeekIndex.value = index
+}
+
+function bepaalHuidigeWeek() {
+  const vandaag = new Date()
+  const dagVanWeek = vandaag.getDay()
+  const diffNaarMaandag = dagVanWeek === 0 ? -6 : 1 - dagVanWeek
+  const maandag = new Date(vandaag)
+  maandag.setDate(vandaag.getDate() + diffNaarMaandag)
+  const maandagStr = maandag.toISOString().split('T')[0]
+
+  const matchIndex = alleWeken.value.findIndex(w =>
+    w.logs.some(l => l.datum === maandagStr)
+  )
+
+  if (matchIndex !== -1) {
+    huidigeWeekIndex.value = matchIndex
+  } else if (alleWeken.value.length > 0) {
+    huidigeWeekIndex.value = alleWeken.value.length - 1
+  }
 }
 
 function statusLabel(status) {
@@ -168,40 +206,49 @@ async function logout() {
 
         <div class="title-block">
           <h1>Logboek overzicht</h1>
-          <p>Wekelijkse voortgang — klik op een week voor details</p>
+          <p>Bekijk je week, of spring naar een andere week</p>
         </div>
 
-        <section v-for="week in weken" :key="week.weekNr" class="week-card" :class="'signaal-' + week.signaal">
-          <div class="week-header" @click="toggleWeek(week.weekNr)">
-            <div class="week-titel">
-              <h2>Week {{ week.weekNr }}</h2>
-              <span class="signaal-badge" :class="'badge-' + week.signaal">{{ week.signaalTekst }}</span>
+        <div v-if="!huidigeWeek" class="geen-data">Geen logboeken gevonden.</div>
+
+        <section v-else>
+          <div class="week-navigatie">
+            <button class="nav-pijl" :disabled="!kanVorige" @click="vorigeWeek">← Vorige</button>
+
+            <div class="week-kiezer">
+              <h2>Week {{ huidigeWeek.weekNr }}</h2>
+              <select :value="huidigeWeek.weekNr" @change="springNaarWeek($event.target.value)" class="week-select">
+                <option v-for="w in alleWeken" :key="w.weekNr" :value="w.weekNr">Week {{ w.weekNr }}</option>
+              </select>
+              <span class="signaal-badge" :class="'badge-' + huidigeWeek.signaal">{{ huidigeWeek.signaalTekst }}</span>
             </div>
-            <div class="week-rechts">
-              <span class="uren-badge">⏱ {{ week.totaalUren }} uur</span>
-              <span class="chevron" :class="{ open: uitgeklapt[week.weekNr] }">▾</span>
-            </div>
+
+            <button class="nav-pijl" :disabled="!kanVolgende" @click="volgendeWeek">Volgende →</button>
           </div>
 
-          <div class="mentor-feedback-block" :class="'mentor-' + (week.mentor_week_status || 'wacht')">
-            <span class="small-label">👤 Feedback van mentor</span>
-            <p class="mentor-status">{{ mentorStatusLabel(week.mentor_week_status) }}</p>
-            <p v-if="week.mentor_feedback">{{ week.mentor_feedback }}</p>
-            <p v-if="week.mentor_naam" class="mentor-naam-info">— {{ week.mentor_naam }}</p>
-          </div>
+          <article class="week-card" :class="'signaal-' + huidigeWeek.signaal">
+            <div class="week-card-top">
+              <span class="uren-badge">⏱ {{ huidigeWeek.totaalUren }} uur</span>
+            </div>
 
-          <div v-if="uitgeklapt[week.weekNr]" class="dagen-detail">
-            <div v-for="log in week.logs" :key="log.id" class="dag-item" :class="statusKlasse(log.status)">
-              <div class="dag-kop">
-                <span class="dag-naam">{{ formatDag(log.datum) }} {{ formatDatum(log.datum) }}</span>
-                <span class="dag-status" :class="statusKlasse(log.status)">{{ statusLabel(log.status) }}</span>
+            <div class="mentor-feedback-block" :class="'mentor-' + (huidigeWeek.mentor_week_status || 'wacht')">
+              <span class="small-label">👤 Feedback van mentor</span>
+              <p class="mentor-status">{{ mentorStatusLabel(huidigeWeek.mentor_week_status) }}</p>
+              <p v-if="huidigeWeek.mentor_feedback">{{ huidigeWeek.mentor_feedback }}</p>
+              <p v-if="huidigeWeek.mentor_naam" class="mentor-naam-info">— {{ huidigeWeek.mentor_naam }}</p>
+            </div>
+
+            <div class="dagen-detail">
+              <div v-for="log in huidigeWeek.logs" :key="log.id" class="dag-item" :class="statusKlasse(log.status)">
+                <div class="dag-kop">
+                  <span class="dag-naam">{{ formatDag(log.datum) }} {{ formatDatum(log.datum) }}</span>
+                  <span class="dag-status" :class="statusKlasse(log.status)">{{ statusLabel(log.status) }}</span>
+                </div>
+                <p v-if="log.tasks" class="dag-taak">{{ log.tasks }}</p>
               </div>
-              <p v-if="log.tasks" class="dag-taak">{{ log.tasks }}</p>
             </div>
-          </div>
+          </article>
         </section>
-
-        <p v-if="!weken.length" class="geen-data">Geen logboeken gevonden.</p>
       </div>
     </section>
   </main>
@@ -244,26 +291,61 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .title-block h1 { margin: 0; font-size: 30px; font-weight: 800; }
 .title-block p { margin: 6px 0 30px; color: #64748b; }
 
-.week-card { background: white; border-radius: 18px; padding: 24px 28px; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(15,23,42,0.04); margin-bottom: 18px; border-left: 5px solid #cbd5e1; }
+.week-navigatie {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+  margin-bottom: 24px;
+}
+.nav-pijl {
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #334155;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.2s;
+}
+.nav-pijl:hover:not(:disabled) { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+.nav-pijl:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.week-kiezer { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.week-kiezer h2 { margin: 0; font-size: 22px; color: #0f172a; }
+.week-select {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  background: white;
+  cursor: pointer;
+}
+
+.week-card { background: white; border-radius: 18px; padding: 24px 28px; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(15,23,42,0.04); border-left: 5px solid #cbd5e1; }
 .week-card.signaal-aandacht { border-left-color: #dc2626; }
 .week-card.signaal-ok { border-left-color: #16a34a; }
 .week-card.signaal-wacht { border-left-color: #f59e0b; }
 
-.week-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-.week-titel { display: flex; align-items: center; gap: 14px; }
-.week-titel h2 { font-size: 18px; font-weight: 800; margin: 0; }
+.week-card-top { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 
 .signaal-badge { padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .badge-ok { background: #dcfce7; color: #166534; }
 .badge-aandacht { background: #fee2e2; color: #991b1b; }
 .badge-wacht { background: #fef3c7; color: #92400e; }
 
-.week-rechts { display: flex; align-items: center; gap: 16px; }
 .uren-badge { background: #f1f5f9; color: #334155; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; }
-.chevron { color: #94a3b8; font-size: 16px; transition: transform 0.2s; display: inline-block; }
-.chevron.open { transform: rotate(180deg); }
 
-.mentor-feedback-block { border-radius: 14px; padding: 16px 18px; margin-top: 16px; }
+.mentor-feedback-block { border-radius: 14px; padding: 16px 18px; margin-top: 8px; }
 .mentor-feedback-block.mentor-goedgekeurd { background: #ecfdf5; border: 1px solid #a7f3d0; }
 .mentor-feedback-block.mentor-afgekeurd { background: #fef2f2; border: 1px solid #fecaca; }
 .mentor-feedback-block.mentor-wacht { background: #f8fafc; border: 1px solid #e2e8f0; }
@@ -289,6 +371,6 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
   .topbar { padding: 0 20px; }
   nav { display: none; }
   .content { padding: 24px 20px; }
-  .week-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .week-navigatie { flex-direction: column; }
 }
 </style>
