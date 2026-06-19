@@ -6,6 +6,7 @@ const router = useRouter()
 const logboeken = ref([])
 const weekFeedback = ref({})
 const user = ref(null)
+const loading = ref(true)
 
 async function logout() {
   const token = localStorage.getItem('token')
@@ -107,39 +108,58 @@ const logboekenPerWeek = computed(() => {
     }))
 })
 
+async function laadLogboeken() {
+  const token = localStorage.getItem('token')
+  const [logRes, reviewRes] = await Promise.all([
+    fetch('http://localhost:3000/api/logboeken/mijn', {
+      headers: { Authorization: `Bearer ${token}` }
+    }),
+    fetch('http://localhost:3000/api/logboeken/mijn/reviews', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  ])
+
+  const logData = await logRes.json()
+  logboeken.value = logData.logboeken || []
+
+  if (reviewRes.ok) {
+    const reviewData = await reviewRes.json()
+    weekFeedback.value = {}
+    reviewData.reviews?.forEach(r => {
+      weekFeedback.value[r.week_number] = {
+        feedback: r.week_feedback,
+        mentor_naam: r.mentor_naam,
+        status: r.week_status
+      }
+    })
+  }
+}
+
 onMounted(async () => {
   try {
     const token = localStorage.getItem('token')
-    const [logRes, dashRes, reviewRes] = await Promise.all([
-      fetch('http://localhost:3000/api/logboeken/mijn', {
-        headers: { Authorization: `Bearer ${token}` }
-      }),
-      fetch('http://localhost:3000/api/dashboards/student', {
-        headers: { Authorization: `Bearer ${token}` }
-      }),
-      fetch('http://localhost:3000/api/logboeken/mijn/reviews', {
+
+    // Eerst proberen om de volledige stageperiode te genereren (idempotent — maakt enkel ontbrekende dagen aan)
+    try {
+      await fetch('http://localhost:3000/api/logboeken/genereer-periode', {
+        method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })
-    ])
+    } catch (genErr) {
+      console.warn('Kon periode niet genereren:', genErr)
+    }
 
-    const logData = await logRes.json()
+    const dashRes = await fetch('http://localhost:3000/api/dashboards/student', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     const dashData = await dashRes.json()
-
-    logboeken.value = logData.logboeken || []
     user.value = dashData.user
 
-    if (reviewRes.ok) {
-      const reviewData = await reviewRes.json()
-      reviewData.reviews?.forEach(r => {
-        weekFeedback.value[r.week_number] = {
-          feedback: r.week_feedback,
-          mentor_naam: r.mentor_naam,
-          status: r.week_status
-        }
-      })
-    }
+    await laadLogboeken()
   } catch (err) {
     console.error(err)
+  } finally {
+    loading.value = false
   }
 })
 </script>
@@ -171,16 +191,21 @@ onMounted(async () => {
         <p class="subtitle">Overzicht van je ingediende logboeken</p>
       </section>
 
-      <section class="week-section">
+      <div v-if="loading" class="loading">Laden...</div>
+
+      <section v-else class="week-section">
         <div class="section-header">
           <h2>Logboeken per week</h2>
+        </div>
+
+        <div v-if="logboekenPerWeek.length === 0" class="leeg-bericht">
+          Er zijn nog geen logboeken beschikbaar. Zorg dat je een goedgekeurd stagevoorstel hebt met een geldige periode.
         </div>
 
         <section v-for="weekGroep in logboekenPerWeek" :key="weekGroep.week" class="week-block">
           <div class="week-title">
             <h2>
               Week {{ weekGroep.week }}
-              <span v-if="Number(weekGroep.week) === 13" class="week-badge blue">Huidige week</span>
               <span v-if="weekGroep.week_status === 'goedgekeurd'" class="week-badge green">✓ Ingediend</span>
               <span v-else-if="weekGroep.week_status === 'ingediend'" class="week-badge green">✓ Ingediend</span>
               <span v-else-if="weekGroep.week_status === 'afgekeurd'" class="week-badge red">✗ Afgekeurd</span>
@@ -215,13 +240,9 @@ onMounted(async () => {
                 + Logboek invullen
               </button>
 
-              <div v-if="logboek.status === 'ingediend' && logboek.datum === '2026-05-08'" class="card-actions">
+              <div v-if="logboek.status === 'ingediend'" class="card-actions">
                 <div class="readonly-badge">🔒 Niet meer aanpasbaar</div>
                 <button class="delete-btn" @click.stop="resetLogboek(logboek)">🗑 Reset</button>
-              </div>
-
-              <div v-if="logboek.status === 'ingediend' && logboek.datum !== '2026-05-08'" class="readonly-badge">
-                🔒 Niet meer aanpasbaar
               </div>
 
               <div v-if="logboek.status === 'goedgekeurd'" class="readonly-badge">
@@ -275,6 +296,9 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .hero h1 { margin: 10px 0; font-size: 38px; color: #0f172a; }
 
 .subtitle { color: #64748b; }
+
+.loading { text-align: center; padding: 60px; color: #64748b; }
+.leeg-bericht { background: white; border-radius: 16px; padding: 32px; text-align: center; color: #64748b; margin-top: 20px; }
 
 .week-section { margin-top: 32px; }
 

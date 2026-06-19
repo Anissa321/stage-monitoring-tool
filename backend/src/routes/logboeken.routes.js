@@ -5,6 +5,108 @@ import { supabaseAdmin } from '../config/supabase.js'
 
 const router = Router()
 
+// POST /api/logboeken/genereer-periode — genereer logboek records voor hele stageperiode (student)
+router.post('/genereer-periode', authMiddleware, requireRole('student'), async (req, res) => {
+  try {
+    let startdatum, einddatum
+
+    const { data: stage } = await supabaseAdmin
+      .from('stages')
+      .select('start_date, end_date')
+      .eq('student_id', req.user.id)
+      .maybeSingle()
+
+    if (stage) {
+      startdatum = stage.start_date
+      einddatum = stage.end_date
+    } else {
+      const { data: voorstel } = await supabaseAdmin
+        .from('stagevoorstellen')
+        .select('startdatum, einddatum')
+        .eq('student_id', req.user.id)
+        .eq('status', 'goedgekeurd')
+        .order('indieningsdatum', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!voorstel) {
+        return res.status(404).json({ error: 'Geen goedgekeurd stagevoorstel of stage gevonden' })
+      }
+      startdatum = voorstel.startdatum
+      einddatum = voorstel.einddatum
+    }
+
+    if (!startdatum || !einddatum) {
+      return res.status(400).json({ error: 'Geen geldige periode gevonden' })
+    }
+
+    const { data: bestaandeLogboeken } = await supabaseAdmin
+      .from('logbooks')
+      .select('datum')
+      .eq('student_id', req.user.id)
+
+    const bestaandeDatums = new Set((bestaandeLogboeken || []).map(l => l.datum))
+
+    // Belangrijk: parse als UTC datum (jaar, maand, dag) om tijdzone-verschuivingen te vermijden
+    const [startJaar, startMaand, startDag] = startdatum.split('-').map(Number)
+    const [eindJaar, eindMaand, eindDag] = einddatum.split('-').map(Number)
+
+    const start = new Date(Date.UTC(startJaar, startMaand - 1, startDag))
+    const eind = new Date(Date.UTC(eindJaar, eindMaand - 1, eindDag))
+
+    const nieuweRijen = []
+
+    let huidigeDatum = new Date(start)
+    let weekTeller = 0
+    let laatsteMaandag = null
+
+    while (huidigeDatum <= eind) {
+      const dagVanWeek = huidigeDatum.getUTCDay() // 0 = zondag, 6 = zaterdag (UTC-consistent)
+      const datumStr = huidigeDatum.toISOString().split('T')[0]
+
+      // Alleen werkdagen (maandag t/m vrijdag) tellen mee — weekend wordt volledig genegeerd,
+      // zowel voor de weeknummering als voor het aanmaken van logboek-rijen
+      if (dagVanWeek >= 1 && dagVanWeek <= 5) {
+        const maandagVanDezeWeek = new Date(huidigeDatum)
+        const diffNaarMaandag = dagVanWeek === 0 ? -6 : 1 - dagVanWeek
+        maandagVanDezeWeek.setUTCDate(huidigeDatum.getUTCDate() + diffNaarMaandag)
+        const maandagStr = maandagVanDezeWeek.toISOString().split('T')[0]
+
+        if (laatsteMaandag !== maandagStr) {
+          weekTeller++
+          laatsteMaandag = maandagStr
+        }
+
+        if (!bestaandeDatums.has(datumStr)) {
+          nieuweRijen.push({
+            student_id: req.user.id,
+            datum: datumStr,
+            week_number: weekTeller,
+            status: 'niet_ingevuld'
+          })
+        }
+      }
+
+      huidigeDatum.setUTCDate(huidigeDatum.getUTCDate() + 1)
+    }
+
+    if (nieuweRijen.length === 0) {
+      return res.json({ message: 'Geen nieuwe logboeken nodig, alles al aangemaakt', aangemaakt: 0 })
+    }
+
+    const { error } = await supabaseAdmin
+      .from('logbooks')
+      .insert(nieuweRijen)
+
+    if (error) return res.status(500).json({ error: 'Kon logboeken niet genereren' })
+
+    res.json({ message: 'Logboeken gegenereerd', aangemaakt: nieuweRijen.length })
+  } catch (err) {
+    console.error('Genereer periode error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
 // GET /api/logboeken/mijn — eigen logboeken ophalen (student)
 router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => {
   try {
@@ -264,7 +366,6 @@ router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) =>
       .in('logbook_id', logboekIds)
       .eq('selected', true)
 
-    // Mentor feedback per week ophalen
     const weekNummers = [...new Set(data.map(l => l.week_number))]
     const { data: reviews } = await supabaseAdmin
       .from('logbook_reviews')
