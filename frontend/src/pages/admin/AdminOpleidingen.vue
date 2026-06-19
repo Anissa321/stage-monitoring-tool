@@ -4,25 +4,22 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const user = ref(null)
-const studenten = ref([])
-const mentors = ref([])
-const docenten = ref([])
+const opleidingen = ref([])
 const loading = ref(true)
+const showForm = ref(false)
+const bewerkId = ref(null)
 const succes = ref('')
 const error = ref('')
-const bewerkStudent = ref(null)
-const bewerkForm = ref({ mentor_id: '', docent_id: '' })
+const naamInput = ref('')
 
-async function laadData() {
+async function laadOpleidingen() {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/gebruikers/studenten-overzicht', {
+    const res = await fetch('http://localhost:3000/api/opleidingen', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
-    studenten.value = data.studenten || []
-    mentors.value = data.mentors || []
-    docenten.value = data.docenten || []
+    opleidingen.value = data.opleidingen || []
   } catch (err) {
     console.error(err)
   }
@@ -36,7 +33,7 @@ onMounted(async () => {
     })
     const data = await res.json()
     user.value = data.user
-    await laadData()
+    await laadOpleidingen()
   } catch (err) {
     console.error(err)
   } finally {
@@ -44,39 +41,84 @@ onMounted(async () => {
   }
 })
 
-function openBewerken(student) {
-  bewerkStudent.value = student
-  bewerkForm.value = {
-    mentor_id: student.mentor_id || '',
-    docent_id: student.docent_id || ''
-  }
+function openNieuw() {
+  bewerkId.value = null
+  naamInput.value = ''
+  error.value = ''
+  showForm.value = true
+}
+
+function openBewerken(opleiding) {
+  bewerkId.value = opleiding.id
+  naamInput.value = opleiding.naam
+  error.value = ''
+  showForm.value = true
 }
 
 function annuleer() {
-  bewerkStudent.value = null
+  showForm.value = false
+  bewerkId.value = null
   error.value = ''
 }
 
 async function opslaan() {
+  if (!naamInput.value.trim()) {
+    error.value = 'Naam is verplicht.'
+    return
+  }
   error.value = ''
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/gebruikers/koppeling/${bewerkStudent.value.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        mentor_id: bewerkForm.value.mentor_id || null,
-        docent_id: bewerkForm.value.docent_id || null
+    if (bewerkId.value) {
+      const res = await fetch(`http://localhost:3000/api/opleidingen/${bewerkId.value}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ naam: naamInput.value })
       })
-    })
-    if (!res.ok) { error.value = 'Kon koppeling niet opslaan'; return }
-    succes.value = `Koppeling bijgewerkt voor ${bewerkStudent.value.voornaam} ${bewerkStudent.value.achternaam}!`
-    await laadData()
-    bewerkStudent.value = null
-    setTimeout(() => succes.value = '', 3000)
+      if (!res.ok) { error.value = 'Kon opleiding niet aanpassen'; return }
+      succes.value = 'Opleiding aangepast!'
+    } else {
+      const res = await fetch('http://localhost:3000/api/opleidingen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ naam: naamInput.value })
+      })
+      if (!res.ok) { error.value = 'Kon opleiding niet aanmaken'; return }
+      succes.value = 'Opleiding toegevoegd!'
+    }
+    await laadOpleidingen()
+    showForm.value = false
+    bewerkId.value = null
+    setTimeout(() => succes.value = '', 2000)
   } catch (err) {
     error.value = 'Verbindingsfout met server.'
   }
+}
+
+async function verwijder(id, naam) {
+  if (!confirm(`Opleiding "${naam}" verwijderen?`)) return
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch(`http://localhost:3000/api/opleidingen/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      error.value = data.error || 'Kon opleiding niet verwijderen'
+      return
+    }
+    await laadOpleidingen()
+    showForm.value = false
+    succes.value = 'Opleiding verwijderd!'
+    setTimeout(() => succes.value = '', 2000)
+  } catch (err) {
+    error.value = 'Verbindingsfout met server.'
+  }
+}
+
+function gaNaarCompetenties(opleidingId) {
+  router.push(`/admin/competenties?opleiding=${opleidingId}`)
 }
 
 async function logout() {
@@ -111,8 +153,8 @@ function initialen() {
         <a @click="router.push('/admin/dashboard')">Dashboard</a>
         <a @click="router.push('/admin/competenties')">Competenties</a>
         <a @click="router.push('/admin/gebruikers')">Gebruikers</a>
-        <a class="active">Koppelingen</a>
-        <a @click="router.push('/admin/opleidingen')">Opleidingen</a>
+        <a @click="router.push('/admin/koppelingen')">Koppelingen</a>
+        <a class="active">Opleidingen</a>
       </nav>
       <div class="profile">
         <span>{{ voornaam() }}</span>
@@ -124,79 +166,47 @@ function initialen() {
     <div class="page-content">
       <div class="page-header">
         <div>
-          <h1>Koppelingen beheren</h1>
-          <p>Wijzig de mentor of docent van een student — ook tijdens een lopende stage</p>
+          <h1>Opleidingen beheren</h1>
+          <p>Elke opleiding heeft zijn eigen evaluatierubriek met competenties op maat</p>
         </div>
+        <button class="new-btn" @click="openNieuw">+ Opleiding</button>
+      </div>
+
+      <div class="info-banner">
+        ℹ️ Klik op een opleiding om de competenties van die opleiding te beheren.
       </div>
 
       <div v-if="succes" class="succes-msg">{{ succes }}</div>
-      <div v-if="error && !bewerkStudent" class="error-msg">{{ error }}</div>
+      <div v-if="error && !showForm" class="error-msg">{{ error }}</div>
 
       <div v-if="loading" class="loading">Laden...</div>
 
-      <div v-else class="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Student</th>
-              <th>Email</th>
-              <th>Mentor</th>
-              <th>Docent</th>
-              <th>Actie</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="s in studenten" :key="s.id">
-              <td><strong>{{ s.voornaam }} {{ s.achternaam }}</strong></td>
-              <td>{{ s.email }}</td>
-              <td>
-                <span v-if="s.mentor_naam" class="badge blue">{{ s.mentor_naam }}</span>
-                <span v-else class="badge gray">Geen mentor</span>
-              </td>
-              <td>
-                <span v-if="s.docent_naam" class="badge green">{{ s.docent_naam }}</span>
-                <span v-else class="badge gray">Geen docent</span>
-              </td>
-              <td>
-                <button class="edit-btn" @click="openBewerken(s)">✏️ Wijzigen</button>
-              </td>
-            </tr>
-            <tr v-if="studenten.length === 0">
-              <td colspan="5" class="leeg">Geen studenten gevonden.</td>
-            </tr>
-          </tbody>
-        </table>
+      <div v-else class="opleidingen-lijst">
+        <div v-for="o in opleidingen" :key="o.id" class="opleiding-rij">
+          <div class="opleiding-info" @click="gaNaarCompetenties(o.id)">
+            <div class="opleiding-icoon">🎓</div>
+            <div>
+              <h3>{{ o.naam }}</h3>
+              <p>Klik om de competenties van deze opleiding te bekijken</p>
+            </div>
+          </div>
+          <div class="opleiding-acties">
+            <button class="edit-btn" @click="openBewerken(o)">✏️ Bewerken</button>
+            <button class="delete-btn" @click="verwijder(o.id, o.naam)">🗑</button>
+          </div>
+        </div>
+        <p v-if="opleidingen.length === 0" class="leeg">Nog geen opleidingen aangemaakt.</p>
       </div>
 
-      <!-- Modal -->
-      <div v-if="bewerkStudent" class="modal-overlay" @click.self="annuleer">
+      <!-- Formulier modal -->
+      <div v-if="showForm" class="modal-overlay" @click.self="annuleer">
         <div class="modal">
           <button class="back-btn" @click="annuleer">← Terug</button>
-          <h2>Koppeling wijzigen</h2>
-          <p>Wijzig de mentor of docent van <strong>{{ bewerkStudent.voornaam }} {{ bewerkStudent.achternaam }}</strong>.</p>
-
-          <div class="warning-banner">
-            ⚠️ Let op — bij een wisseling midden in de stage worden de logboeken en evaluaties van de vorige mentor/docent bewaard. De nieuwe mentor/docent start vanaf nu.
-          </div>
+          <h2>{{ bewerkId ? 'Opleiding bewerken' : 'Nieuwe opleiding' }}</h2>
 
           <div class="form-group">
-            <label>Mentor</label>
-            <select v-model="bewerkForm.mentor_id">
-              <option value="">— Geen mentor —</option>
-              <option v-for="m in mentors" :key="m.id" :value="m.id">
-                {{ m.voornaam }} {{ m.achternaam }} ({{ m.email }})
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Docent</label>
-            <select v-model="bewerkForm.docent_id">
-              <option value="">— Geen docent —</option>
-              <option v-for="d in docenten" :key="d.id" :value="d.id">
-                {{ d.voornaam }} {{ d.achternaam }} ({{ d.email }})
-              </option>
-            </select>
+            <label>Naam opleiding *</label>
+            <input v-model="naamInput" type="text" placeholder="bijv. Bedrijfsmanagement" />
           </div>
 
           <div v-if="error" class="error-msg">{{ error }}</div>
@@ -226,32 +236,34 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .logout-btn { border: none; background: #991b1b; color: white; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .logout-btn:hover { background: #7f1d1d; }
 .page-content { padding: 40px 64px; }
-.page-header { margin-bottom: 24px; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
 .page-header h1 { margin: 0; font-size: 28px; font-weight: 800; }
 .page-header p { margin: 6px 0 0; color: #64748b; font-size: 14px; }
+.new-btn { border: none; background: #991b1b; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.new-btn:hover { background: #7f1d1d; }
+.info-banner { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 14px 18px; border-radius: 12px; font-size: 14px; margin-bottom: 24px; }
 .loading { text-align: center; padding: 40px; color: #64748b; }
-.table-card { background: white; border-radius: 22px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 14px 30px rgba(15,23,42,0.05); }
-table { width: 100%; border-collapse: collapse; }
-th { background: #f8fafc; color: #94a3b8; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.7px; padding: 16px 28px; }
-td { padding: 18px 28px; border-top: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
-.badge { padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-.badge.blue { background: #dbeafe; color: #1d4ed8; }
-.badge.green { background: #dcfce7; color: #15803d; }
-.badge.gray { background: #f1f5f9; color: #64748b; }
-.edit-btn { border: 1px solid #e5e7eb; background: white; color: #334155; padding: 6px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; }
+.opleidingen-lijst { display: flex; flex-direction: column; gap: 12px; }
+.opleiding-rij { background: white; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(15,23,42,0.04); }
+.opleiding-info { display: flex; align-items: center; gap: 16px; cursor: pointer; flex: 1; }
+.opleiding-icoon { width: 44px; height: 44px; border-radius: 12px; background: #fee2e2; display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
+.opleiding-info h3 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+.opleiding-info p { margin: 0; color: #64748b; font-size: 13px; }
+.opleiding-acties { display: flex; gap: 8px; align-items: center; }
+.edit-btn { border: 1px solid #e5e7eb; background: white; color: #334155; padding: 8px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 13px; }
 .edit-btn:hover { background: #fef3c7; }
-.leeg { text-align: center; color: #64748b; padding: 40px; }
+.delete-btn { border: none; background: transparent; cursor: pointer; font-size: 18px; padding: 6px; border-radius: 8px; }
+.delete-btn:hover { background: #fee2e2; }
+.leeg { color: #64748b; text-align: center; padding: 40px; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; }
-.modal { background: white; border-radius: 20px; padding: 36px; width: 560px; max-width: 90vw; box-shadow: 0 24px 60px rgba(0,0,0,0.15); }
+.modal { background: white; border-radius: 20px; padding: 36px; width: 480px; max-width: 90vw; box-shadow: 0 24px 60px rgba(0,0,0,0.15); }
 .back-btn { border: none; background: transparent; color: #64748b; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 16px; }
 .back-btn:hover { color: #991b1b; }
-.modal h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; }
-.modal > p { margin: 0 0 20px; color: #64748b; font-size: 14px; }
-.warning-banner { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; padding: 14px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 20px; }
-.form-group { margin-bottom: 18px; }
+.modal h2 { margin: 0 0 24px; font-size: 22px; font-weight: 800; }
+.form-group { margin-bottom: 20px; }
 .form-group label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 8px; }
-.form-group select { width: 100%; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; font-size: 14px; font-family: inherit; }
-.form-group select:focus { outline: none; border-color: #991b1b; box-shadow: 0 0 0 3px rgba(153,27,27,0.1); }
+.form-group input { width: 100%; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; font-size: 14px; font-family: inherit; }
+.form-group input:focus { outline: none; border-color: #991b1b; box-shadow: 0 0 0 3px rgba(153,27,27,0.1); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
 .annuleer-btn { border: 1px solid #e5e7eb; background: white; color: #334155; padding: 12px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; }
 .opslaan-btn { border: none; background: #991b1b; color: white; padding: 12px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; }
@@ -260,8 +272,6 @@ td { padding: 18px 28px; border-top: 1px solid #f1f5f9; font-size: 14px; color: 
 .error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
 @media (max-width: 900px) {
   .topbar { padding: 0 20px; }
-  nav { display: none; }
   .page-content { padding: 24px 20px; }
-  table { display: block; overflow-x: auto; }
 }
 </style>

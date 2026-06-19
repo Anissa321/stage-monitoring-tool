@@ -14,10 +14,14 @@ const succes = ref('')
 
 async function laadCompetencies() {
   const token = localStorage.getItem('token')
-  const res = await fetch('http://localhost:3000/api/evaluatie-competenties', {
+  const res = await fetch(`http://localhost:3000/api/evaluatie-competenties/student/${studentId}`, {
     headers: { Authorization: `Bearer ${token}` }
   })
   const data = await res.json()
+  if (!res.ok) {
+    error.value = data.error || 'Kon competenties niet ophalen'
+    return
+  }
   competenties.value = data.competenties.map(c => ({
     ...c,
     geselecteerd: null,

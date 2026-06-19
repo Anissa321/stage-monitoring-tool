@@ -31,10 +31,14 @@ const beschrijvingen = ref({})
 
 async function laadCompetencies() {
   const token = localStorage.getItem('token')
-  const res = await fetch('http://localhost:3000/api/evaluatie-competenties', {
+  const res = await fetch('http://localhost:3000/api/evaluatie-competenties/mijn-opleiding', {
     headers: { Authorization: `Bearer ${token}` }
   })
   const result = await res.json()
+  if (!res.ok) {
+    console.error('Kon competenties niet ophalen:', result.error)
+    return []
+  }
   return result.competenties.map(c => ({
     ...c,
     geselecteerd: null,

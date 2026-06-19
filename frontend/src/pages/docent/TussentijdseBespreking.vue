@@ -13,6 +13,7 @@ const mentorCompetencies = ref([])
 const studentCompetencies = ref([])
 const studentBeschrijvingen = ref({})
 const docentNaam = ref('')
+const competentieError = ref('')
 
 const beschrijvingVelden = [
   'communicatie_beschrijving',
@@ -30,10 +31,14 @@ const scoreVelden = [
 
 async function laadCompetencies() {
   const token = localStorage.getItem('token')
-  const res = await fetch('http://localhost:3000/api/evaluatie-competenties', {
+  const res = await fetch(`http://localhost:3000/api/evaluatie-competenties/student/${studentId}`, {
     headers: { Authorization: `Bearer ${token}` }
   })
   const result = await res.json()
+  if (!res.ok) {
+    competentieError.value = result.error || 'Kon competenties niet ophalen'
+    return []
+  }
   return result.competenties.map(c => ({
     ...c,
     geselecteerd: null,
@@ -144,6 +149,8 @@ function studentNaam() {
       <a class="back-link" @click="router.push(`/docent/studenten/${studentId}`)">← Terug naar studentdossier</a>
       <h1>Tussentijdse evaluatie</h1>
       <p class="subtitle">Voor {{ studentNaam() }}</p>
+
+      <div v-if="competentieError" class="error-banner">{{ competentieError }}</div>
 
       <!-- Legenda -->
       <div class="legenda">
@@ -285,6 +292,8 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .content h1 { margin: 0 0 4px; font-size: 26px; font-weight: 800; }
 .subtitle { margin: 0 0 24px; color: #64748b; font-size: 14px; }
 .sectie-titel { font-size: 18px; font-weight: 800; margin: 0 0 16px; }
+
+.error-banner { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
 
 .legenda { display: flex; gap: 20px; margin-bottom: 20px; }
 .legenda-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; }

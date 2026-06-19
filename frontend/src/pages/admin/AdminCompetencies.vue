@@ -1,10 +1,13 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const user = ref(null)
 const competenties = ref([])
+const opleidingen = ref([])
+const geselecteerdeOpleiding = ref(null)
 const loading = ref(true)
 const showForm = ref(false)
 const bewerkId = ref(null)
@@ -17,10 +20,35 @@ const form = ref({
   volgorde: 0
 })
 
-async function laadCompetencies() {
+async function laadOpleidingen() {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/evaluatie-competenties', {
+    const res = await fetch('http://localhost:3000/api/opleidingen', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    opleidingen.value = data.opleidingen || []
+
+    // Pak opleiding uit query param, of de eerste beschikbare
+    const queryOpleiding = route.query.opleiding
+    if (queryOpleiding && opleidingen.value.some(o => o.id === Number(queryOpleiding))) {
+      geselecteerdeOpleiding.value = Number(queryOpleiding)
+    } else if (opleidingen.value.length > 0) {
+      geselecteerdeOpleiding.value = opleidingen.value[0].id
+    }
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+async function laadCompetencies() {
+  if (!geselecteerdeOpleiding.value) {
+    competenties.value = []
+    return
+  }
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch(`http://localhost:3000/api/evaluatie-competenties?opleiding_id=${geselecteerdeOpleiding.value}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -39,6 +67,8 @@ onMounted(async () => {
     })
     const dashData = await dashRes.json()
     user.value = dashData.user
+
+    await laadOpleidingen()
     await laadCompetencies()
   } catch (err) {
     console.error(err)
@@ -46,6 +76,21 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+// Herlaad competenties wanneer de gekozen opleiding wijzigt
+watch(geselecteerdeOpleiding, () => {
+  laadCompetencies()
+})
+
+const huidigeOpleidingNaam = computed(() => {
+  const o = opleidingen.value.find(o => o.id === geselecteerdeOpleiding.value)
+  return o ? o.naam : ''
+})
+
+function wisselOpleiding(id) {
+  geselecteerdeOpleiding.value = Number(id)
+  router.replace({ path: '/admin/competenties', query: { opleiding: id } })
+}
 
 function gewichtKleur(index) {
   const kleuren = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
@@ -80,6 +125,10 @@ async function opslaan() {
     error.value = 'Naam is verplicht.'
     return
   }
+  if (!geselecteerdeOpleiding.value) {
+    error.value = 'Selecteer eerst een opleiding.'
+    return
+  }
   error.value = ''
   const token = localStorage.getItem('token')
   try {
@@ -87,7 +136,7 @@ async function opslaan() {
       const res = await fetch(`http://localhost:3000/api/evaluatie-competenties/${bewerkId.value}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form.value)
+        body: JSON.stringify({ ...form.value, opleiding_id: geselecteerdeOpleiding.value })
       })
       if (!res.ok) { error.value = 'Kon competentie niet aanpassen'; return }
       succes.value = 'Competentie aangepast!'
@@ -95,7 +144,7 @@ async function opslaan() {
       const res = await fetch('http://localhost:3000/api/evaluatie-competenties', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form.value)
+        body: JSON.stringify({ ...form.value, opleiding_id: geselecteerdeOpleiding.value })
       })
       if (!res.ok) { error.value = 'Kon competentie niet aanmaken'; return }
       succes.value = 'Competentie toegevoegd!'
@@ -157,6 +206,7 @@ function initialen() {
       </div>
       <nav>
         <a @click="router.push('/admin/dashboard')">Dashboard</a>
+        <a @click="router.push('/admin/opleidingen')">Opleidingen</a>
         <a class="active">Competenties</a>
         <a @click="router.push('/admin/gebruikers')">Gebruikers</a>
         <a @click="router.push('/admin/koppelingen')">Koppelingen</a>
@@ -172,13 +222,26 @@ function initialen() {
       <div class="page-header">
         <div>
           <h1>Competenties beheren</h1>
-          <p>Beheer evaluatiecriteria voor stages — flexibel aan te passen wanneer beleid wijzigt</p>
+          <p>Beheer evaluatiecriteria per opleiding — flexibel aan te passen wanneer beleid wijzigt</p>
         </div>
-        <button class="new-btn" @click="openNieuw">+ Competentie</button>
+        <button class="new-btn" @click="openNieuw" :disabled="!geselecteerdeOpleiding">+ Competentie</button>
+      </div>
+
+      <div v-if="opleidingen.length > 0" class="opleiding-selector">
+        <label>Opleiding</label>
+        <select :value="geselecteerdeOpleiding" @change="wisselOpleiding($event.target.value)">
+          <option v-for="o in opleidingen" :key="o.id" :value="o.id">{{ o.naam }}</option>
+        </select>
+      </div>
+
+      <div v-else-if="!loading" class="info-banner">
+        ⚠️ Er zijn nog geen opleidingen aangemaakt. Ga eerst naar
+        <a @click="router.push('/admin/opleidingen')" style="cursor:pointer; text-decoration: underline;">Opleidingen</a>
+        om er een toe te voegen.
       </div>
 
       <div class="info-banner">
-        ℹ️ Wijzigingen worden automatisch doorgevoerd naar alle evaluaties. Elke competentie heeft zijn eigen niveaus met bijhorende punten.
+        ℹ️ Wijzigingen worden automatisch doorgevoerd naar alle evaluaties van <strong>{{ huidigeOpleidingNaam }}</strong>. Elke competentie heeft zijn eigen niveaus met bijhorende punten.
       </div>
 
       <div v-if="succes" class="succes-msg">{{ succes }}</div>
@@ -207,6 +270,9 @@ function initialen() {
             <button class="delete-btn" @click="verwijder(comp.id)">🗑</button>
           </div>
         </div>
+        <p v-if="competenties.length === 0 && geselecteerdeOpleiding" class="leeg">
+          Nog geen competenties voor {{ huidigeOpleidingNaam }}.
+        </p>
       </div>
 
       <!-- Formulier modal -->
@@ -214,7 +280,7 @@ function initialen() {
         <div class="modal">
           <button class="back-btn" @click="annuleer">← Terug naar competenties</button>
           <h2>{{ bewerkId ? 'Competentie bewerken' : 'Nieuwe competentie' }}</h2>
-          <p>{{ bewerkId ? 'Pas naam en beschrijving aan. Wijzigingen worden direct doorgevoerd.' : 'Voeg een nieuwe competentie toe.' }}</p>
+          <p>{{ bewerkId ? `Pas naam en beschrijving aan voor ${huidigeOpleidingNaam}.` : `Voeg een nieuwe competentie toe aan ${huidigeOpleidingNaam}.` }}</p>
 
           <div class="form-group">
             <label>Naam competentie *</label>
@@ -232,7 +298,7 @@ function initialen() {
           </div>
 
           <div v-if="bewerkId" class="warning-banner">
-            ⚠ Deze wijziging wordt toegepast op alle lopende evaluaties.
+            ⚠ Deze wijziging wordt toegepast op alle lopende evaluaties van {{ huidigeOpleidingNaam }}.
           </div>
 
           <div v-if="error" class="error-msg">{{ error }}</div>
@@ -269,11 +335,18 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .page-header h1 { margin: 0; font-size: 28px; font-weight: 800; }
 .page-header p { margin: 6px 0 0; color: #64748b; font-size: 14px; }
 .new-btn { border: none; background: #991b1b; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
-.new-btn:hover { background: #7f1d1d; }
+.new-btn:hover:not(:disabled) { background: #7f1d1d; }
+.new-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.opleiding-selector { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px; }
+.opleiding-selector label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+.opleiding-selector select { flex: 1; max-width: 320px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 600; color: #334155; background: white; cursor: pointer; }
+
 .info-banner { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 14px 18px; border-radius: 12px; font-size: 14px; margin-bottom: 24px; }
 .competenties-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
 .competenties-header h2 { margin: 0; font-size: 18px; font-weight: 800; }
 .loading { text-align: center; padding: 40px; color: #64748b; }
+.leeg { color: #64748b; text-align: center; padding: 40px; }
 .competenties-lijst { display: flex; flex-direction: column; gap: 12px; }
 .competentie-rij { background: white; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; display: grid; grid-template-columns: 44px 1fr auto; gap: 16px; align-items: center; box-shadow: 0 4px 12px rgba(15,23,42,0.04); }
 .comp-nummer { width: 44px; height: 44px; border-radius: 50%; color: white; display: grid; place-items: center; font-weight: 800; font-size: 16px; flex-shrink: 0; }
