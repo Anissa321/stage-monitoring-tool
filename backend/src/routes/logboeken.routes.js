@@ -367,6 +367,91 @@ router.get('/mentor/week/:studentId/:weekNummer', authMiddleware, requireRole('m
   }
 })
 
+// GET /api/logboeken/docent/week/:studentId/:weekNummer — docent bekijkt één specifieke week (read-only)
+router.get('/docent/week/:studentId/:weekNummer', authMiddleware, requireRole('docent'), async (req, res) => {
+  try {
+    const { studentId, weekNummer } = req.params
+
+    const { data: koppelingen } = await supabaseAdmin
+      .from('docent_studenten')
+      .select('student_id')
+      .eq('docent_id', req.user.id)
+
+    const studentIds = koppelingen.map(k => k.student_id)
+    if (!studentIds.includes(studentId)) {
+      return res.status(403).json({ error: 'Student niet gekoppeld' })
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('logbooks')
+      .select('id, datum, week_number, tasks, reflection, learning_points, uren_gewerkt, status, submitted_at')
+      .eq('student_id', studentId)
+      .eq('week_number', weekNummer)
+      .order('datum', { ascending: true })
+
+    if (error) return res.status(500).json({ error: 'Kon logboeken niet ophalen' })
+
+    const logboekIds = data.map(l => l.id)
+    const { data: competenties } = await supabaseAdmin
+      .from('logbook_competencies')
+      .select('logbook_id, competence_name, selected, description')
+      .in('logbook_id', logboekIds)
+      .eq('selected', true)
+
+    const { data: reviews } = await supabaseAdmin
+      .from('logbook_reviews')
+      .select('week_feedback, week_status, mentor_id, reviewed_at')
+      .eq('reviewer_role', 'mentor')
+      .eq('week_number', weekNummer)
+      .in('logbook_id', logboekIds)
+      .order('reviewed_at', { ascending: false })
+
+    let mentorFeedback = null
+    let mentorWeekStatus = null
+    let mentorNaam = null
+
+    if (reviews && reviews.length > 0) {
+      mentorFeedback = reviews[0].week_feedback
+      mentorWeekStatus = reviews[0].week_status
+      if (reviews[0].mentor_id) {
+        const { data: mentorProfiel } = await supabaseAdmin
+          .from('profiles')
+          .select('voornaam, achternaam')
+          .eq('id', reviews[0].mentor_id)
+          .single()
+        if (mentorProfiel) mentorNaam = `${mentorProfiel.voornaam} ${mentorProfiel.achternaam}`
+      }
+    }
+
+    const logboekenMetCompetenties = data.map(log => ({
+      ...log,
+      competenties: competenties
+        ? competenties.filter(c => c.logbook_id === log.id).map(c => ({
+            naam: c.competence_name,
+            description: c.description || ''
+          }))
+        : []
+    }))
+
+    const { data: student } = await supabaseAdmin
+      .from('profiles')
+      .select('voornaam, achternaam')
+      .eq('id', studentId)
+      .single()
+
+    res.json({
+      logboeken: logboekenMetCompetenties,
+      student,
+      mentor_feedback: mentorFeedback,
+      mentor_week_status: mentorWeekStatus,
+      mentor_naam: mentorNaam
+    })
+  } catch (err) {
+    console.error('Docent week error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
 // GET /api/logboeken/docent — logboeken van gekoppelde studenten
 router.get('/docent', authMiddleware, requireRole('docent'), async (req, res) => {
   try {

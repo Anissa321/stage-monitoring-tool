@@ -213,7 +213,7 @@ function weekStatusKlasse(status) {
               <td>
                 <button
                   class="bekijk-btn"
-                  @click="router.push(`/docent/studenten/${studentId}/bespreking`)"
+                  @click="router.push(`/docent/studenten/${studentId}/logboek/week/${weekGroep.week}`)"
                 >
                   Bekijk →
                 </button>
@@ -293,7 +293,7 @@ td { padding: 16px; border-top: 1px solid #f1f5f9; font-size: 14px; color: #3341
   .content { padding: 24px 20px; }
   .info-grid { grid-template-columns: 1fr; }
   nav { display: none; }
-  .header-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .header-row { flex-direction: column; align-items: flex-start; }
   .header-acties { flex-direction: column; width: 100%; }
 }
 </style>

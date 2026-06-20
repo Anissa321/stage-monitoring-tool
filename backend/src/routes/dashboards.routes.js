@@ -5,14 +5,46 @@ import { supabaseAdmin } from '../config/supabase.js'
 
 const router = Router()
 
+// Haalt de actieve stage-info op voor een student uit het goedgekeurde stagevoorstel
+// (de 'stages' tabel is verouderd en wordt niet meer gebruikt als bron van waarheid)
+async function haalStageInfo(studentId) {
+  const { data: voorstel } = await supabaseAdmin
+    .from('stagevoorstellen')
+    .select('bedrijfsnaam, bedrijf_adres, opdrachtomschrijving, startdatum, einddatum, sector')
+    .eq('student_id', studentId)
+    .eq('status', 'goedgekeurd')
+    .order('indieningsdatum', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!voorstel) return null
+
+  const { data: overeenkomst } = await supabaseAdmin
+    .from('stageovereenkomsten')
+    .select('status, stage_gestart')
+    .eq('student_id', studentId)
+    .maybeSingle()
+
+  let status = 'in_aanvraag'
+  if (overeenkomst?.stage_gestart) status = 'actief'
+  else if (overeenkomst?.status === 'volledig_getekend') status = 'klaar_om_te_starten'
+  else if (overeenkomst) status = 'overeenkomst_in_behandeling'
+
+  return {
+    company_name: voorstel.bedrijfsnaam,
+    startdatum: voorstel.startdatum,
+    einddatum: voorstel.einddatum,
+    locatie: voorstel.bedrijf_adres,
+    opdracht: voorstel.opdrachtomschrijving,
+    sector: voorstel.sector,
+    status
+  }
+}
+
 // GET /api/dashboards/student
 router.get('/student', authMiddleware, requireRole('student'), async (req, res) => {
   try {
-    const { data: stage } = await supabaseAdmin
-      .from('stages')
-      .select('id, company_name, start_date, end_date, status')
-      .eq('student_id', req.user.id)
-      .single()
+    const stage = await haalStageInfo(req.user.id)
 
     let stagevoorstel = null
     if (!stage) {
@@ -167,11 +199,7 @@ router.get('/docent/student/:studentId', authMiddleware, requireRole('docent'), 
       .eq('id', studentId)
       .single()
 
-    const { data: stage } = await supabaseAdmin
-      .from('stages')
-      .select('id, company_name, start_date, end_date, status')
-      .eq('student_id', studentId)
-      .single()
+    const stageInfo = await haalStageInfo(studentId)
 
     const { data: mentorKoppeling } = await supabaseAdmin
       .from('mentor_studenten')
@@ -197,11 +225,8 @@ router.get('/docent/student/:studentId', authMiddleware, requireRole('docent'), 
 
     res.json({
       student,
-      stage: stage ? {
-        company_name: stage.company_name,
-        startdatum: stage.start_date,
-        einddatum: stage.end_date,
-        status: stage.status,
+      stage: stageInfo ? {
+        ...stageInfo,
         mentor_naam: mentorNaam
       } : null,
       logboeken: logboeken || []
@@ -287,11 +312,7 @@ router.get('/mentor/student/:studentId', authMiddleware, requireRole('mentor'), 
       .eq('id', studentId)
       .single()
 
-    const { data: stage } = await supabaseAdmin
-      .from('stages')
-      .select('id, company_name, start_date, end_date, status')
-      .eq('student_id', studentId)
-      .single()
+    const stageInfo = await haalStageInfo(studentId)
 
     const { data: logboeken } = await supabaseAdmin
       .from('logbooks')
@@ -302,12 +323,7 @@ router.get('/mentor/student/:studentId', authMiddleware, requireRole('mentor'), 
 
     res.json({
       student,
-      stage: stage ? {
-        company_name: stage.company_name,
-        startdatum: stage.start_date,
-        einddatum: stage.end_date,
-        status: stage.status
-      } : null,
+      stage: stageInfo,
       logboeken: logboeken || []
     })
   } catch (err) {

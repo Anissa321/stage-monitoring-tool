@@ -37,6 +37,9 @@ import AdminKoppelingen from '../pages/admin/AdminKoppelingen.vue'
 import AdminOpleidingen from '../pages/admin/AdminOpleidingen.vue'
 import TussentijdsRapport from '../pages/docent/TussentijdsRapport.vue'
 import TussentijdsRapportOverzicht from '../pages/docent/TussentijdsRapportOverzicht.vue'
+import DocentLogboekWeek from '../pages/docent/DocentLogboekWeek.vue'
+
+
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -69,6 +72,7 @@ const routes = [
   { path: '/docent/evaluaties', name: 'DocentEvaluaties', component: DocentEvaluaties },
   { path: '/docent/studenten/:id/tussentijds-rapport', name: 'TussentijdsRapport', component: TussentijdsRapport },
   { path: '/docent/studenten/:id/tussentijds-rapport/overzicht', name: 'TussentijdsRapportOverzicht', component: TussentijdsRapportOverzicht },
+  { path: '/docent/studenten/:id/logboek/week/:weekNummer', name: 'DocentLogboekWeek', component: DocentLogboekWeek },
 
   // MENTOR
   { path: '/mentor', redirect: '/mentor/dashboard' },
