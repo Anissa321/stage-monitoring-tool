@@ -6,6 +6,7 @@ import SignaturePad from '../../components/SignaturePad.vue'
 const router = useRouter()
 const data = ref(null)
 const overeenkomst = ref(null)
+const opleidingNaam = ref('')
 const loading = ref(true)
 const error = ref('')
 const succes = ref('')
@@ -15,11 +16,14 @@ const handtekening = ref('')
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const [dashRes, overRes] = await Promise.all([
+    const [dashRes, overRes, opleidingenRes] = await Promise.all([
       fetch('http://localhost:3000/api/dashboards/student', {
         headers: { Authorization: `Bearer ${token}` }
       }),
       fetch('http://localhost:3000/api/stageovereenkomsten/mijn', {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch('http://localhost:3000/api/opleidingen', {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -28,6 +32,12 @@ onMounted(async () => {
 
     if (overData.overeenkomst) {
       overeenkomst.value = overData.overeenkomst
+
+      if (overeenkomst.value.opleiding_id) {
+        const opleidingenData = await opleidingenRes.json()
+        const match = opleidingenData.opleidingen?.find(o => o.id === overeenkomst.value.opleiding_id)
+        opleidingNaam.value = match?.naam || ''
+      }
     } else {
       error.value = overData.error || 'Geen stageovereenkomst beschikbaar'
     }
@@ -157,6 +167,10 @@ async function logout() {
           <h2>Overeenkomstgegevens</h2>
           <div class="info-grid">
             <div>
+              <span>Opleiding</span>
+              <strong>{{ opleidingNaam || '—' }}</strong>
+            </div>
+            <div>
               <span>Bedrijf</span>
               <strong>{{ overeenkomst.bedrijfsnaam }}</strong>
             </div>
@@ -254,7 +268,7 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .document-card, .status-card, .sign-card { background: white; border: 1px solid #e5e7eb; border-radius: 18px; padding: 24px; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(15,23,42,0.04); }
 .document-card h2, .status-card h2, .sign-card h2 { margin: 0 0 18px; font-size: 17px; font-weight: 800; }
 
-.info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 .info-grid span, .document-card > div > span { display: block; color: #64748b; text-transform: uppercase; font-size: 11px; font-weight: 800; margin-bottom: 6px; }
 .info-grid strong { font-size: 14px; }
 .divider { height: 1px; background: #e5e7eb; margin: 20px 0; }

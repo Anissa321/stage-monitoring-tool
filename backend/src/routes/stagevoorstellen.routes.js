@@ -32,11 +32,15 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
   try {
     const {
       bedrijfsnaam, bedrijf_adres,
-      opdrachtomschrijving, startdatum, einddatum, sector, deadline
+      opdrachtomschrijving, startdatum, einddatum, sector, deadline, opleiding_id
     } = req.body
 
     if (!bedrijfsnaam || !opdrachtomschrijving) {
       return res.status(400).json({ error: 'Bedrijfsnaam en opdrachtomschrijving zijn verplicht' })
+    }
+
+    if (!opleiding_id) {
+      return res.status(400).json({ error: 'Opleiding is verplicht' })
     }
 
     const insertData = {
@@ -47,6 +51,7 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
       startdatum: startdatum || null,
       einddatum: einddatum || null,
       sector: sector || null,
+      opleiding_id,
       status: 'ingediend',
       indieningsdatum: new Date().toISOString()
     }
@@ -64,6 +69,12 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
       return res.status(500).json({ error: 'Kon stagevoorstel niet aanmaken' })
     }
 
+    // Zet de opleiding ook op het studentprofiel — die stuurt de evaluatierubriek aan
+    await supabaseAdmin
+      .from('profiles')
+      .update({ opleiding_id })
+      .eq('id', req.user.id)
+
     res.status(201).json({ stagevoorstel: data })
   } catch (err) {
     console.error('Stagevoorstel aanmaken error:', err)
@@ -77,7 +88,7 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
     const { id } = req.params
     const {
       bedrijfsnaam, bedrijf_adres,
-      opdrachtomschrijving, startdatum, einddatum, sector, deadline
+      opdrachtomschrijving, startdatum, einddatum, sector, deadline, opleiding_id
     } = req.body
 
     const { data: bestaand } = await supabaseAdmin
@@ -104,6 +115,7 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
     }
 
     if (deadline) updateData.deadline = deadline
+    if (opleiding_id) updateData.opleiding_id = opleiding_id
 
     const { data, error } = await supabaseAdmin
       .from('stagevoorstellen')
@@ -116,6 +128,13 @@ router.put('/:id', authMiddleware, requireRole('student'), async (req, res) => {
     if (error) {
       console.error('Supabase update error:', error)
       return res.status(500).json({ error: 'Kon stagevoorstel niet bewerken' })
+    }
+
+    if (opleiding_id) {
+      await supabaseAdmin
+        .from('profiles')
+        .update({ opleiding_id })
+        .eq('id', req.user.id)
     }
 
     res.json({ stagevoorstel: data })

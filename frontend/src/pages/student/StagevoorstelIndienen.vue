@@ -10,7 +10,8 @@ const form = ref({
   bedrijf_adres: '',
   opdrachtomschrijving: '',
   startdatum: '',
-  einddatum: ''
+  einddatum: '',
+  opleiding_id: ''
 })
  
 const loading = ref(false)
@@ -18,10 +19,26 @@ const error = ref('')
 const succes = ref('')
 const bestaandVoorstel = ref(null)
 const isAanpassen = ref(false)
+const opleidingen = ref([])
  
+async function laadOpleidingen() {
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch('http://localhost:3000/api/opleidingen', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    opleidingen.value = data.opleidingen || []
+  } catch (err) {
+    console.error(err)
+  }
+}
+
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
+    await laadOpleidingen()
+
     const res = await fetch('http://localhost:3000/api/stagevoorstellen/mijn', {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -37,7 +54,8 @@ onMounted(async () => {
         bedrijf_adres: voorstel.bedrijf_adres || '',
         opdrachtomschrijving: voorstel.opdrachtomschrijving || '',
         startdatum: voorstel.startdatum ? voorstel.startdatum.split('T')[0] : '',
-        einddatum: voorstel.einddatum ? voorstel.einddatum.split('T')[0] : ''
+        einddatum: voorstel.einddatum ? voorstel.einddatum.split('T')[0] : '',
+        opleiding_id: voorstel.opleiding_id || ''
       }
     }
   } catch (err) {
@@ -51,6 +69,11 @@ async function indienen() {
  
   if (!form.value.bedrijfsnaam || !form.value.opdrachtomschrijving || !form.value.startdatum || !form.value.einddatum) {
     error.value = 'Vul alle verplichte velden in'
+    return
+  }
+
+  if (!form.value.opleiding_id) {
+    error.value = 'Selecteer je opleiding'
     return
   }
  
@@ -129,6 +152,19 @@ function goBack() {
       <h3>✏️ Feedback van de stagecommissie</h3>
       <p>{{ bestaandVoorstel.feedback_aanpassen }}</p>
     </div>
+
+    <section class="card">
+      <h2>🎓 Opleiding</h2>
+      <div class="form-grid">
+        <div class="field full-width">
+          <label>Jouw opleiding *</label>
+          <select v-model="form.opleiding_id" class="select-input">
+            <option value="" disabled>Selecteer je opleiding</option>
+            <option v-for="o in opleidingen" :key="o.id" :value="o.id">{{ o.naam }}</option>
+          </select>
+        </div>
+      </div>
+    </section>
  
     <section class="card">
       <h2>🏢 Bedrijfsinformatie</h2>
@@ -210,6 +246,8 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .field input, .field textarea { border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #334155; font-family: inherit; background: white; }
 .field input:focus, .field textarea:focus { outline: none; border-color: #991b1b; box-shadow: 0 0 0 3px rgba(153,27,27,0.12); }
 .field textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+.select-input { border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #334155; font-family: inherit; background: white; cursor: pointer; }
+.select-input:focus { outline: none; border-color: #991b1b; box-shadow: 0 0 0 3px rgba(153,27,27,0.12); }
 .error-msg { margin: 0 64px 16px; color: #991b1b; font-size: 14px; font-weight: 600; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 16px; }
 .succes-msg { margin: 0 64px 16px; color: #15803d; font-size: 14px; font-weight: 700; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 12px 16px; }
 .actions { margin: 0 64px; padding-bottom: 60px; display: flex; justify-content: flex-end; gap: 12px; }

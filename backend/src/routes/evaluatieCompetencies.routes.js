@@ -6,8 +6,6 @@ import { supabaseAdmin } from '../config/supabase.js'
 const router = Router()
 
 // GET /api/evaluatie-competenties — haalt competenties op, optioneel gefilterd op opleiding_id
-// Gebruik: /api/evaluatie-competenties?opleiding_id=1 (voor rubriek van een specifieke opleiding)
-// Zonder query param: alle competenties (gebruikt door admin-overzicht)
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const { opleiding_id } = req.query
@@ -94,7 +92,6 @@ router.get('/student/:studentId', authMiddleware, async (req, res) => {
     const { studentId } = req.params
     const { rol, id } = req.user
 
-    // Toegangscheck — mentor of docent moet gekoppeld zijn aan de student
     if (rol === 'mentor') {
       const { data: koppeling } = await supabaseAdmin
         .from('mentor_studenten')
@@ -171,7 +168,54 @@ router.put('/niveau/:id', authMiddleware, requireRole('administratie'), async (r
   }
 })
 
-// POST /api/evaluatie-competenties — admin voegt competentie toe (nu met opleiding_id)
+// DELETE /api/evaluatie-competenties/niveau/:id — admin verwijdert een niveau (VOOR /:id)
+router.delete('/niveau/:id', authMiddleware, requireRole('administratie'), async (req, res) => {
+  try {
+    const { id } = req.params
+    const { error } = await supabaseAdmin
+      .from('evaluatie_niveaus')
+      .delete()
+      .eq('id', id)
+
+    if (error) return res.status(500).json({ error: 'Kon niveau niet verwijderen' })
+    res.json({ success: true })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
+// POST /api/evaluatie-competenties/:id/niveau — admin voegt nieuw niveau toe aan bestaande competentie (VOOR /:id)
+router.post('/:id/niveau', authMiddleware, requireRole('administratie'), async (req, res) => {
+  try {
+    const { id } = req.params
+    const { label, punten, beschrijving, volgorde } = req.body
+
+    if (!label || punten === undefined || punten === null) {
+      return res.status(400).json({ error: 'Label en punten zijn verplicht' })
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('evaluatie_niveaus')
+      .insert({
+        competentie_id: id,
+        label,
+        punten,
+        beschrijving: beschrijving || '',
+        volgorde: volgorde || 0
+      })
+      .select()
+      .single()
+
+    if (error) return res.status(500).json({ error: 'Kon niveau niet toevoegen' })
+    res.json({ niveau: data })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
+// POST /api/evaluatie-competenties — admin voegt competentie toe
 router.post('/', authMiddleware, requireRole('administratie'), async (req, res) => {
   try {
     const { naam, beschrijving, volgorde, niveaus, opleiding_id } = req.body
@@ -198,7 +242,7 @@ router.post('/', authMiddleware, requireRole('administratie'), async (req, res) 
   }
 })
 
-// PUT /api/evaluatie-competenties/:id — admin past competentie aan (nu met opleiding_id)
+// PUT /api/evaluatie-competenties/:id — admin past competentie aan
 router.put('/:id', authMiddleware, requireRole('administratie'), async (req, res) => {
   try {
     const { id } = req.params

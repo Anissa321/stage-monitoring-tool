@@ -77,18 +77,19 @@ async function genereerLogboeken(studentId, startdatum, einddatum) {
 }
 
 // Bouwt de PDF content (gedeeld door preview en finale versie)
-function bouwPdfContent(doc, overeenkomst, student, { metHandtekeningen }) {
+function bouwPdfContent(doc, overeenkomst, student, opleidingNaam, { metHandtekeningen }) {
   doc.fontSize(18).font('Helvetica-Bold').text('Stageovereenkomst', { align: 'center' })
   doc.moveDown(1)
 
   doc.fontSize(10).font('Helvetica').text(
-    `Deze overeenkomst wordt afgesloten tussen de student, het stagebedrijf en de hogeschool Erasmushogeschool Brussel (EhB), in het kader van de stage binnen de opleiding Toegepaste Informatica.`,
+    `Deze overeenkomst wordt afgesloten tussen de student, het stagebedrijf en de hogeschool Erasmushogeschool Brussel (EhB), in het kader van de stage binnen de opleiding ${opleidingNaam || 'onbekend'}.`,
     { align: 'justify' }
   )
   doc.moveDown(1)
 
   doc.font('Helvetica-Bold').text('1. Partijen')
   doc.font('Helvetica').text(`Student: ${student.voornaam} ${student.achternaam} (${student.email})`)
+  doc.text(`Opleiding: ${opleidingNaam || '—'}`)
   doc.text(`Stagebedrijf: ${overeenkomst.bedrijfsnaam}`)
   if (overeenkomst.bedrijf_adres) doc.text(`Adres: ${overeenkomst.bedrijf_adres}`)
   doc.moveDown(1)
@@ -142,8 +143,19 @@ function bouwPdfContent(doc, overeenkomst, student, { metHandtekeningen }) {
   }
 }
 
+// Helper: haalt de opleiding-naam op aan de hand van opleiding_id
+async function haalOpleidingNaam(opleidingId) {
+  if (!opleidingId) return null
+  const { data } = await supabaseAdmin
+    .from('opleidingen')
+    .select('naam')
+    .eq('id', opleidingId)
+    .single()
+  return data?.naam || null
+}
+
 // Helper: genereer PDF buffer (met handtekeningen, voor opslag)
-async function genereerPdfBuffer(overeenkomst, student) {
+async function genereerPdfBuffer(overeenkomst, student, opleidingNaam) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 })
     const chunks = []
@@ -152,7 +164,7 @@ async function genereerPdfBuffer(overeenkomst, student) {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
 
-    bouwPdfContent(doc, overeenkomst, student, { metHandtekeningen: true })
+    bouwPdfContent(doc, overeenkomst, student, opleidingNaam, { metHandtekeningen: true })
 
     doc.end()
   })
@@ -174,7 +186,9 @@ async function genereerEnUploadPdf(overeenkomstId) {
     .eq('id', overeenkomst.student_id)
     .single()
 
-  const pdfBuffer = await genereerPdfBuffer(overeenkomst, student)
+  const opleidingNaam = await haalOpleidingNaam(overeenkomst.opleiding_id)
+
+  const pdfBuffer = await genereerPdfBuffer(overeenkomst, student, opleidingNaam)
   const filePath = `stageovereenkomsten/${overeenkomst.student_id}.pdf`
 
   const { error: uploadError } = await supabaseAdmin.storage
@@ -238,12 +252,14 @@ router.get('/:id/preview-pdf', authMiddleware, async (req, res) => {
       .eq('id', overeenkomst.student_id)
       .single()
 
+    const opleidingNaam = await haalOpleidingNaam(overeenkomst.opleiding_id)
+
     const doc = new PDFDocument({ margin: 50 })
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', 'inline; filename="stageovereenkomst-preview.pdf"')
 
     doc.pipe(res)
-    bouwPdfContent(doc, overeenkomst, student, { metHandtekeningen: false })
+    bouwPdfContent(doc, overeenkomst, student, opleidingNaam, { metHandtekeningen: false })
     doc.end()
   } catch (err) {
     console.error('Preview PDF error:', err)
@@ -289,6 +305,7 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
         opdrachtomschrijving: voorstel.opdrachtomschrijving,
         startdatum: voorstel.startdatum,
         einddatum: voorstel.einddatum,
+        opleiding_id: voorstel.opleiding_id,
         status: 'open'
       })
       .select()
