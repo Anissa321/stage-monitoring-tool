@@ -496,4 +496,42 @@ router.put('/:id/tekenen-mentor', authMiddleware, requireRole('mentor'), async (
   }
 })
 
+// PUT /api/stageovereenkomsten/:id/start-stage — student start zijn stage (enkel mogelijk als volledig ondertekend)
+router.put('/:id/start-stage', authMiddleware, requireRole('student'), async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const { data: bestaand } = await supabaseAdmin
+      .from('stageovereenkomsten')
+      .select('id, student_id, status, stage_gestart')
+      .eq('id', id)
+      .eq('student_id', req.user.id)
+      .single()
+
+    if (!bestaand) return res.status(404).json({ error: 'Overeenkomst niet gevonden' })
+
+    if (bestaand.status !== 'volledig_getekend') {
+      return res.status(400).json({ error: 'De overeenkomst moet eerst volledig ondertekend zijn door zowel student als mentor' })
+    }
+
+    if (bestaand.stage_gestart) {
+      return res.json({ overeenkomst: bestaand, message: 'Stage was al gestart' })
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('stageovereenkomsten')
+      .update({ stage_gestart: true })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) return res.status(500).json({ error: 'Kon stage niet starten' })
+
+    res.json({ overeenkomst: data })
+  } catch (err) {
+    console.error('Start stage error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
 export default router

@@ -109,6 +109,16 @@ const studentToegestaanZonderOvereenkomst = [
   '/student/stagevoorstel/detail'
 ]
 
+// Paden die pas toegankelijk zijn nadat de student op "Stage starten" heeft geklikt
+const studentVereistStageGestart = [
+  '/student/logboek',
+  '/student/logboek-invullen',
+  '/student/evaluatie',
+  '/student/evaluatie/tussentijds',
+  '/student/evaluatie/tussentijds-rapport',
+  '/student/eindrapport'
+]
+
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
@@ -133,6 +143,12 @@ router.beforeEach((to, from, next) => {
   if (role === 'student' && to.path.startsWith('/student')) {
     const getekend = localStorage.getItem('overeenkomstGetekend') === 'true'
     if (!getekend && !studentToegestaanZonderOvereenkomst.includes(to.path)) {
+      next('/student/documenten')
+      return
+    }
+
+    const stageGestart = localStorage.getItem('stageGestart') === 'true'
+    if (!stageGestart && studentVereistStageGestart.includes(to.path)) {
       next('/student/documenten')
       return
     }

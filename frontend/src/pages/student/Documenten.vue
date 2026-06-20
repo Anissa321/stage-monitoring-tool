@@ -79,6 +79,7 @@ function formatDatum(datum) {
 const studentHeeftGetekend = computed(() => !!overeenkomst.value?.student_handtekening)
 const mentorHeeftGetekend = computed(() => !!overeenkomst.value?.mentor_handtekening)
 const volledigGetekend = computed(() => overeenkomst.value?.status === 'volledig_getekend')
+const stageGestart = computed(() => overeenkomst.value?.stage_gestart === true)
 
 async function ondertekenen() {
   if (!handtekening.value) {
@@ -112,6 +113,26 @@ async function ondertekenen() {
     error.value = 'Verbindingsfout met server'
   } finally {
     opslaan.value = false
+  }
+}
+
+async function stageStarten() {
+  error.value = ''
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch(`http://localhost:3000/api/stageovereenkomsten/${overeenkomst.value.id}/start-stage`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const result = await res.json()
+    if (!res.ok) {
+      error.value = result.error || 'Kon stage niet starten'
+      return
+    }
+    overeenkomst.value = result.overeenkomst
+    router.push('/student/dashboard')
+  } catch (err) {
+    error.value = 'Verbindingsfout met server'
   }
 }
 
@@ -209,9 +230,15 @@ async function logout() {
             <div>
               ✅ Deze overeenkomst is volledig ondertekend. Je stage kan starten!
             </div>
-            <a v-if="overeenkomst.pdf_url" :href="overeenkomst.pdf_url" target="_blank" class="pdf-btn">
-              📄 Download PDF
-            </a>
+            <div class="banner-acties">
+              <a v-if="overeenkomst.pdf_url" :href="overeenkomst.pdf_url" target="_blank" class="pdf-btn">
+                📄 Download PDF
+              </a>
+              <button v-if="!stageGestart" class="start-stage-btn" @click="stageStarten">
+                🚀 Stage starten
+              </button>
+              <span v-else class="stage-gestart-badge">✓ Stage gestart</span>
+            </div>
           </div>
         </section>
 
@@ -232,6 +259,7 @@ async function logout() {
           <h2>Jouw handtekening</h2>
           <img :src="overeenkomst.student_handtekening" alt="Handtekening student" class="signature-preview" />
           <div v-if="succes" class="succes-msg">{{ succes }}</div>
+          <div v-if="error" class="error-msg">{{ error }}</div>
         </section>
       </div>
     </section>
@@ -281,8 +309,12 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .status-badge.done { background: #dcfce7; color: #166534; }
 .status-badge.pending { background: #fef3c7; color: #92400e; }
 .volledig-banner { margin-top: 14px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; padding: 14px 18px; border-radius: 12px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.banner-acties { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .pdf-btn { background: #047857; color: white; padding: 8px 16px; border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; }
 .pdf-btn:hover { background: #065f46; }
+.start-stage-btn { background: #991b1b; color: white; padding: 8px 16px; border-radius: 10px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.start-stage-btn:hover { background: #7f1d1d; }
+.stage-gestart-badge { background: #047857; color: white; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; white-space: nowrap; }
 
 .sign-hint { margin: 0 0 14px; color: #64748b; font-size: 13px; }
 .signature-preview { max-width: 300px; border: 1px solid #e5e7eb; border-radius: 8px; background: white; padding: 8px; }

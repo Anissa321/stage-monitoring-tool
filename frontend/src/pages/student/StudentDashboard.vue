@@ -1,27 +1,44 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
  
 const router = useRouter()
 const data = ref(null)
 const voorstel = ref(null)
+const overeenkomst = ref(null)
+const logboeken = ref([])
 const loading = ref(true)
 const resetting = ref(false)
  
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const [dashRes, voorstelRes] = await Promise.all([
+    const [dashRes, voorstelRes, overRes] = await Promise.all([
       fetch('http://localhost:3000/api/dashboards/student', {
         headers: { Authorization: `Bearer ${token}` }
       }),
       fetch('http://localhost:3000/api/stagevoorstellen/mijn', {
         headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch('http://localhost:3000/api/stageovereenkomsten/mijn', {
+        headers: { Authorization: `Bearer ${token}` }
       })
     ])
     data.value = await dashRes.json()
+
     const voorstelData = await voorstelRes.json()
     voorstel.value = voorstelData.stagevoorstel
+
+    const overData = await overRes.json()
+    overeenkomst.value = overData.overeenkomst
+
+    if (overeenkomst.value?.stage_gestart) {
+      const logRes = await fetch('http://localhost:3000/api/logboeken/mijn', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const logData = await logRes.json()
+      logboeken.value = logData.logboeken || []
+    }
   } catch (err) {
     console.error(err)
   } finally {
@@ -75,6 +92,27 @@ function formatDatum(d) {
   if (!d) return ''
   return new Date(d).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })
 }
+
+const stageActief = computed(() => overeenkomst.value?.stage_gestart === true)
+const klaarOmTeStarten = computed(() => overeenkomst.value?.status === 'volledig_getekend' && !stageActief.value)
+
+const logboekenIngevuld = computed(() => logboeken.value.filter(l => l.status !== 'niet_ingevuld').length)
+const logboekenTotaal = computed(() => logboeken.value.length)
+const voortgangPercentage = computed(() => logboekenTotaal.value ? Math.round((logboekenIngevuld.value / logboekenTotaal.value) * 100) : 0)
+
+const huidigeWeek = computed(() => {
+  if (logboeken.value.length === 0) return null
+  const vandaag = new Date()
+  const dagVanWeek = vandaag.getDay()
+  const diffNaarMaandag = dagVanWeek === 0 ? -6 : 1 - dagVanWeek
+  const maandag = new Date(vandaag)
+  maandag.setDate(vandaag.getDate() + diffNaarMaandag)
+  const maandagStr = maandag.toISOString().split('T')[0]
+  const match = logboeken.value.find(l => l.datum === maandagStr)
+  if (match) return match.week_number
+  const sorted = [...logboeken.value].sort((a, b) => new Date(b.datum) - new Date(a.datum))
+  return sorted[0]?.week_number || null
+})
 </script>
  
 <template>
@@ -99,15 +137,93 @@ function formatDatum(d) {
  
     <section class="welcome">
       <h1>Welkom{{ voorstel ? ' terug' : '' }}, {{ voornaam() }}!</h1>
-      <p v-if="voorstel?.status === 'ingediend'" class="welcome-sub">Je voorstel wordt beoordeeld door de stagecommissie</p>
+      <p v-if="stageActief" class="welcome-sub">Je stage is actief — succes ermee!</p>
+      <p v-else-if="klaarOmTeStarten" class="welcome-sub">Je overeenkomst is volledig ondertekend, klaar om te starten</p>
+      <p v-else-if="voorstel?.status === 'ingediend'" class="welcome-sub">Je voorstel wordt beoordeeld door de stagecommissie</p>
       <p v-else-if="voorstel?.status === 'goedgekeurd'" class="welcome-sub">Je stagevoorstel is goedgekeurd</p>
       <p v-else-if="voorstel?.status === 'afgekeurd'" class="welcome-sub">Je stagevoorstel is helaas afgekeurd door de commissie</p>
       <p v-else-if="voorstel?.status === 'aanpassen'" class="welcome-sub">De commissie vraagt enkele aanpassingen aan je voorstel</p>
       <div v-else class="underline"></div>
     </section>
+
+    <!-- ACTIEVE STAGE DASHBOARD -->
+    <template v-if="stageActief">
+      <section class="actief-info-card">
+        <div class="actief-info-grid">
+          <div>
+            <span>Bedrijf</span>
+            <strong>{{ overeenkomst.bedrijfsnaam }}</strong>
+          </div>
+          <div>
+            <span>Mentor</span>
+            <strong>{{ voorstel?.mentor_naam || '—' }}</strong>
+          </div>
+          <div>
+            <span>Periode</span>
+            <strong>{{ formatDatum(overeenkomst.startdatum) }} – {{ formatDatum(overeenkomst.einddatum) }}</strong>
+          </div>
+          <div>
+            <span>Huidige week</span>
+            <strong>{{ huidigeWeek ? 'Week ' + huidigeWeek : '—' }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="voortgang-card">
+        <div class="voortgang-header">
+          <h2>Logboek voortgang</h2>
+          <span class="voortgang-percentage">{{ voortgangPercentage }}%</span>
+        </div>
+        <div class="voortgang-bar">
+          <div class="voortgang-fill" :style="{ width: voortgangPercentage + '%' }"></div>
+        </div>
+        <p class="voortgang-tekst">{{ logboekenIngevuld }} van {{ logboekenTotaal }} werkdagen ingevuld</p>
+      </section>
+
+      <section class="snelkoppelingen">
+        <article class="snel-kaart" @click="router.push('/student/logboek')">
+          <div class="snel-icoon">📋</div>
+          <div>
+            <h3>Logboek</h3>
+            <p>Vul je dagelijkse logboek in en bekijk feedback van je mentor</p>
+          </div>
+          <span class="snel-pijl">→</span>
+        </article>
+
+        <article class="snel-kaart" @click="router.push('/student/evaluatie')">
+          <div class="snel-icoon">📊</div>
+          <div>
+            <h3>Evaluatie</h3>
+            <p>Bekijk je tussentijdse en eindevaluatie</p>
+          </div>
+          <span class="snel-pijl">→</span>
+        </article>
+
+        <article class="snel-kaart" @click="router.push('/student/documenten')">
+          <div class="snel-icoon">📄</div>
+          <div>
+            <h3>Documenten</h3>
+            <p>Bekijk je stageovereenkomst en download de PDF</p>
+          </div>
+          <span class="snel-pijl">→</span>
+        </article>
+      </section>
+    </template>
+
+    <!-- Klaar om te starten (volledig getekend, nog niet gestart) -->
+    <section v-else-if="klaarOmTeStarten" class="status-card status-approved">
+      <div class="status-row">
+        <div class="status-icon">🚀</div>
+        <div class="status-text">
+          <h3>Klaar om te starten</h3>
+          <p>Je stageovereenkomst is volledig ondertekend door jou en je mentor. Klik op "Stage starten" bij Documenten om je logboek en evaluatie vrij te geven.</p>
+        </div>
+        <button class="secondary-btn success" @click="router.push('/student/documenten')">Naar documenten</button>
+      </div>
+    </section>
  
     <!-- Geen voorstel ingediend -->
-    <section v-if="!loading && !voorstel" class="start-card">
+    <section v-else-if="!loading && !voorstel" class="start-card">
       <div class="rocket">🚀</div>
       <h2>Klaar om je stage te starten?</h2>
       <p>Dien je stagevoorstel in en de stagecommissie zal het beoordelen binnen 5 werkdagen.</p>
@@ -173,7 +289,7 @@ function formatDatum(d) {
       </div>
     </section>
  
-    <section class="steps-section">
+    <section v-if="!stageActief" class="steps-section">
       <h2>Zo verloopt je stage</h2>
       <div class="steps">
         <div class="step-card" :class="{ done: voorstel }">
@@ -186,7 +302,7 @@ function formatDatum(d) {
           <h3>Beoordeling</h3>
           <p>De stagecommissie beoordeelt binnen 5 werkdagen.</p>
         </div>
-        <div class="step-card">
+        <div class="step-card" :class="{ done: klaarOmTeStarten }">
           <div class="step-number">3</div>
           <h3>Overeenkomst</h3>
           <p>Upload de ondertekende stageovereenkomst.</p>
@@ -224,6 +340,27 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .welcome h1 { margin: 0; font-size: 28px; font-weight: 800; }
 .welcome-sub { margin: 8px 0 0; color: #64748b; font-size: 14px; }
 .underline { width: 110px; height: 5px; background: #991b1b; border-radius: 999px; margin-top: 10px; }
+
+.actief-info-card { margin: 0 64px 24px; background: white; border-radius: 22px; border: 1px solid #e5e7eb; box-shadow: 0 14px 30px rgba(15,23,42,0.05); padding: 28px; }
+.actief-info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.actief-info-grid span { display: block; color: #64748b; text-transform: uppercase; font-size: 11px; font-weight: 800; margin-bottom: 6px; }
+.actief-info-grid strong { font-size: 15px; color: #111827; }
+
+.voortgang-card { margin: 0 64px 24px; background: white; border-radius: 22px; border: 1px solid #e5e7eb; box-shadow: 0 14px 30px rgba(15,23,42,0.05); padding: 28px; }
+.voortgang-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.voortgang-header h2 { margin: 0; font-size: 17px; font-weight: 800; }
+.voortgang-percentage { font-size: 20px; font-weight: 800; color: #991b1b; }
+.voortgang-bar { height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
+.voortgang-fill { height: 100%; background: #991b1b; border-radius: 999px; transition: width 0.3s; }
+.voortgang-tekst { margin: 0; color: #64748b; font-size: 13px; }
+
+.snelkoppelingen { margin: 0 64px 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.snel-kaart { background: white; border-radius: 18px; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(15,23,42,0.04); padding: 22px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: 0.2s ease; }
+.snel-kaart:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(15,23,42,0.08); border-color: #991b1b; }
+.snel-icoon { width: 46px; height: 46px; border-radius: 14px; background: #fee2e2; display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
+.snel-kaart h3 { margin: 0 0 4px; font-size: 15px; font-weight: 800; }
+.snel-kaart p { margin: 0; color: #64748b; font-size: 12px; line-height: 1.5; }
+.snel-pijl { margin-left: auto; color: #94a3b8; font-size: 18px; font-weight: 700; }
  
 .start-card { margin: 0 64px 34px; background: white; border-radius: 22px; border: 1px solid #e5e7eb; box-shadow: 0 14px 30px rgba(15,23,42,0.05); min-height: 210px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 34px; }
 .rocket { width: 54px; height: 54px; background: #fee2e2; border-radius: 50%; display: grid; place-items: center; font-size: 24px; margin-bottom: 16px; }
@@ -269,8 +406,10 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .step-card p { margin: 0; color: #64748b; font-size: 13px; line-height: 1.5; }
 @media (max-width: 1000px) {
   .steps { grid-template-columns: repeat(2, 1fr); }
+  .actief-info-grid { grid-template-columns: repeat(2, 1fr); }
+  .snelkoppelingen { grid-template-columns: 1fr; }
   .topbar { padding: 0 20px; }
-  .welcome, .start-card, .status-card, .steps-section { margin-left: 20px; margin-right: 20px; }
+  .welcome, .start-card, .status-card, .steps-section, .actief-info-card, .voortgang-card, .snelkoppelingen { margin-left: 20px; margin-right: 20px; }
   .status-row { flex-direction: column; align-items: flex-start; }
 }
 </style>
