@@ -22,7 +22,9 @@ import CommissieAanvragen from '../pages/commissie/CommissieAanvragen.vue'
 import MijnStudenten from '../pages/docent/MijnStudenten.vue'
 import Documenten from '../pages/student/Documenten.vue'
 import TussentijdseFeedback from '../pages/mentor/TussentijdseFeedback.vue'
+import EvaluatieKeuze from '../pages/student/EvaluatieKeuze.vue'
 import EvaluatieRubriek from '../pages/student/EvaluatieRubriek.vue'
+import TussentijdsRapportStudent from '../pages/student/TussentijdsRapportStudent.vue'
 import Eindrapport from '../pages/student/Eindrapport.vue'
 import DocentStudentDetail from '../pages/docent/DocentStudentDetail.vue'
 import TussentijdseBespreking from '../pages/docent/TussentijdseBespreking.vue'
@@ -48,8 +50,13 @@ const routes = [
   { path: '/student/stagevoorstel', name: 'StagevoorstelIndienen', component: StagevoorstelIndienen },
   { path: '/student/stagevoorstel/detail', name: 'StagevoorstelDetail', component: StagevoorstelDetail },
   { path: '/student/documenten', name: 'Documenten', component: Documenten },
-  { path: '/student/evaluatie', name: 'EvaluatieRubriek', component: EvaluatieRubriek },
+  { path: '/student/evaluatie', name: 'EvaluatieKeuze', component: EvaluatieKeuze },
+  { path: '/student/evaluatie/tussentijds', name: 'EvaluatieRubriek', component: EvaluatieRubriek },
+  { path: '/student/evaluatie/tussentijds-rapport', name: 'TussentijdsRapportStudent', component: TussentijdsRapportStudent },
   { path: '/student/eindrapport', name: 'Eindrapport', component: Eindrapport },
+  
+  
+
 
   // DOCENT
   { path: '/docent', redirect: '/docent/dashboard' },

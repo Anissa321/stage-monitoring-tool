@@ -6,6 +6,7 @@ const router = useRouter()
 const data = ref(null)
 const mentorEvaluatieIngevuld = ref(false)
 const zelfevaluatieIngediend = ref(false)
+const docentRapportBeschikbaar = ref(false)
 const loading = ref(false)
 const succes = ref('')
 const error = ref('')
@@ -68,7 +69,7 @@ onMounted(async () => {
       beschrijvingen.value[veld] = ''
     })
 
-    const [dashRes, mentorEvalRes, studentEvalRes] = await Promise.all([
+    const [dashRes, mentorEvalRes, studentEvalRes, rapportRes] = await Promise.all([
       fetch('http://localhost:3000/api/dashboards/student', {
         headers: { Authorization: `Bearer ${token}` }
       }),
@@ -76,6 +77,9 @@ onMounted(async () => {
         headers: { Authorization: `Bearer ${token}` }
       }),
       fetch('http://localhost:3000/api/student-evaluaties/mijn', {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch(`http://localhost:3000/api/tussentijdse-rapporten/student/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -95,6 +99,11 @@ onMounted(async () => {
       beschrijvingVelden.forEach(veld => {
         beschrijvingen.value[veld] = studentEvalData.evaluatie[veld] || ''
       })
+    }
+
+    const rapportData = await rapportRes.json()
+    if (rapportData.rapport) {
+      docentRapportBeschikbaar.value = true
     }
   } catch (err) {
     console.error(err)
@@ -204,7 +213,7 @@ async function logout() {
     </header>
 
     <section class="content">
-      <a class="back-link" @click="router.push('/student/dashboard')">← Terug naar dashboard</a>
+      <a class="back-link" @click="router.push('/student/evaluatie')">← Terug naar evaluatie-overzicht</a>
       <h1>Tussentijdse evaluatie</h1>
       <p class="subtitle">Bekijk de beoordeling van je mentor en vul je zelfevaluatie in</p>
 
@@ -342,16 +351,21 @@ async function logout() {
         </div>
       </div>
 
-      <!-- Eindrapport -->
-      <section class="eindrapport-card">
+      <!-- Tussentijds rapport van docent -->
+      <section v-if="docentRapportBeschikbaar" class="eindrapport-card">
         <div>
           <span class="eindrapport-label">Finale evaluatie</span>
-          <h2>Eindrapport</h2>
-          <p>Bekijk je finale stagebeoordeling met totaalscore, competentiescores, feedback en resultaat.</p>
+          <h2>Tussentijds rapport</h2>
+          <p>Je docent heeft een tussentijds rapport opgesteld op basis van de evaluatie van je mentor en jouw zelfevaluatie. Bekijk je score, competentiescores en feedback.</p>
         </div>
-        <button class="eindrapport-btn" @click="router.push('/student/eindrapport')">
-          Bekijk eindrapport →
+        <button class="eindrapport-btn" @click="router.push('/student/evaluatie/tussentijds-rapport')">
+          Bekijk tussentijds rapport →
         </button>
+      </section>
+
+      <section v-else class="wacht-rapport-card">
+        <span>⏳</span>
+        <p>Je docent heeft nog geen tussentijds rapport opgesteld. Zodra dit klaar is, kan je het hier bekijken.</p>
       </section>
     </section>
   </main>
@@ -441,8 +455,11 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .eindrapport-label { display: inline-block; margin-bottom: 8px; color: #991b1b; font-size: 12px; font-weight: 800; text-transform: uppercase; }
 .eindrapport-card h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; }
 .eindrapport-card p { margin: 0; color: #64748b; font-size: 14px; max-width: 640px; }
-.eindrapport-btn { border: none; background: #991b1b; color: white; padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.eindrapport-btn { border: none; background: #991b1b; color: white; padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
 .eindrapport-btn:hover { background: #7f1d1d; }
+
+.wacht-rapport-card { margin-top: 24px; display: flex; gap: 12px; align-items: center; background: #fefce8; border: 1px solid #fde68a; border-radius: 18px; padding: 20px 24px; font-size: 14px; color: #854d0e; }
+.wacht-rapport-card p { margin: 0; }
 
 @media (max-width: 900px) {
   .topbar { padding: 0 20px; }
