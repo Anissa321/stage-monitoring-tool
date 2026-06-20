@@ -11,15 +11,19 @@ const student = ref(null)
 const stage = ref(null)
 const logboeken = ref([])
 const docentInfo = ref(null)
+const tussentijdsRapportBeschikbaar = ref(false)
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const [meRes, studentRes] = await Promise.all([
+    const [meRes, studentRes, rapportRes] = await Promise.all([
       fetch('http://localhost:3000/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       }),
       fetch(`http://localhost:3000/api/dashboards/docent/student/${studentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch(`http://localhost:3000/api/tussentijdse-rapporten/student/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -31,6 +35,9 @@ onMounted(async () => {
     student.value = studentData.student
     stage.value = studentData.stage
     logboeken.value = studentData.logboeken || []
+
+    const rapportData = await rapportRes.json()
+    tussentijdsRapportBeschikbaar.value = !!rapportData.rapport
   } catch (err) {
     console.error(err)
   } finally {
@@ -116,6 +123,13 @@ function weekStatusKlasse(status) {
       <div class="header-row">
         <h1>Studentdossier</h1>
         <div class="header-acties">
+          <button
+            v-if="tussentijdsRapportBeschikbaar"
+            class="rapport-btn"
+            @click="router.push(`/docent/studenten/${studentId}/tussentijds-rapport/overzicht`)"
+          >
+            📋 Tussentijds rapport
+          </button>
           <button class="eindrapport-btn" @click="router.push(`/docent/studenten/${studentId}/eindrapport`)">📄 Bekijk eindrapport</button>
           <button class="bespreking-btn" @click="router.push(`/docent/studenten/${studentId}/bespreking`)">+ Tussentijdse bespreking</button>
         </div>
@@ -169,9 +183,9 @@ function weekStatusKlasse(status) {
           <div class="progress-bar">
             <div class="progress-fill" :style="{ width: logboekenTotaal ? (logboekenIngevuld / logboekenTotaal * 100) + '%' : '0%' }"></div>
           </div>
-          <div class="progress-row warning">
-            <span>Evaluatie ingevuld</span>
-            <strong>In afwachting</strong>
+          <div class="progress-row" :class="tussentijdsRapportBeschikbaar ? 'success' : 'warning'">
+            <span>Tussentijds rapport</span>
+            <strong>{{ tussentijdsRapportBeschikbaar ? 'Opgesteld' : 'Nog niet opgesteld' }}</strong>
           </div>
           <div class="progress-row success">
             <span>Stageovereenkomst</span>
@@ -228,13 +242,15 @@ nav a.active { color: #991b1b; }
 .content { padding: 34px 56px 48px; }
 .back-btn { border: none; background: transparent; color: #64748b; font-weight: 700; cursor: pointer; margin-bottom: 12px; font-size: 14px; padding: 0; }
 .back-btn:hover { color: #991b1b; }
-.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; flex-wrap: wrap; gap: 12px; }
 .header-row h1 { margin: 0; font-size: 28px; font-weight: 800; }
-.header-acties { display: flex; gap: 12px; }
+.header-acties { display: flex; gap: 12px; flex-wrap: wrap; }
 .bespreking-btn { border: none; background: #1d4ed8; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .bespreking-btn:hover { background: #1e40af; }
 .eindrapport-btn { border: 1px solid #cbd5e1; background: white; color: #334155; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .eindrapport-btn:hover { background: #f8fafc; }
+.rapport-btn { border: 1px solid #15803d; background: white; color: #15803d; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.rapport-btn:hover { background: #ecfdf5; }
 
 .student-card { background: white; border-radius: 18px; border: 1px solid #e5e7eb; padding: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 8px 20px rgba(15,23,42,0.04); margin-bottom: 24px; }
 .student-left { display: flex; align-items: center; gap: 18px; }
