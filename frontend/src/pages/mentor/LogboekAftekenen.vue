@@ -1,12 +1,12 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 
 const studentId = route.params.studentId
-const weekNummer = route.params.weekNummer
+const weekNummer = computed(() => Number(route.params.weekNummer))
 const loading = ref(true)
 const error = ref('')
 const succes = ref('')
@@ -15,17 +15,16 @@ const feedback = ref('')
 const logboeken = ref([])
 const student = ref(null)
 const mentor = ref(null)
+const beschikbareWeken = ref([])
 
-onMounted(async () => {
+async function laadWeek() {
+  loading.value = true
+  error.value = ''
+  succes.value = ''
+  feedback.value = ''
   const token = localStorage.getItem('token')
   try {
-    const resMe = await fetch('http://localhost:3000/api/auth/me', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    const meData = await resMe.json()
-    mentor.value = meData.user
-
-    const res = await fetch(`http://localhost:3000/api/logboeken/mentor/week/${studentId}/${weekNummer}`, {
+    const res = await fetch(`http://localhost:3000/api/logboeken/mentor/week/${studentId}/${weekNummer.value}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const data = await res.json()
@@ -42,6 +41,64 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+async function laadBeschikbareWeken() {
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch('http://localhost:3000/api/logboeken/mentor', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const data = await res.json()
+    const weken = (data.logboeken || [])
+      .filter(l => l.student_id === studentId)
+      .map(l => l.week_number)
+    beschikbareWeken.value = [...new Set(weken)].sort((a, b) => a - b)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+  try {
+    const resMe = await fetch('http://localhost:3000/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const meData = await resMe.json()
+    mentor.value = meData.user
+  } catch (err) {
+    console.error(err)
+  }
+
+  await laadBeschikbareWeken()
+  await laadWeek()
+})
+
+const huidigeIndex = computed(() => beschikbareWeken.value.indexOf(weekNummer.value))
+const kanVorige = computed(() => huidigeIndex.value > 0)
+const kanVolgende = computed(() => huidigeIndex.value !== -1 && huidigeIndex.value < beschikbareWeken.value.length - 1)
+
+function vorigeWeek() {
+  if (!kanVorige.value) return
+  const nieuweWeek = beschikbareWeken.value[huidigeIndex.value - 1]
+  router.push(`/mentor/week/${studentId}/${nieuweWeek}`)
+}
+
+function volgendeWeek() {
+  if (!kanVolgende.value) return
+  const nieuweWeek = beschikbareWeken.value[huidigeIndex.value + 1]
+  router.push(`/mentor/week/${studentId}/${nieuweWeek}`)
+}
+
+function springNaarWeek(week) {
+  router.push(`/mentor/week/${studentId}/${week}`)
+}
+
+// Herlaad de week-data wanneer de route-parameter verandert (navigatie binnen dezelfde pagina)
+import { watch } from 'vue'
+watch(weekNummer, () => {
+  laadWeek()
 })
 
 function initialen(voornaam, achternaam) {
@@ -69,7 +126,6 @@ function statusLabel(status) {
   return status
 }
 
-// Parse competenties - kunnen JSON-strings of objecten zijn
 function parseCompetenties(competenties) {
   if (!competenties || !competenties.length) return []
   return competenties.map(c => {
@@ -85,7 +141,6 @@ function parseCompetenties(competenties) {
   })
 }
 
-// Status van de hele week - groen "Goedgekeurd" als alle dagen goedgekeurd/vrije dag zijn
 function weekStatusLabel() {
   const alleGoedgekeurd = logboeken.value.length > 0 && logboeken.value.every(l => ['goedgekeurd', 'vrije_dag'].includes(l.status))
   return alleGoedgekeurd ? '✓ Goedgekeurd' : '⏳ Wacht op weekgoedkeuring'
@@ -118,7 +173,7 @@ async function aftekenen(week_status) {
       })
     }
     succes.value = week_status === 'goedgekeurd' ? 'Week goedgekeurd!' : 'Week afgekeurd!'
-    setTimeout(() => router.push('/mentor/dashboard'), 1500)
+    await laadWeek()
   } catch (err) {
     error.value = 'Verbindingsfout met server'
   }
@@ -173,6 +228,16 @@ async function logout() {
           </div>
           <span :class="weekStatusKlasse()">{{ weekStatusLabel() }}</span>
         </div>
+      </section>
+
+      <section class="week-navigatie">
+        <button class="nav-pijl" :disabled="!kanVorige" @click="vorigeWeek">← Vorige week</button>
+
+        <select :value="weekNummer" @change="springNaarWeek(Number($event.target.value))" class="week-select">
+          <option v-for="w in beschikbareWeken" :key="w" :value="w">Week {{ w }}</option>
+        </select>
+
+        <button class="nav-pijl" :disabled="!kanVolgende" @click="volgendeWeek">Volgende week →</button>
       </section>
 
       <section class="days-list">
@@ -244,6 +309,44 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .status-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 7px 13px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .warning { background: #fef3c7; color: #92400e; }
 .success { background: #dcfce7; color: #15803d; }
+
+.week-navigatie {
+  margin: 0 64px 20px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+}
+.nav-pijl {
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #334155;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.2s;
+}
+.nav-pijl:hover:not(:disabled) { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+.nav-pijl:disabled { opacity: 0.35; cursor: not-allowed; }
+.week-select {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  background: white;
+  cursor: pointer;
+}
+
 .days-list { padding: 8px 64px 20px; display: flex; flex-direction: column; gap: 18px; }
 .day-card { background: white; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px; display: grid; grid-template-columns: 200px 1fr 420px; gap: 28px; box-shadow: 0 8px 22px rgba(15,23,42,0.04); }
 .day-meta h3 { margin: 0 0 6px; font-size: 14px; font-weight: 700; }
@@ -276,6 +379,7 @@ textarea:focus { outline: none; border-color: #991b1b; box-shadow: 0 0 0 3px rgb
 @media (max-width: 900px) {
   .topbar { padding: 0 20px; } nav { display: none; }
   .page-header, .days-list, .feedback-section, .actions { padding-left: 20px; padding-right: 20px; margin-left: 0; margin-right: 0; }
+  .week-navigatie { margin-left: 20px; margin-right: 20px; flex-direction: column; }
   .title-row { flex-direction: column; }
   .day-card { grid-template-columns: 1fr; }
   .comp-list { grid-template-columns: 1fr; }

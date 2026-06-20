@@ -6,6 +6,8 @@ const router = useRouter()
 const logboeken = ref([])
 const weekFeedback = ref({})
 const user = ref(null)
+const loading = ref(true)
+const huidigeWeekIndex = ref(null)
 
 async function logout() {
   const token = localStorage.getItem('token')
@@ -31,6 +33,11 @@ function formatDatum(datum) {
   })
 }
 
+function formatDatumKort(datum) {
+  if (!datum) return ''
+  return new Date(datum).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' })
+}
+
 function statusClass(status) {
   if (status === 'goedgekeurd') return 'submitted'
   if (status === 'ingediend') return 'submitted'
@@ -47,6 +54,20 @@ function statusLabel(status) {
   if (status === 'niet_ingevuld') return 'Nog niet ingevuld'
   if (status === 'vrije_dag') return 'Vrije dag'
   return status
+}
+
+function weekStatusLabel(status) {
+  if (status === 'goedgekeurd') return '✓ Goedgekeurd'
+  if (status === 'ingediend') return '✓ Ingediend'
+  if (status === 'afgekeurd') return '✗ Afgekeurd'
+  return 'Nog niet afgerond'
+}
+
+function weekStatusKlasse(status) {
+  if (status === 'goedgekeurd') return 'badge groen'
+  if (status === 'ingediend') return 'badge groen'
+  if (status === 'afgekeurd') return 'badge rood'
+  return 'badge grijs'
 }
 
 function korteCompetentie(competentie) {
@@ -90,56 +111,119 @@ async function resetLogboek(logboek) {
   }
 }
 
-const logboekenPerWeek = computed(() => {
+// Alle weken, gesorteerd oplopend op weeknummer (laagste eerst)
+const alleWeken = computed(() => {
   const groepen = {}
   logboeken.value.forEach((logboek) => {
     const week = logboek.week_number
     if (!groepen[week]) groepen[week] = []
     groepen[week].push(logboek)
   })
+
   return Object.keys(groepen)
-    .sort((a, b) => Number(b) - Number(a))
-    .map((week) => ({
-      week,
-      logboeken: groepen[week].sort((a, b) => new Date(a.datum) - new Date(b.datum)),
-      feedback: weekFeedback.value[week] || null,
-      week_status: groepen[week][0]?.week_status || null
-    }))
+    .map(week => Number(week))
+    .sort((a, b) => a - b)
+    .map(week => {
+      const dagen = groepen[week].sort((a, b) => new Date(a.datum) - new Date(b.datum))
+      return {
+        week,
+        dagen,
+        weekStatus: dagen[0]?.week_status || null,
+        feedback: weekFeedback.value[week] || null
+      }
+    })
 })
+
+// De week die op dit moment getoond wordt
+const huidigeWeek = computed(() => {
+  if (huidigeWeekIndex.value === null || !alleWeken.value.length) return null
+  return alleWeken.value[huidigeWeekIndex.value] || null
+})
+
+const kanVorige = computed(() => huidigeWeekIndex.value > 0)
+const kanVolgende = computed(() => huidigeWeekIndex.value < alleWeken.value.length - 1)
+
+function vorigeWeek() {
+  if (kanVorige.value) huidigeWeekIndex.value--
+}
+
+function volgendeWeek() {
+  if (kanVolgende.value) huidigeWeekIndex.value++
+}
+
+function springNaarWeek(weekNr) {
+  const index = alleWeken.value.findIndex(w => w.week === Number(weekNr))
+  if (index !== -1) huidigeWeekIndex.value = index
+}
+
+async function laadData() {
+  const token = localStorage.getItem('token')
+
+  try {
+    await fetch('http://localhost:3000/api/logboeken/genereer-periode', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  } catch (genErr) {
+    console.warn('Kon periode niet genereren:', genErr)
+  }
+
+  const [dashRes, logRes, reviewRes] = await Promise.all([
+    fetch('http://localhost:3000/api/dashboards/student', {
+      headers: { Authorization: `Bearer ${token}` }
+    }),
+    fetch('http://localhost:3000/api/logboeken/mijn', {
+      headers: { Authorization: `Bearer ${token}` }
+    }),
+    fetch('http://localhost:3000/api/logboeken/mijn/reviews', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  ])
+
+  const dashData = await dashRes.json()
+  user.value = dashData.user
+
+  const logData = await logRes.json()
+  logboeken.value = logData.logboeken || []
+
+  if (reviewRes.ok) {
+    const reviewData = await reviewRes.json()
+    weekFeedback.value = {}
+    reviewData.reviews?.forEach(r => {
+      weekFeedback.value[r.week_number] = {
+        feedback: r.week_feedback,
+        mentor_naam: r.mentor_naam,
+        status: r.week_status
+      }
+    })
+  }
+
+  // Bepaal de huidige week op basis van vandaag, en zet die als startpunt
+  const vandaag = new Date()
+  const dagVanWeek = vandaag.getDay()
+  const diffNaarMaandag = dagVanWeek === 0 ? -6 : 1 - dagVanWeek
+  const maandag = new Date(vandaag)
+  maandag.setDate(vandaag.getDate() + diffNaarMaandag)
+  const maandagStr = maandag.toISOString().split('T')[0]
+
+  const matchIndex = alleWeken.value.findIndex(w =>
+    w.dagen.some(d => d.datum === maandagStr)
+  )
+
+  if (matchIndex !== -1) {
+    huidigeWeekIndex.value = matchIndex
+  } else if (alleWeken.value.length > 0) {
+    huidigeWeekIndex.value = alleWeken.value.length - 1
+  }
+}
 
 onMounted(async () => {
   try {
-    const token = localStorage.getItem('token')
-    const [logRes, dashRes, reviewRes] = await Promise.all([
-      fetch('http://localhost:3000/api/logboeken/mijn', {
-        headers: { Authorization: `Bearer ${token}` }
-      }),
-      fetch('http://localhost:3000/api/dashboards/student', {
-        headers: { Authorization: `Bearer ${token}` }
-      }),
-      fetch('http://localhost:3000/api/logboeken/mijn/reviews', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-    ])
-
-    const logData = await logRes.json()
-    const dashData = await dashRes.json()
-
-    logboeken.value = logData.logboeken || []
-    user.value = dashData.user
-
-    if (reviewRes.ok) {
-      const reviewData = await reviewRes.json()
-      reviewData.reviews?.forEach(r => {
-        weekFeedback.value[r.week_number] = {
-          feedback: r.week_feedback,
-          mentor_naam: r.mentor_naam,
-          status: r.week_status
-        }
-      })
-    }
+    await laadData()
   } catch (err) {
     console.error(err)
+  } finally {
+    loading.value = false
   }
 })
 </script>
@@ -168,73 +252,75 @@ onMounted(async () => {
       <section class="hero">
         <p class="label">Stage Logboek</p>
         <h1>Mijn Logboek</h1>
-        <p class="subtitle">Overzicht van je ingediende logboeken</p>
+        <p class="subtitle">Bekijk je week, of spring naar een andere week</p>
       </section>
 
-      <section class="week-section">
-        <div class="section-header">
-          <h2>Logboeken per week</h2>
+      <div v-if="loading" class="loading">Laden...</div>
+
+      <div v-else-if="!huidigeWeek" class="leeg-bericht">
+        Er zijn nog geen logboeken beschikbaar. Zorg dat je een goedgekeurd stagevoorstel hebt met een geldige periode.
+      </div>
+
+      <section v-else class="week-blok">
+        <div class="week-navigatie">
+          <button class="nav-pijl" :disabled="!kanVorige" @click="vorigeWeek">← Vorige</button>
+
+          <div class="week-kiezer">
+            <h2>Week {{ huidigeWeek.week }}</h2>
+            <select :value="huidigeWeek.week" @change="springNaarWeek($event.target.value)" class="week-select">
+              <option v-for="w in alleWeken" :key="w.week" :value="w.week">
+                Week {{ w.week }} — {{ formatDatumKort(w.dagen[0]?.datum) }}
+              </option>
+            </select>
+            <span :class="weekStatusKlasse(huidigeWeek.weekStatus)">{{ weekStatusLabel(huidigeWeek.weekStatus) }}</span>
+          </div>
+
+          <button class="nav-pijl" :disabled="!kanVolgende" @click="volgendeWeek">Volgende →</button>
         </div>
 
-        <section v-for="weekGroep in logboekenPerWeek" :key="weekGroep.week" class="week-block">
-          <div class="week-title">
-            <h2>
-              Week {{ weekGroep.week }}
-              <span v-if="Number(weekGroep.week) === 13" class="week-badge blue">Huidige week</span>
-              <span v-if="weekGroep.week_status === 'goedgekeurd'" class="week-badge green">✓ Ingediend</span>
-              <span v-else-if="weekGroep.week_status === 'ingediend'" class="week-badge green">✓ Ingediend</span>
-              <span v-else-if="weekGroep.week_status === 'afgekeurd'" class="week-badge red">✗ Afgekeurd</span>
-            </h2>
-          </div>
+        <div class="cards">
+          <article
+            v-for="logboek in huidigeWeek.dagen"
+            :key="logboek.id"
+            class="day-card"
+            :class="[statusClass(logboek.status), (logboek.status !== 'niet_ingevuld' && logboek.status !== 'vrije_dag') ? 'clickable' : '']"
+            @click="klikOpCard(logboek)"
+          >
+            <h3>{{ formatDatum(logboek.datum) }}</h3>
+            <span class="status">{{ statusLabel(logboek.status) }}</span>
 
-          <div class="cards">
-            <article
-              v-for="logboek in weekGroep.logboeken"
-              :key="logboek.id"
-              class="day-card"
-              :class="[statusClass(logboek.status), (logboek.status !== 'niet_ingevuld' && logboek.status !== 'vrije_dag') ? 'clickable' : '']"
-              @click="klikOpCard(logboek)"
+            <p v-if="logboek.tasks" class="taken-preview">{{ logboek.tasks }}</p>
+            <p v-if="logboek.uren_gewerkt" class="hours">{{ logboek.uren_gewerkt }} uur gewerkt</p>
+
+            <div v-if="logboek.competenties && logboek.competenties.length" class="tags">
+              <span v-for="competentie in logboek.competenties" :key="competentie.naam || competentie">
+                {{ korteCompetentie(competentie.naam || competentie) }}
+              </span>
+            </div>
+
+            <button
+              v-if="logboek.status === 'niet_ingevuld'"
+              class="fill-card-btn"
+              @click.stop="router.push(`/student/logboek-invullen?id=${logboek.id}`)"
             >
-              <h3>{{ formatDatum(logboek.datum) }}</h3>
-              <span class="status">{{ statusLabel(logboek.status) }}</span>
+              + Logboek invullen
+            </button>
 
-              <p v-if="logboek.tasks" class="taken-preview">{{ logboek.tasks }}</p>
-              <p v-if="logboek.uren_gewerkt" class="hours">{{ logboek.uren_gewerkt }} uur gewerkt</p>
+            <div v-if="logboek.status === 'ingediend'" class="card-actions">
+              <div class="readonly-badge">🔒 Niet meer aanpasbaar</div>
+              <button class="delete-btn" @click.stop="resetLogboek(logboek)">🗑 Reset</button>
+            </div>
 
-              <div v-if="logboek.competenties && logboek.competenties.length" class="tags">
-                <span v-for="competentie in logboek.competenties" :key="competentie.naam || competentie">
-                  {{ korteCompetentie(competentie.naam || competentie) }}
-                </span>
-              </div>
+            <div v-if="logboek.status === 'goedgekeurd'" class="readonly-badge">
+              🔒 Niet meer aanpasbaar
+            </div>
+          </article>
+        </div>
 
-              <button
-                v-if="logboek.status === 'niet_ingevuld'"
-                class="fill-card-btn"
-                @click.stop="router.push(`/student/logboek-invullen?id=${logboek.id}`)"
-              >
-                + Logboek invullen
-              </button>
-
-              <div v-if="logboek.status === 'ingediend' && logboek.datum === '2026-05-08'" class="card-actions">
-                <div class="readonly-badge">🔒 Niet meer aanpasbaar</div>
-                <button class="delete-btn" @click.stop="resetLogboek(logboek)">🗑 Reset</button>
-              </div>
-
-              <div v-if="logboek.status === 'ingediend' && logboek.datum !== '2026-05-08'" class="readonly-badge">
-                🔒 Niet meer aanpasbaar
-              </div>
-
-              <div v-if="logboek.status === 'goedgekeurd'" class="readonly-badge">
-                🔒 Niet meer aanpasbaar
-              </div>
-            </article>
-          </div>
-
-          <div v-if="weekGroep.feedback" class="feedback-card">
-            <h3>Feedback van {{ weekGroep.feedback.mentor_naam || 'Mentor' }} — Week {{ weekGroep.week }}</h3>
-            <p>{{ weekGroep.feedback.feedback }}</p>
-          </div>
-        </section>
+        <div v-if="huidigeWeek.feedback" class="feedback-card">
+          <h3>Feedback van {{ huidigeWeek.feedback.mentor_naam || 'Mentor' }} — Week {{ huidigeWeek.week }}</h3>
+          <p>{{ huidigeWeek.feedback.feedback }}</p>
+        </div>
       </section>
     </div>
   </main>
@@ -274,24 +360,58 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 
 .hero h1 { margin: 10px 0; font-size: 38px; color: #0f172a; }
 
-.subtitle { color: #64748b; }
+.subtitle { color: #64748b; margin: 0; }
 
-.week-section { margin-top: 32px; }
+.loading { text-align: center; padding: 60px; color: #64748b; }
+.leeg-bericht { background: white; border-radius: 16px; padding: 32px; text-align: center; color: #64748b; margin-top: 20px; }
 
-.section-header { margin-bottom: 28px; }
+.week-blok { margin-top: 28px; }
 
-.section-header h2 { color: #0f172a; margin: 0; }
+.week-navigatie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border-radius: 18px;
+  padding: 18px 24px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+  margin-bottom: 24px;
+  gap: 16px;
+}
 
-.week-block { margin-bottom: 42px; }
+.nav-pijl {
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #334155;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.2s;
+}
+.nav-pijl:hover:not(:disabled) { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+.nav-pijl:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.week-title { margin-bottom: 18px; }
+.week-kiezer { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.week-kiezer h2 { margin: 0; font-size: 22px; color: #0f172a; }
 
-.week-title h2 { margin: 0; color: #0f172a; font-size: 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.week-select {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  background: white;
+  cursor: pointer;
+}
 
-.week-badge { padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; }
-.week-badge.green { background: #dcfce7; color: #15803d; }
-.week-badge.red { background: #fee2e2; color: #991b1b; }
-.week-badge.blue { background: #dbeafe; color: #1d4ed8; }
+.badge { padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.badge.groen { background: #dcfce7; color: #166534; }
+.badge.rood { background: #fee2e2; color: #991b1b; }
+.badge.grijs { background: #e2e8f0; color: #475569; }
 
 .cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
 
@@ -342,5 +462,6 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
   .topbar { padding: 0 20px; }
   nav { display: none; }
   .page-content { padding: 24px 20px; }
+  .week-navigatie { flex-direction: column; }
 }
 </style>

@@ -11,19 +11,121 @@ function formatDatum(datum) {
   return new Date(datum).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+// Berekent het week-nummer van de stage op basis van startdatum
+function berekenWeekNummer(datum, startdatum) {
+  const start = new Date(startdatum)
+  const dag = new Date(datum)
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000
+  const week = Math.ceil((dag - start) / msPerWeek) + 1
+  return week < 1 ? 1 : week
+}
+
+// Verwijdert logboek-rijen (en gekoppelde competenties/reviews) die buiten de officiële periode vallen
+async function ruimOudeLogboekenOp(studentId, startdatum, einddatum) {
+  try {
+    const { data: buitenPeriode } = await supabaseAdmin
+      .from('logbooks')
+      .select('id')
+      .eq('student_id', studentId)
+      .or(`datum.lt.${startdatum},datum.gt.${einddatum}`)
+
+    if (!buitenPeriode || buitenPeriode.length === 0) return
+
+    const idsOmTeVerwijderen = buitenPeriode.map(l => l.id)
+
+    await supabaseAdmin
+      .from('logbook_competencies')
+      .delete()
+      .in('logbook_id', idsOmTeVerwijderen)
+
+    await supabaseAdmin
+      .from('logbook_reviews')
+      .delete()
+      .in('logbook_id', idsOmTeVerwijderen)
+
+    await supabaseAdmin
+      .from('logbooks')
+      .delete()
+      .in('id', idsOmTeVerwijderen)
+  } catch (err) {
+    console.error('ruimOudeLogboekenOp error:', err)
+  }
+}
+
+// Genereert lege logboeken (status niet_ingevuld) voor elke weekdag (ma-vr)
+// tussen startdatum en einddatum van de stage. Bestaande logboeken worden niet overschreven.
+// Logboeken buiten de periode (van eerdere/foutieve tests) worden eerst opgeruimd.
+async function genereerLogboeken(studentId, startdatum, einddatum) {
+  try {
+    const start = new Date(startdatum)
+    const eind = new Date(einddatum)
+
+    if (isNaN(start) || isNaN(eind) || start > eind) {
+      console.error('genereerLogboeken: ongeldige periode', startdatum, einddatum)
+      return
+    }
+
+    // Eerst opruimen: alles buiten de officiële periode hoort hier niet meer
+    await ruimOudeLogboekenOp(studentId, startdatum, einddatum)
+
+    // Bestaande logboeken van deze student ophalen om duplicaten te vermijden
+    const { data: bestaande } = await supabaseAdmin
+      .from('logbooks')
+      .select('datum')
+      .eq('student_id', studentId)
+
+    const bestaandeDatums = new Set((bestaande || []).map(l => l.datum))
+
+    const nieuweRijen = []
+    const cursor = new Date(start)
+
+    while (cursor <= eind) {
+      const dagVanWeek = cursor.getDay() // 0 = zondag, 6 = zaterdag
+      const isWeekdag = dagVanWeek >= 1 && dagVanWeek <= 5
+
+      if (isWeekdag) {
+        const datumStr = cursor.toISOString().split('T')[0]
+        if (!bestaandeDatums.has(datumStr)) {
+          nieuweRijen.push({
+            student_id: studentId,
+            datum: datumStr,
+            week_number: berekenWeekNummer(datumStr, startdatum),
+            status: 'niet_ingevuld'
+          })
+        }
+      }
+
+      cursor.setDate(cursor.getDate() + 1)
+    }
+
+    if (nieuweRijen.length > 0) {
+      const { error } = await supabaseAdmin
+        .from('logbooks')
+        .insert(nieuweRijen)
+
+      if (error) {
+        console.error('genereerLogboeken: kon logboeken niet aanmaken', error)
+      }
+    }
+  } catch (err) {
+    console.error('genereerLogboeken error:', err)
+  }
+}
+
 // Bouwt de PDF content (gedeeld door preview en finale versie)
-function bouwPdfContent(doc, overeenkomst, student, { metHandtekeningen }) {
+function bouwPdfContent(doc, overeenkomst, student, opleidingNaam, { metHandtekeningen }) {
   doc.fontSize(18).font('Helvetica-Bold').text('Stageovereenkomst', { align: 'center' })
   doc.moveDown(1)
 
   doc.fontSize(10).font('Helvetica').text(
-    `Deze overeenkomst wordt afgesloten tussen de student, het stagebedrijf en de hogeschool Erasmushogeschool Brussel (EhB), in het kader van de stage binnen de opleiding Toegepaste Informatica.`,
+    `Deze overeenkomst wordt afgesloten tussen de student, het stagebedrijf en de hogeschool Erasmushogeschool Brussel (EhB), in het kader van de stage binnen de opleiding ${opleidingNaam || 'onbekend'}.`,
     { align: 'justify' }
   )
   doc.moveDown(1)
 
   doc.font('Helvetica-Bold').text('1. Partijen')
   doc.font('Helvetica').text(`Student: ${student.voornaam} ${student.achternaam} (${student.email})`)
+  doc.text(`Opleiding: ${opleidingNaam || '—'}`)
   doc.text(`Stagebedrijf: ${overeenkomst.bedrijfsnaam}`)
   if (overeenkomst.bedrijf_adres) doc.text(`Adres: ${overeenkomst.bedrijf_adres}`)
   doc.moveDown(1)
@@ -77,8 +179,19 @@ function bouwPdfContent(doc, overeenkomst, student, { metHandtekeningen }) {
   }
 }
 
+// Helper: haalt de opleiding-naam op aan de hand van opleiding_id
+async function haalOpleidingNaam(opleidingId) {
+  if (!opleidingId) return null
+  const { data } = await supabaseAdmin
+    .from('opleidingen')
+    .select('naam')
+    .eq('id', opleidingId)
+    .single()
+  return data?.naam || null
+}
+
 // Helper: genereer PDF buffer (met handtekeningen, voor opslag)
-async function genereerPdfBuffer(overeenkomst, student) {
+async function genereerPdfBuffer(overeenkomst, student, opleidingNaam) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 })
     const chunks = []
@@ -87,7 +200,7 @@ async function genereerPdfBuffer(overeenkomst, student) {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
 
-    bouwPdfContent(doc, overeenkomst, student, { metHandtekeningen: true })
+    bouwPdfContent(doc, overeenkomst, student, opleidingNaam, { metHandtekeningen: true })
 
     doc.end()
   })
@@ -109,7 +222,9 @@ async function genereerEnUploadPdf(overeenkomstId) {
     .eq('id', overeenkomst.student_id)
     .single()
 
-  const pdfBuffer = await genereerPdfBuffer(overeenkomst, student)
+  const opleidingNaam = await haalOpleidingNaam(overeenkomst.opleiding_id)
+
+  const pdfBuffer = await genereerPdfBuffer(overeenkomst, student, opleidingNaam)
   const filePath = `stageovereenkomsten/${overeenkomst.student_id}.pdf`
 
   const { error: uploadError } = await supabaseAdmin.storage
@@ -173,12 +288,14 @@ router.get('/:id/preview-pdf', authMiddleware, async (req, res) => {
       .eq('id', overeenkomst.student_id)
       .single()
 
+    const opleidingNaam = await haalOpleidingNaam(overeenkomst.opleiding_id)
+
     const doc = new PDFDocument({ margin: 50 })
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', 'inline; filename="stageovereenkomst-preview.pdf"')
 
     doc.pipe(res)
-    bouwPdfContent(doc, overeenkomst, student, { metHandtekeningen: false })
+    bouwPdfContent(doc, overeenkomst, student, opleidingNaam, { metHandtekeningen: false })
     doc.end()
   } catch (err) {
     console.error('Preview PDF error:', err)
@@ -224,6 +341,7 @@ router.get('/mijn', authMiddleware, requireRole('student'), async (req, res) => 
         opdrachtomschrijving: voorstel.opdrachtomschrijving,
         startdatum: voorstel.startdatum,
         einddatum: voorstel.einddatum,
+        opleiding_id: voorstel.opleiding_id,
         status: 'open'
       })
       .select()
@@ -251,7 +369,7 @@ router.put('/:id/tekenen-student', authMiddleware, requireRole('student'), async
 
     const { data: bestaand } = await supabaseAdmin
       .from('stageovereenkomsten')
-      .select('id, student_id, mentor_handtekening')
+      .select('id, student_id, mentor_handtekening, startdatum, einddatum')
       .eq('id', id)
       .eq('student_id', req.user.id)
       .single()
@@ -276,6 +394,7 @@ router.put('/:id/tekenen-student', authMiddleware, requireRole('student'), async
     let pdfUrl = data.pdf_url
     if (nieuweStatus === 'volledig_getekend') {
       pdfUrl = await genereerEnUploadPdf(id)
+      await genereerLogboeken(bestaand.student_id, bestaand.startdatum, bestaand.einddatum)
     }
 
     res.json({ overeenkomst: { ...data, pdf_url: pdfUrl } })
@@ -340,7 +459,7 @@ router.put('/:id/tekenen-mentor', authMiddleware, requireRole('mentor'), async (
 
     const { data: bestaand } = await supabaseAdmin
       .from('stageovereenkomsten')
-      .select('id, student_id, student_handtekening')
+      .select('id, student_id, student_handtekening, startdatum, einddatum')
       .eq('id', id)
       .single()
 
@@ -367,6 +486,7 @@ router.put('/:id/tekenen-mentor', authMiddleware, requireRole('mentor'), async (
     let pdfUrl = data.pdf_url
     if (nieuweStatus === 'volledig_getekend') {
       pdfUrl = await genereerEnUploadPdf(id)
+      await genereerLogboeken(bestaand.student_id, bestaand.startdatum, bestaand.einddatum)
     }
 
     res.json({ overeenkomst: { ...data, pdf_url: pdfUrl } })

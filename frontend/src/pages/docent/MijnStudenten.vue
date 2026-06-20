@@ -46,8 +46,8 @@ function initiaalStudent(s) {
   return (s.voornaam?.[0] || '') + (s.achternaam?.[0] || '')
 }
 
-function gaNaarLogboek() {
-  router.push('/docent/logboek')
+function gaNaarStudent(student) {
+  router.push(`/docent/studenten/${student.id}`)
 }
 </script>
 
@@ -61,7 +61,7 @@ function gaNaarLogboek() {
       <nav>
         <a @click="router.push('/docent/dashboard')">Dashboard</a>
         <a class="active" @click="router.push('/docent/studenten')">Stagiairs</a>
-        <a @click="router.push('/docent/evaluaties')">Evaluaties</a>
+        <a class="active" @click="router.push('/docent/evaluaties')">Evaluaties</a>
       </nav>
       <div class="profile">
         <span>{{ voornaam() }}</span>
@@ -87,7 +87,7 @@ function gaNaarLogboek() {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="student in data?.studenten || []" :key="student.id" class="student-row" @click="gaNaarLogboek">
+            <tr v-for="student in data?.studenten || []" :key="student.id" class="student-row" @click="gaNaarStudent(student)">
               <td>
                 <div class="student-cel">
                   <div class="avatar-small">{{ initiaalStudent(student) }}</div>
@@ -95,7 +95,7 @@ function gaNaarLogboek() {
                 </div>
               </td>
               <td>{{ student.email }}</td>
-              <td><button class="icon-btn" @click.stop="gaNaarLogboek">Bekijk logboeken →</button></td>
+              <td><button class="icon-btn" @click.stop="gaNaarStudent(student)">Bekijk dossier →</button></td>
             </tr>
             <tr v-if="!data?.studenten?.length">
               <td colspan="3" class="leeg">Geen stagiairs gekoppeld.</td>
@@ -121,14 +121,11 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .avatar { width: 38px; height: 38px; border-radius: 50%; background: #f1f5f9; border: 1px solid #e2e8f0; display: grid; place-items: center; font-size: 13px; }
 .logout-btn { border: none; background: #991b1b; color: white; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s ease; }
 .logout-btn:hover { background: #7f1d1d; }
-
 .content { padding: 40px 64px 52px; }
 .back-link { color: #991b1b; text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; }
 .content h1 { margin: 14px 0 6px; font-size: 28px; font-weight: 800; }
 .subtitle { margin: 0 0 28px; color: #64748b; font-size: 14px; }
-
 .loading { text-align: center; padding: 60px; color: #64748b; }
-
 .table-card { background: white; border-radius: 22px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 14px 30px rgba(15,23,42,0.05); }
 table { width: 100%; border-collapse: collapse; }
 th { background: #f8fafc; color: #94a3b8; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.7px; padding: 16px 28px; }
@@ -140,7 +137,6 @@ td { padding: 20px 28px; border-top: 1px solid #f1f5f9; font-size: 14px; color: 
 .icon-btn { border: 1px solid #e2e8f0; background: white; color: #991b1b; padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px; transition: 0.2s; }
 .icon-btn:hover { background: #991b1b; color: white; border-color: #991b1b; }
 .leeg { padding: 28px; color: #64748b; text-align: center; }
-
 @media (max-width: 900px) {
   .topbar { padding: 0 20px; } nav { display: none; }
   .content { padding: 24px 20px; }

@@ -66,7 +66,7 @@ function goToAftekenen(logboek) {
       <nav>
         <a class="active">Dashboard</a>
         <a @click="router.push('/mentor/stagiairs')">Stagiairs</a>
-        <a>Evaluaties</a>
+        <a @click="router.push('/mentor/evaluaties')">Evaluaties</a>
       </nav>
       <div class="profile">
         <span>{{ voornaam() }}</span>
