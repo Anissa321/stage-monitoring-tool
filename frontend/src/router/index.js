@@ -33,8 +33,8 @@ import EindevaluatieMentor from '../pages/mentor/EindevaluatieMentor.vue'
 import AdminGebruikers from '../pages/admin/AdminGebruikers.vue'
 import AdminKoppelingen from '../pages/admin/AdminKoppelingen.vue'
 import AdminOpleidingen from '../pages/admin/AdminOpleidingen.vue'
-
-
+import TussentijdsRapport from '../pages/docent/TussentijdsRapport.vue'
+import TussentijdsRapportOverzicht from '../pages/docent/TussentijdsRapportOverzicht.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -60,6 +60,8 @@ const routes = [
   { path: '/docent/studenten/:id/bespreking', name: 'TussentijdseBespreking', component: TussentijdseBespreking },
   { path: '/docent/studenten/:id/eindrapport', name: 'DocentEindrapport', component: DocentEindrapport },
   { path: '/docent/evaluaties', name: 'DocentEvaluaties', component: DocentEvaluaties },
+  { path: '/docent/studenten/:id/tussentijds-rapport', name: 'TussentijdsRapport', component: TussentijdsRapport },
+  { path: '/docent/studenten/:id/tussentijds-rapport/overzicht', name: 'TussentijdsRapportOverzicht', component: TussentijdsRapportOverzicht },
 
   // MENTOR
   { path: '/mentor', redirect: '/mentor/dashboard' },
