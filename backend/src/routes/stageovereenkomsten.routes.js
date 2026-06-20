@@ -20,8 +20,41 @@ function berekenWeekNummer(datum, startdatum) {
   return week < 1 ? 1 : week
 }
 
+// Verwijdert logboek-rijen (en gekoppelde competenties/reviews) die buiten de officiële periode vallen
+async function ruimOudeLogboekenOp(studentId, startdatum, einddatum) {
+  try {
+    const { data: buitenPeriode } = await supabaseAdmin
+      .from('logbooks')
+      .select('id')
+      .eq('student_id', studentId)
+      .or(`datum.lt.${startdatum},datum.gt.${einddatum}`)
+
+    if (!buitenPeriode || buitenPeriode.length === 0) return
+
+    const idsOmTeVerwijderen = buitenPeriode.map(l => l.id)
+
+    await supabaseAdmin
+      .from('logbook_competencies')
+      .delete()
+      .in('logbook_id', idsOmTeVerwijderen)
+
+    await supabaseAdmin
+      .from('logbook_reviews')
+      .delete()
+      .in('logbook_id', idsOmTeVerwijderen)
+
+    await supabaseAdmin
+      .from('logbooks')
+      .delete()
+      .in('id', idsOmTeVerwijderen)
+  } catch (err) {
+    console.error('ruimOudeLogboekenOp error:', err)
+  }
+}
+
 // Genereert lege logboeken (status niet_ingevuld) voor elke weekdag (ma-vr)
 // tussen startdatum en einddatum van de stage. Bestaande logboeken worden niet overschreven.
+// Logboeken buiten de periode (van eerdere/foutieve tests) worden eerst opgeruimd.
 async function genereerLogboeken(studentId, startdatum, einddatum) {
   try {
     const start = new Date(startdatum)
@@ -31,6 +64,9 @@ async function genereerLogboeken(studentId, startdatum, einddatum) {
       console.error('genereerLogboeken: ongeldige periode', startdatum, einddatum)
       return
     }
+
+    // Eerst opruimen: alles buiten de officiële periode hoort hier niet meer
+    await ruimOudeLogboekenOp(studentId, startdatum, einddatum)
 
     // Bestaande logboeken van deze student ophalen om duplicaten te vermijden
     const { data: bestaande } = await supabaseAdmin
