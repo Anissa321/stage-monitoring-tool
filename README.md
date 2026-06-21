@@ -13,15 +13,6 @@ npm install
 npm run dev
 De applicatie is beschikbaar op: http://10.2.160.246:5173/
 
-🔐 Testaccounts
-Rol	E-mail	Wachtwoord
-Student	test@ehb.be	Test123!
-Docent	docent@ehb.be	Docent123!
-Mentor	mentor@ehb.be	Mentor123!
-Stagecommissie	commissie@ehb.be	Commissie123!
-Administratie	administratie@ehb.be	Admin123!
-💡 De mentor krijgt toegang tot stagiaires nadat de commissie hem/haar koppelt aan een student.
-
 🎯 Functionaliteiten
 👤 Rollen & toegang
 De applicatie werkt met rolgebaseerde toegang. Elke gebruiker ziet enkel wat relevant is voor zijn/haar rol.
