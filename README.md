@@ -11,7 +11,7 @@ git clone https://github.com/Anissa321/stage-monitoring-tool.git
 cd stage-monitoring-tool/frontend
 npm install
 npm run dev
-De applicatie is beschikbaar op: http://localhost:5173
+De applicatie is beschikbaar op: http://10.2.160.246:5173/
 
 🔐 Testaccounts
 Rol	E-mail	Wachtwoord
