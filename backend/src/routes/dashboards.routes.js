@@ -314,12 +314,13 @@ router.get('/mentor/student/:studentId', authMiddleware, requireRole('mentor'), 
 
     const stageInfo = await haalStageInfo(studentId)
 
+    // Belangrijk: GEEN limit hier — anders ziet de mentor minder weken dan de docent,
+    // en kan een oudere afgekeurde/goedgekeurde week buiten beeld vallen
     const { data: logboeken } = await supabaseAdmin
       .from('logbooks')
       .select('id, datum, status, tasks, week_number')
       .eq('student_id', studentId)
       .order('datum', { ascending: false })
-      .limit(10)
 
     res.json({
       student,

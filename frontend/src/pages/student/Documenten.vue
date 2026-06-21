@@ -130,6 +130,7 @@ async function stageStarten() {
       return
     }
     overeenkomst.value = result.overeenkomst
+    localStorage.setItem('stageGestart', 'true')
     router.push('/student/dashboard')
   } catch (err) {
     error.value = 'Verbindingsfout met server'

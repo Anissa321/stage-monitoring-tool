@@ -150,4 +150,58 @@ router.get('/student/:studentId', authMiddleware, async (req, res) => {
   }
 })
 
+// GET /api/tussentijdse-evaluaties/mentor — mentor ziet al zijn studenten met hun evaluatie-status
+router.get('/mentor', authMiddleware, requireRole('mentor'), async (req, res) => {
+  try {
+    const { data: koppelingen, error: kError } = await supabaseAdmin
+      .from('mentor_studenten')
+      .select('student_id')
+      .eq('mentor_id', req.user.id)
+
+    if (kError) return res.status(500).json({ error: 'Kon studenten niet ophalen' })
+
+    const studentIds = koppelingen.map(k => k.student_id)
+    if (studentIds.length === 0) return res.json({ studenten: [] })
+
+    const { data: studenten } = await supabaseAdmin
+      .from('profiles')
+      .select('id, voornaam, achternaam')
+      .in('id', studentIds)
+
+    // Bedrijfsnaam per student via het goedgekeurde stagevoorstel
+    const { data: voorstellen } = await supabaseAdmin
+      .from('stagevoorstellen')
+      .select('student_id, bedrijfsnaam')
+      .in('student_id', studentIds)
+      .eq('status', 'goedgekeurd')
+
+    const { data: evaluaties } = await supabaseAdmin
+      .from('tussentijdse_evaluaties')
+      .select('student_id, totaal_score, status, created_at')
+      .in('student_id', studentIds)
+      .order('created_at', { ascending: false })
+
+    const result = (studenten || []).map(s => {
+      const voorstel = voorstellen?.find(v => v.student_id === s.id)
+      const evaluatie = evaluaties?.find(e => e.student_id === s.id)
+
+      let status = 'nog_niet_gestart'
+      if (evaluatie) status = 'ingediend'
+
+      return {
+        student_id: s.id,
+        student_naam: `${s.voornaam} ${s.achternaam}`,
+        bedrijf: voorstel?.bedrijfsnaam || 'Onbekend',
+        tussentijds_score: evaluatie ? `${evaluatie.totaal_score} / 100` : '—',
+        status
+      }
+    })
+
+    res.json({ studenten: result })
+  } catch (err) {
+    console.error('Mentor evaluaties error:', err)
+    res.status(500).json({ error: 'Server fout' })
+  }
+})
+
 export default router

@@ -38,7 +38,8 @@ import AdminOpleidingen from '../pages/admin/AdminOpleidingen.vue'
 import TussentijdsRapport from '../pages/docent/TussentijdsRapport.vue'
 import TussentijdsRapportOverzicht from '../pages/docent/TussentijdsRapportOverzicht.vue'
 import DocentLogboekWeek from '../pages/docent/DocentLogboekWeek.vue'
-
+import MentorEvaluatieKeuze from '../pages/mentor/MentorEvaluatieKeuze.vue'
+import MentorEindevaluatie from '../pages/mentor/MentorEindevaluatie.vue'
 
 
 const routes = [
@@ -81,8 +82,11 @@ const routes = [
   { path: '/mentor/student/:id', name: 'StudentDetailMentor', component: StudentDetailMentor },
   { path: '/mentor/week/:studentId/:weekNummer', name: 'WeekAftekenen', component: LogboekAftekenen },
   { path: '/mentor/student/:id/feedback', name: 'TussentijdseFeedback', component: TussentijdseFeedback },
-  { path: '/mentor/evaluaties', name: 'MentorEvaluaties', component: MentorEvaluaties },
   { path: '/mentor/student/:id/eindevaluatie', name: 'EindevaluatieMentor', component: EindevaluatieMentor },
+  { path: '/mentor/evaluaties', name: 'MentorEvaluatieKeuze', component: MentorEvaluatieKeuze },
+{ path: '/mentor/evaluaties/tussentijds', name: 'MentorEvaluaties', component: MentorEvaluaties },
+{ path: '/mentor/evaluaties/eind', name: 'MentorEindevaluatie', component: MentorEindevaluatie },
+
 
   // COMMISSIE
   { path: '/commissie', redirect: '/commissie/dashboard' },
