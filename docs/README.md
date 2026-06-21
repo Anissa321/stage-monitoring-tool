@@ -112,10 +112,11 @@ Fase 5b: Finale evaluatie op competenties + eindoverzicht
 
 ---
 
-## 🗂️ ERD
+## Database (ERD)
 
-![ERD Stage Monitoring Tool](docs/erd.png)
+Hieronder het Entity Relationship Diagram van de volledige database structuur.
 
+![ERD Stage Monitoring Tool](docs/ERD_Stage_Monitoring_Tool.png)
 ---
 
 ## 🛠️ Technologieën
