@@ -21,13 +21,13 @@ const mentorNaam = ref(null)
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const resMe = await fetch('http://localhost:3000/api/auth/me', {
+    const resMe = await fetch('http://10.2.160.246:3000/api/auth/me', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const meData = await resMe.json()
     docentInfo.value = meData.user
 
-    const res = await fetch(`http://localhost:3000/api/logboeken/docent/week/${studentId}/${weekNummer}`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/logboeken/docent/week/${studentId}/${weekNummer}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -98,7 +98,7 @@ function mentorStatusLabel(status) {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

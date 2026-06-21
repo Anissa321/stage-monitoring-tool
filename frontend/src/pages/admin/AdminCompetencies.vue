@@ -26,7 +26,7 @@ const formNiveaus = ref([])
 async function laadOpleidingen() {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/opleidingen', {
+    const res = await fetch('http://10.2.160.246:3000/api/opleidingen', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -50,7 +50,7 @@ async function laadCompetencies() {
   }
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/evaluatie-competenties?opleiding_id=${geselecteerdeOpleiding.value}`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/evaluatie-competenties?opleiding_id=${geselecteerdeOpleiding.value}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -64,7 +64,7 @@ async function laadCompetencies() {
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const dashRes = await fetch('http://localhost:3000/api/dashboards/administratie', {
+    const dashRes = await fetch('http://10.2.160.246:3000/api/dashboards/administratie', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const dashData = await dashRes.json()
@@ -173,7 +173,7 @@ async function verwijderNiveau(index) {
     if (!confirm('Dit niveau verwijderen?')) return
     const token = localStorage.getItem('token')
     try {
-      const res = await fetch(`http://localhost:3000/api/evaluatie-competenties/niveau/${niveau.id}`, {
+      const res = await fetch(`http://10.2.160.246:3000/api/evaluatie-competenties/niveau/${niveau.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -214,14 +214,14 @@ async function opslaan() {
     let competentieId = bewerkId.value
 
     if (bewerkId.value) {
-      const res = await fetch(`http://localhost:3000/api/evaluatie-competenties/${bewerkId.value}`, {
+      const res = await fetch(`http://10.2.160.246:3000/api/evaluatie-competenties/${bewerkId.value}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...form.value, opleiding_id: geselecteerdeOpleiding.value })
       })
       if (!res.ok) { error.value = 'Kon competentie niet aanpassen'; return }
     } else {
-      const res = await fetch('http://localhost:3000/api/evaluatie-competenties', {
+      const res = await fetch('http://10.2.160.246:3000/api/evaluatie-competenties', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...form.value, opleiding_id: geselecteerdeOpleiding.value })
@@ -234,7 +234,7 @@ async function opslaan() {
     // Sla elk niveau apart op: update bestaande, voeg nieuwe toe
     for (const niveau of formNiveaus.value) {
       if (niveau.id) {
-        await fetch(`http://localhost:3000/api/evaluatie-competenties/niveau/${niveau.id}`, {
+        await fetch(`http://10.2.160.246:3000/api/evaluatie-competenties/niveau/${niveau.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -245,7 +245,7 @@ async function opslaan() {
           })
         })
       } else {
-        await fetch(`http://localhost:3000/api/evaluatie-competenties/${competentieId}/niveau`, {
+        await fetch(`http://10.2.160.246:3000/api/evaluatie-competenties/${competentieId}/niveau`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -273,7 +273,7 @@ async function verwijder(id) {
   if (!confirm('Competentie verwijderen? De bijhorende niveaus worden ook verwijderd.')) return
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/evaluatie-competenties/${id}`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/evaluatie-competenties/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -290,7 +290,7 @@ async function verwijder(id) {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

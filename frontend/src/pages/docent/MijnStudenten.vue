@@ -9,7 +9,7 @@ const loading = ref(true)
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/dashboards/docent', {
+    const res = await fetch('http://10.2.160.246:3000/api/dashboards/docent', {
       headers: { Authorization: `Bearer ${token}` }
     })
     data.value = await res.json()
@@ -23,7 +23,7 @@ onMounted(async () => {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

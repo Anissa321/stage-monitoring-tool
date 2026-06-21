@@ -12,10 +12,10 @@ onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
     const [meRes, studentenRes] = await Promise.all([
-      fetch('http://localhost:3000/api/auth/me', {
+      fetch('http://10.2.160.246:3000/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch('http://localhost:3000/api/dashboards/docent', {
+      fetch('http://10.2.160.246:3000/api/dashboards/docent', {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -28,10 +28,10 @@ onMounted(async () => {
     // Haal voor elke student de tussentijdse evaluatie + rapport op
     const verrijkt = await Promise.all(studentenLijst.map(async s => {
       const [mentorEvalRes, rapportRes] = await Promise.all([
-        fetch(`http://localhost:3000/api/tussentijdse-evaluaties/student/${s.id}`, {
+        fetch(`http://10.2.160.246:3000/api/tussentijdse-evaluaties/student/${s.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        fetch(`http://localhost:3000/api/tussentijdse-rapporten/student/${s.id}`, {
+        fetch(`http://10.2.160.246:3000/api/tussentijdse-rapporten/student/${s.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       ])

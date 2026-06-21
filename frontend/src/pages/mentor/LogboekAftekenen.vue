@@ -24,7 +24,7 @@ async function laadWeek() {
   feedback.value = ''
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/logboeken/mentor/week/${studentId}/${weekNummer.value}`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/logboeken/mentor/week/${studentId}/${weekNummer.value}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const data = await res.json()
@@ -46,7 +46,7 @@ async function laadWeek() {
 async function laadBeschikbareWeken() {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/logboeken/mentor', {
+    const res = await fetch('http://10.2.160.246:3000/api/logboeken/mentor', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const data = await res.json()
@@ -62,7 +62,7 @@ async function laadBeschikbareWeken() {
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const resMe = await fetch('http://localhost:3000/api/auth/me', {
+    const resMe = await fetch('http://10.2.160.246:3000/api/auth/me', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const meData = await resMe.json()
@@ -159,7 +159,7 @@ async function aftekenen(week_status) {
   try {
     const ingediend = logboeken.value.filter(l => l.status === 'ingediend')
     for (const log of ingediend) {
-      await fetch(`http://localhost:3000/api/logboeken/${log.id}/aftekenen`, {
+      await fetch(`http://10.2.160.246:3000/api/logboeken/${log.id}/aftekenen`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -182,7 +182,7 @@ async function aftekenen(week_status) {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

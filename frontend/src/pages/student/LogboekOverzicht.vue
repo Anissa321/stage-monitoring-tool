@@ -12,7 +12,7 @@ const huidigeWeekIndex = ref(null)
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -87,7 +87,7 @@ async function resetLogboek(logboek) {
   if (!confirm(`Logboek van ${formatDatum(logboek.datum)} resetten?`)) return
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/logboeken/${logboek.id}`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/logboeken/${logboek.id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -160,7 +160,7 @@ async function laadData() {
   const token = localStorage.getItem('token')
 
   try {
-    await fetch('http://localhost:3000/api/logboeken/genereer-periode', {
+    await fetch('http://10.2.160.246:3000/api/logboeken/genereer-periode', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -169,13 +169,13 @@ async function laadData() {
   }
 
   const [dashRes, logRes, reviewRes] = await Promise.all([
-    fetch('http://localhost:3000/api/dashboards/student', {
+    fetch('http://10.2.160.246:3000/api/dashboards/student', {
       headers: { Authorization: `Bearer ${token}` }
     }),
-    fetch('http://localhost:3000/api/logboeken/mijn', {
+    fetch('http://10.2.160.246:3000/api/logboeken/mijn', {
       headers: { Authorization: `Bearer ${token}` }
     }),
-    fetch('http://localhost:3000/api/logboeken/mijn/reviews', {
+    fetch('http://10.2.160.246:3000/api/logboeken/mijn/reviews', {
       headers: { Authorization: `Bearer ${token}` }
     })
   ])

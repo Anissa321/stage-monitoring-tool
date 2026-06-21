@@ -17,13 +17,13 @@ onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
     const [dashRes, overRes, opleidingenRes] = await Promise.all([
-      fetch('http://localhost:3000/api/dashboards/student', {
+      fetch('http://10.2.160.246:3000/api/dashboards/student', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch('http://localhost:3000/api/stageovereenkomsten/mijn', {
+      fetch('http://10.2.160.246:3000/api/stageovereenkomsten/mijn', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch('http://localhost:3000/api/opleidingen', {
+      fetch('http://10.2.160.246:3000/api/opleidingen', {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -58,7 +58,7 @@ function initialen() {
 
 function bekijkOvereenkomst() {
   const token = localStorage.getItem('token')
-  fetch(`http://localhost:3000/api/stageovereenkomsten/${overeenkomst.value.id}/preview-pdf`, {
+  fetch(`http://10.2.160.246:3000/api/stageovereenkomsten/${overeenkomst.value.id}/preview-pdf`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then(res => res.blob())
@@ -90,7 +90,7 @@ async function ondertekenen() {
   opslaan.value = true
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/stageovereenkomsten/${overeenkomst.value.id}/tekenen-student`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/stageovereenkomsten/${overeenkomst.value.id}/tekenen-student`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ async function stageStarten() {
   error.value = ''
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/stageovereenkomsten/${overeenkomst.value.id}/start-stage`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/stageovereenkomsten/${overeenkomst.value.id}/start-stage`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -140,7 +140,7 @@ async function stageStarten() {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

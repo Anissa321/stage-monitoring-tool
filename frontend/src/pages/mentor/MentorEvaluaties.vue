@@ -12,10 +12,10 @@ onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
     const [meRes, evalRes] = await Promise.all([
-      fetch('http://localhost:3000/api/auth/me', {
+      fetch('http://10.2.160.246:3000/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch('http://localhost:3000/api/tussentijdse-evaluaties/mentor', {
+      fetch('http://10.2.160.246:3000/api/tussentijdse-evaluaties/mentor', {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -60,7 +60,7 @@ function gaNaarEvaluatie(item) {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

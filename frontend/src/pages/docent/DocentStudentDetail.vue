@@ -17,13 +17,13 @@ onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
     const [meRes, studentRes, rapportRes] = await Promise.all([
-      fetch('http://localhost:3000/api/auth/me', {
+      fetch('http://10.2.160.246:3000/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch(`http://localhost:3000/api/dashboards/docent/student/${studentId}`, {
+      fetch(`http://10.2.160.246:3000/api/dashboards/docent/student/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch(`http://localhost:3000/api/tussentijdse-rapporten/student/${studentId}`, {
+      fetch(`http://10.2.160.246:3000/api/tussentijdse-rapporten/student/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])

@@ -21,13 +21,13 @@ onMounted(async () => {
   const userData = JSON.parse(localStorage.getItem('user') || '{}')
   try {
     const [dashRes, rapportRes, compRes] = await Promise.all([
-      fetch('http://localhost:3000/api/dashboards/student', {
+      fetch('http://10.2.160.246:3000/api/dashboards/student', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch(`http://localhost:3000/api/tussentijdse-rapporten/student/${userData.id}`, {
+      fetch(`http://10.2.160.246:3000/api/tussentijdse-rapporten/student/${userData.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch(`http://localhost:3000/api/evaluatie-competenties/mijn-opleiding`, {
+      fetch(`http://10.2.160.246:3000/api/evaluatie-competenties/mijn-opleiding`, {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -90,7 +90,7 @@ function initialen() {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -104,7 +104,7 @@ async function logout() {
 function downloadPdf() {
   const token = localStorage.getItem('token')
   const userData = JSON.parse(localStorage.getItem('user') || '{}')
-  fetch(`http://localhost:3000/api/tussentijdse-rapporten/student/${userData.id}/pdf`, {
+  fetch(`http://10.2.160.246:3000/api/tussentijdse-rapporten/student/${userData.id}/pdf`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then(res => res.blob())

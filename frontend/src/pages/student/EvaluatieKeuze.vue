@@ -8,7 +8,7 @@ const user = ref(null)
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/dashboards/student', {
+    const res = await fetch('http://10.2.160.246:3000/api/dashboards/student', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -27,7 +27,7 @@ function initialen() {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

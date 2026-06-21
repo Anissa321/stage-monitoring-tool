@@ -15,7 +15,7 @@ const naamInput = ref('')
 async function laadOpleidingen() {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/opleidingen', {
+    const res = await fetch('http://10.2.160.246:3000/api/opleidingen', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -28,7 +28,7 @@ async function laadOpleidingen() {
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/dashboards/administratie', {
+    const res = await fetch('http://10.2.160.246:3000/api/dashboards/administratie', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -70,7 +70,7 @@ async function opslaan() {
   const token = localStorage.getItem('token')
   try {
     if (bewerkId.value) {
-      const res = await fetch(`http://localhost:3000/api/opleidingen/${bewerkId.value}`, {
+      const res = await fetch(`http://10.2.160.246:3000/api/opleidingen/${bewerkId.value}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ naam: naamInput.value })
@@ -78,7 +78,7 @@ async function opslaan() {
       if (!res.ok) { error.value = 'Kon opleiding niet aanpassen'; return }
       succes.value = 'Opleiding aangepast!'
     } else {
-      const res = await fetch('http://localhost:3000/api/opleidingen', {
+      const res = await fetch('http://10.2.160.246:3000/api/opleidingen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ naam: naamInput.value })
@@ -99,7 +99,7 @@ async function verwijder(id, naam) {
   if (!confirm(`Opleiding "${naam}" verwijderen?`)) return
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/opleidingen/${id}`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/opleidingen/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -124,7 +124,7 @@ function gaNaarCompetenties(opleidingId) {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

@@ -11,10 +11,10 @@ onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
     const [dashRes, voorstelRes] = await Promise.all([
-      fetch('http://localhost:3000/api/dashboards/student', {
+      fetch('http://10.2.160.246:3000/api/dashboards/student', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch('http://localhost:3000/api/stagevoorstellen/mijn', {
+      fetch('http://10.2.160.246:3000/api/stagevoorstellen/mijn', {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])

@@ -31,7 +31,7 @@ const scoreVelden = [
 
 async function laadCompetencies() {
   const token = localStorage.getItem('token')
-  const res = await fetch(`http://localhost:3000/api/evaluatie-competenties/student/${studentId}`, {
+  const res = await fetch(`http://10.2.160.246:3000/api/evaluatie-competenties/student/${studentId}`, {
     headers: { Authorization: `Bearer ${token}` }
   })
   const result = await res.json()
@@ -64,16 +64,16 @@ onMounted(async () => {
     studentCompetencies.value = basis.map(c => ({ ...c, geselecteerd: null, niveaus: [...c.niveaus] }))
 
     const [studentRes, mentorEvalRes, studentEvalRes, meRes] = await Promise.all([
-      fetch(`http://localhost:3000/api/dashboards/docent/student/${studentId}`, {
+      fetch(`http://10.2.160.246:3000/api/dashboards/docent/student/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch(`http://localhost:3000/api/tussentijdse-evaluaties/student/${studentId}`, {
+      fetch(`http://10.2.160.246:3000/api/tussentijdse-evaluaties/student/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch(`http://localhost:3000/api/student-evaluaties/student/${studentId}`, {
+      fetch(`http://10.2.160.246:3000/api/student-evaluaties/student/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch('http://localhost:3000/api/auth/me', {
+      fetch('http://10.2.160.246:3000/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])

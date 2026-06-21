@@ -16,7 +16,7 @@ const bewerkForm = ref({ mentor_id: '', docent_id: '' })
 async function laadData() {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/gebruikers/studenten-overzicht', {
+    const res = await fetch('http://10.2.160.246:3000/api/gebruikers/studenten-overzicht', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -31,7 +31,7 @@ async function laadData() {
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/dashboards/administratie', {
+    const res = await fetch('http://10.2.160.246:3000/api/dashboards/administratie', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -61,7 +61,7 @@ async function opslaan() {
   error.value = ''
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/gebruikers/koppeling/${bewerkStudent.value.id}`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/gebruikers/koppeling/${bewerkStudent.value.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -82,7 +82,7 @@ async function opslaan() {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

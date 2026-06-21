@@ -24,13 +24,13 @@ onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
     const [studentRes, rapportRes, compRes] = await Promise.all([
-      fetch(`http://localhost:3000/api/dashboards/docent/student/${studentId}`, {
+      fetch(`http://10.2.160.246:3000/api/dashboards/docent/student/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch(`http://localhost:3000/api/tussentijdse-rapporten/student/${studentId}`, {
+      fetch(`http://10.2.160.246:3000/api/tussentijdse-rapporten/student/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch(`http://localhost:3000/api/evaluatie-competenties/student/${studentId}`, {
+      fetch(`http://10.2.160.246:3000/api/evaluatie-competenties/student/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -93,7 +93,7 @@ function studentNaam() {
 
 function downloadPdf() {
   const token = localStorage.getItem('token')
-  fetch(`http://localhost:3000/api/tussentijdse-rapporten/student/${studentId}/pdf`, {
+  fetch(`http://10.2.160.246:3000/api/tussentijdse-rapporten/student/${studentId}/pdf`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then(res => res.blob())

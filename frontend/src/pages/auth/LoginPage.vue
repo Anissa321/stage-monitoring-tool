@@ -116,7 +116,7 @@ async function handleLogin() {
   isLoading.value = true
 
   try {
-    const response = await fetch('http://localhost:3000/api/auth/login', {
+    const response = await fetch('http://10.2.160.246:3000/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value, password: password.value })
@@ -136,7 +136,7 @@ async function handleLogin() {
     // Overeenkomst-status ophalen voor student/mentor
     if (data.user.rol === 'student') {
       try {
-        const overRes = await fetch('http://localhost:3000/api/stageovereenkomsten/mijn', {
+        const overRes = await fetch('http://10.2.160.246:3000/api/stageovereenkomsten/mijn', {
           headers: { Authorization: `Bearer ${data.session.access_token}` }
         })
         const overData = await overRes.json()
@@ -150,7 +150,7 @@ async function handleLogin() {
       }
     } else if (data.user.rol === 'mentor') {
       try {
-        const overRes = await fetch('http://localhost:3000/api/stageovereenkomsten/mentor', {
+        const overRes = await fetch('http://10.2.160.246:3000/api/stageovereenkomsten/mentor', {
           headers: { Authorization: `Bearer ${data.session.access_token}` }
         })
         const overData = await overRes.json()

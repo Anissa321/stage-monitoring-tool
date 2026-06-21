@@ -11,7 +11,7 @@ const actieveFilter = ref('alle')
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/stagevoorstellen/commissie', {
+    const res = await fetch('http://10.2.160.246:3000/api/stagevoorstellen/commissie', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()

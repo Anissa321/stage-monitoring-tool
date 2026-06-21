@@ -22,7 +22,7 @@ const form = ref({
 async function laadGebruikers() {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/gebruikers', {
+    const res = await fetch('http://10.2.160.246:3000/api/gebruikers', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -36,7 +36,7 @@ async function laadGebruikers() {
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/dashboards/administratie', {
+    const res = await fetch('http://10.2.160.246:3000/api/dashboards/administratie', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -111,7 +111,7 @@ async function opslaan() {
   error.value = ''
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/gebruikers', {
+    const res = await fetch('http://10.2.160.246:3000/api/gebruikers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(form.value)
@@ -131,7 +131,7 @@ async function verwijder(id, naam) {
   if (!confirm(`Account van ${naam} verwijderen?`)) return
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/gebruikers/${id}`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/gebruikers/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -150,7 +150,7 @@ async function verwijderGeselecteerd() {
   const token = localStorage.getItem('token')
   try {
     for (const id of geselecteerd.value) {
-      await fetch(`http://localhost:3000/api/gebruikers/${id}`, {
+      await fetch(`http://10.2.160.246:3000/api/gebruikers/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -166,7 +166,7 @@ async function verwijderGeselecteerd() {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

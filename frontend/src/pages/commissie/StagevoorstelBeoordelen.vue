@@ -24,10 +24,10 @@ onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
     const [voorstelRes, docentenRes] = await Promise.all([
-      fetch('http://localhost:3000/api/stagevoorstellen/commissie', {
+      fetch('http://10.2.160.246:3000/api/stagevoorstellen/commissie', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch('http://localhost:3000/api/stagevoorstellen/docenten', {
+      fetch('http://10.2.160.246:3000/api/stagevoorstellen/docenten', {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -84,7 +84,7 @@ async function beoordeel(status) {
   error.value = ''
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/stagevoorstellen/${voorstelId}/beoordelen`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/stagevoorstellen/${voorstelId}/beoordelen`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

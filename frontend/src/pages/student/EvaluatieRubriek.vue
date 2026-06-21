@@ -32,7 +32,7 @@ const beschrijvingen = ref({})
 
 async function laadCompetencies() {
   const token = localStorage.getItem('token')
-  const res = await fetch('http://localhost:3000/api/evaluatie-competenties/mijn-opleiding', {
+  const res = await fetch('http://10.2.160.246:3000/api/evaluatie-competenties/mijn-opleiding', {
     headers: { Authorization: `Bearer ${token}` }
   })
   const result = await res.json()
@@ -70,16 +70,16 @@ onMounted(async () => {
     })
 
     const [dashRes, mentorEvalRes, studentEvalRes, rapportRes] = await Promise.all([
-      fetch('http://localhost:3000/api/dashboards/student', {
+      fetch('http://10.2.160.246:3000/api/dashboards/student', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch(`http://localhost:3000/api/tussentijdse-evaluaties/student/${user.id}`, {
+      fetch(`http://10.2.160.246:3000/api/tussentijdse-evaluaties/student/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch('http://localhost:3000/api/student-evaluaties/mijn', {
+      fetch('http://10.2.160.246:3000/api/student-evaluaties/mijn', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch(`http://localhost:3000/api/tussentijdse-rapporten/student/${user.id}`, {
+      fetch(`http://10.2.160.246:3000/api/tussentijdse-rapporten/student/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -153,7 +153,7 @@ async function indienen() {
       if (scoreVelden[i]) scores[scoreVelden[i]] = c.niveaus[c.geselecteerd].punten
     })
 
-    const res = await fetch('http://localhost:3000/api/student-evaluaties', {
+    const res = await fetch('http://10.2.160.246:3000/api/student-evaluaties', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ ...scores, ...beschrijvingen.value })
@@ -180,7 +180,7 @@ function initialen() {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

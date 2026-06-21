@@ -41,7 +41,7 @@ function terug() {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -62,7 +62,7 @@ onMounted(async () => {
   }
 
   if (logboekId.value) {
-    const res = await fetch('http://localhost:3000/api/logboeken/mijn', {
+    const res = await fetch('http://10.2.160.246:3000/api/logboeken/mijn', {
       headers: { Authorization: `Bearer ${token}` }
     })
 
@@ -120,8 +120,8 @@ async function verstuurLogboek(status) {
     }
 
     const url = logboekId.value
-      ? `http://localhost:3000/api/logboeken/${logboekId.value}`
-      : 'http://localhost:3000/api/logboeken'
+      ? `http://10.2.160.246:3000/api/logboeken/${logboekId.value}`
+      : 'http://10.2.160.246:3000/api/logboeken'
     const method = logboekId.value ? 'PUT' : 'POST'
 
     const res = await fetch(url, {

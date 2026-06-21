@@ -24,7 +24,7 @@ const opleidingen = ref([])
 async function laadOpleidingen() {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/opleidingen', {
+    const res = await fetch('http://10.2.160.246:3000/api/opleidingen', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -39,7 +39,7 @@ onMounted(async () => {
   try {
     await laadOpleidingen()
 
-    const res = await fetch('http://localhost:3000/api/stagevoorstellen/mijn', {
+    const res = await fetch('http://10.2.160.246:3000/api/stagevoorstellen/mijn', {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -83,13 +83,13 @@ async function indienen() {
   try {
     let res
     if (bestaandVoorstel.value) {
-      res = await fetch(`http://localhost:3000/api/stagevoorstellen/${bestaandVoorstel.value.id}`, {
+      res = await fetch(`http://10.2.160.246:3000/api/stagevoorstellen/${bestaandVoorstel.value.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(form.value)
       })
     } else {
-      res = await fetch('http://localhost:3000/api/stagevoorstellen', {
+      res = await fetch('http://10.2.160.246:3000/api/stagevoorstellen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(form.value)

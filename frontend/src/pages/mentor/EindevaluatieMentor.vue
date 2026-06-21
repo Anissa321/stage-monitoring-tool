@@ -114,7 +114,7 @@ async function evaluatieAfronden() {
     //   })),
     //   totaal_score: totaalScore.value
     // }
-    // await fetch('http://localhost:3000/api/eindevaluaties/mentor', {
+    // await fetch('http://10.2.160.246:3000/api/eindevaluaties/mentor', {
     //   method: 'POST',
     //   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     //   body: JSON.stringify(payload)

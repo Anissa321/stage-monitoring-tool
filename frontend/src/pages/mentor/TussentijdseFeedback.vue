@@ -14,7 +14,7 @@ const succes = ref('')
 
 async function laadCompetencies() {
   const token = localStorage.getItem('token')
-  const res = await fetch(`http://localhost:3000/api/evaluatie-competenties/student/${studentId}`, {
+  const res = await fetch(`http://10.2.160.246:3000/api/evaluatie-competenties/student/${studentId}`, {
     headers: { Authorization: `Bearer ${token}` }
   })
   const data = await res.json()
@@ -34,7 +34,7 @@ onMounted(async () => {
   try {
     await laadCompetencies()
 
-    const res = await fetch(`http://localhost:3000/api/tussentijdse-evaluaties/student/${studentId}`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/tussentijdse-evaluaties/student/${studentId}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
@@ -101,7 +101,7 @@ async function registreren() {
       }
     })
 
-    const res = await fetch('http://localhost:3000/api/tussentijdse-evaluaties', {
+    const res = await fetch('http://10.2.160.246:3000/api/tussentijdse-evaluaties', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

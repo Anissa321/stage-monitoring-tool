@@ -23,13 +23,13 @@ const overeenkomstSucces = ref('')
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const resMe = await fetch('http://localhost:3000/api/auth/me', {
+    const resMe = await fetch('http://10.2.160.246:3000/api/auth/me', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const meData = await resMe.json()
     mentor.value = meData.user
 
-    const res = await fetch(`http://localhost:3000/api/dashboards/mentor/student/${studentId}`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/dashboards/mentor/student/${studentId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const data = await res.json()
@@ -43,7 +43,7 @@ onMounted(async () => {
     stage.value = data.stage
     logboeken.value = data.logboeken
 
-    const overRes = await fetch('http://localhost:3000/api/stageovereenkomsten/mentor', {
+    const overRes = await fetch('http://10.2.160.246:3000/api/stageovereenkomsten/mentor', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const overData = await overRes.json()
@@ -128,7 +128,7 @@ function weekStatusKlasse(status) {
 
 function bekijkOvereenkomst() {
   const token = localStorage.getItem('token')
-  fetch(`http://localhost:3000/api/stageovereenkomsten/${overeenkomst.value.id}/preview-pdf`, {
+  fetch(`http://10.2.160.246:3000/api/stageovereenkomsten/${overeenkomst.value.id}/preview-pdf`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then(res => res.blob())
@@ -150,7 +150,7 @@ async function ondertekenen() {
   opslaan.value = true
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch(`http://localhost:3000/api/stageovereenkomsten/${overeenkomst.value.id}/tekenen-mentor`, {
+    const res = await fetch(`http://10.2.160.246:3000/api/stageovereenkomsten/${overeenkomst.value.id}/tekenen-mentor`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ handtekening: handtekening.value })
@@ -178,7 +178,7 @@ async function ondertekenen() {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })

@@ -9,10 +9,10 @@ onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
     const [dashRes, voorstellenRes] = await Promise.all([
-      fetch('http://localhost:3000/api/dashboards/commissie', {
+      fetch('http://10.2.160.246:3000/api/dashboards/commissie', {
         headers: { Authorization: `Bearer ${token}` }
       }),
-      fetch('http://localhost:3000/api/stagevoorstellen/commissie', {
+      fetch('http://10.2.160.246:3000/api/stagevoorstellen/commissie', {
         headers: { Authorization: `Bearer ${token}` }
       })
     ])
@@ -31,7 +31,7 @@ onMounted(async () => {
 async function logout() {
   const token = localStorage.getItem('token')
   try {
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://10.2.160.246:3000/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })
