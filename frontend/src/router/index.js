@@ -37,6 +37,10 @@ import AdminKoppelingen from '../pages/admin/AdminKoppelingen.vue'
 import AdminOpleidingen from '../pages/admin/AdminOpleidingen.vue'
 import TussentijdsRapport from '../pages/docent/TussentijdsRapport.vue'
 import TussentijdsRapportOverzicht from '../pages/docent/TussentijdsRapportOverzicht.vue'
+import DocentLogboekWeek from '../pages/docent/DocentLogboekWeek.vue'
+import MentorEvaluatieKeuze from '../pages/mentor/MentorEvaluatieKeuze.vue'
+import MentorEindevaluatie from '../pages/mentor/MentorEindevaluatie.vue'
+
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -69,6 +73,7 @@ const routes = [
   { path: '/docent/evaluaties', name: 'DocentEvaluaties', component: DocentEvaluaties },
   { path: '/docent/studenten/:id/tussentijds-rapport', name: 'TussentijdsRapport', component: TussentijdsRapport },
   { path: '/docent/studenten/:id/tussentijds-rapport/overzicht', name: 'TussentijdsRapportOverzicht', component: TussentijdsRapportOverzicht },
+  { path: '/docent/studenten/:id/logboek/week/:weekNummer', name: 'DocentLogboekWeek', component: DocentLogboekWeek },
 
   // MENTOR
   { path: '/mentor', redirect: '/mentor/dashboard' },
@@ -77,8 +82,11 @@ const routes = [
   { path: '/mentor/student/:id', name: 'StudentDetailMentor', component: StudentDetailMentor },
   { path: '/mentor/week/:studentId/:weekNummer', name: 'WeekAftekenen', component: LogboekAftekenen },
   { path: '/mentor/student/:id/feedback', name: 'TussentijdseFeedback', component: TussentijdseFeedback },
-  { path: '/mentor/evaluaties', name: 'MentorEvaluaties', component: MentorEvaluaties },
   { path: '/mentor/student/:id/eindevaluatie', name: 'EindevaluatieMentor', component: EindevaluatieMentor },
+  { path: '/mentor/evaluaties', name: 'MentorEvaluatieKeuze', component: MentorEvaluatieKeuze },
+{ path: '/mentor/evaluaties/tussentijds', name: 'MentorEvaluaties', component: MentorEvaluaties },
+{ path: '/mentor/evaluaties/eind', name: 'MentorEindevaluatie', component: MentorEindevaluatie },
+
 
   // COMMISSIE
   { path: '/commissie', redirect: '/commissie/dashboard' },
@@ -109,6 +117,16 @@ const studentToegestaanZonderOvereenkomst = [
   '/student/stagevoorstel/detail'
 ]
 
+// Paden die pas toegankelijk zijn nadat de student op "Stage starten" heeft geklikt
+const studentVereistStageGestart = [
+  '/student/logboek',
+  '/student/logboek-invullen',
+  '/student/evaluatie',
+  '/student/evaluatie/tussentijds',
+  '/student/evaluatie/tussentijds-rapport',
+  '/student/eindrapport'
+]
+
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
@@ -133,6 +151,12 @@ router.beforeEach((to, from, next) => {
   if (role === 'student' && to.path.startsWith('/student')) {
     const getekend = localStorage.getItem('overeenkomstGetekend') === 'true'
     if (!getekend && !studentToegestaanZonderOvereenkomst.includes(to.path)) {
+      next('/student/documenten')
+      return
+    }
+
+    const stageGestart = localStorage.getItem('stageGestart') === 'true'
+    if (!stageGestart && studentVereistStageGestart.includes(to.path)) {
       next('/student/documenten')
       return
     }

@@ -5,43 +5,32 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const mentor = ref(null)
 const loading = ref(true)
-
-// Mock data — later vervangen door API
-// status: 'in_behandeling' | 'evaluatie_locked' | 'afgerond'
-const evaluaties = ref([
-  {
-    student_id: 'a572e332-a1f4-4811-810a-11684b2d0f41',
-    student_naam: 'Anissa Canton',
-    bedrijf: 'Acme Corp',
-    tussentijds_score: '14 / 20',
-    eindscore: 'Nog op stage bezig',
-    status: 'in_behandeling'
-  },
-  {
-    student_id: 'b1234567-aaaa-bbbb-cccc-d1234567ef89',
-    student_naam: 'Tom Janssens',
-    bedrijf: 'TechSol',
-    tussentijds_score: '—',
-    eindscore: '—',
-    status: 'evaluatie_locked'
-  }
-])
+const error = ref('')
+const evaluaties = ref([])
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
   try {
-    const res = await fetch('http://localhost:3000/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const data = await res.json()
-    mentor.value = data.user
-    // TODO: fetch evaluaties van eigen stagiairs
-    // const evalRes = await fetch('http://localhost:3000/api/evaluaties/mentor', {
-    //   headers: { Authorization: `Bearer ${token}` }
-    // })
-    // evaluaties.value = await evalRes.json()
+    const [meRes, evalRes] = await Promise.all([
+      fetch('http://localhost:3000/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch('http://localhost:3000/api/tussentijdse-evaluaties/mentor', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ])
+    const meData = await meRes.json()
+    mentor.value = meData.user
+
+    const evalData = await evalRes.json()
+    if (!evalRes.ok) {
+      error.value = evalData.error || 'Kon evaluaties niet ophalen'
+      return
+    }
+    evaluaties.value = evalData.studenten || []
   } catch (err) {
     console.error(err)
+    error.value = 'Verbindingsfout met server.'
   } finally {
     loading.value = false
   }
@@ -53,21 +42,19 @@ function initialen(naam) {
 }
 
 function statusLabel(status) {
-  if (status === 'in_behandeling') return '⏳ In behandeling'
-  if (status === 'evaluatie_locked') return '🔒 Evaluatie locked'
-  if (status === 'afgerond') return '✓ Afgerond'
+  if (status === 'nog_niet_gestart') return '⏳ Nog niet gestart'
+  if (status === 'ingediend') return '✓ Ingediend'
   return status
 }
 
 function statusKlasse(status) {
-  if (status === 'in_behandeling') return 'badge oranje'
-  if (status === 'evaluatie_locked') return 'badge rood'
-  if (status === 'afgerond') return 'badge groen'
+  if (status === 'nog_niet_gestart') return 'badge oranje'
+  if (status === 'ingediend') return 'badge groen'
   return 'badge'
 }
 
 function gaNaarEvaluatie(item) {
-  router.push(`/mentor/student/${item.student_id}/eindevaluatie`)
+  router.push(`/mentor/student/${item.student_id}/feedback`)
 }
 
 async function logout() {
@@ -104,10 +91,12 @@ async function logout() {
     </header>
 
     <section class="content">
-      <h1>Evaluaties</h1>
-      <p class="subtitle">Status van evaluaties per stagiair</p>
+      <a class="back-link" @click="router.push('/mentor/evaluaties')">← Terug naar evaluatie-overzicht</a>
+      <h1>Tussentijdse evaluaties</h1>
+      <p class="subtitle">Status van tussentijdse evaluaties per stagiair</p>
 
       <div v-if="loading" class="loading">Laden...</div>
+      <div v-else-if="error" class="error-msg">{{ error }}</div>
 
       <div v-else class="table-card">
         <table>
@@ -116,7 +105,6 @@ async function logout() {
               <th>Stagiair</th>
               <th>Bedrijf</th>
               <th>Tussentijds</th>
-              <th>Eindscore</th>
               <th>Status</th>
               <th></th>
             </tr>
@@ -131,12 +119,11 @@ async function logout() {
               </td>
               <td>{{ item.bedrijf }}</td>
               <td>{{ item.tussentijds_score }}</td>
-              <td>{{ item.eindscore }}</td>
               <td><span :class="statusKlasse(item.status)">{{ statusLabel(item.status) }}</span></td>
               <td class="cel-arrow">→</td>
             </tr>
             <tr v-if="!evaluaties.length">
-              <td colspan="6" class="leeg">Geen stagiairs gekoppeld.</td>
+              <td colspan="5" class="leeg">Geen stagiairs gekoppeld.</td>
             </tr>
           </tbody>
         </table>
@@ -161,10 +148,13 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .logout-btn:hover { background: #7f1d1d; }
 
 .content { padding: 40px 64px 52px; }
+.back-link { color: #64748b; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-block; margin-bottom: 14px; }
+.back-link:hover { color: #991b1b; }
 .content h1 { margin: 0 0 6px; font-size: 28px; font-weight: 800; }
 .subtitle { margin: 0 0 28px; color: #64748b; font-size: 14px; }
 
 .loading { text-align: center; padding: 60px; color: #64748b; }
+.error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 12px 16px; font-size: 14px; font-weight: 600; }
 
 .table-card { background: white; border-radius: 22px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 14px 30px rgba(15,23,42,0.05); }
 table { width: 100%; border-collapse: collapse; }
@@ -178,7 +168,6 @@ td { padding: 20px 28px; border-top: 1px solid #f1f5f9; font-size: 14px; color: 
 
 .badge { padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .badge.oranje { background: #fef3c7; color: #b45309; }
-.badge.rood { background: #fee2e2; color: #991b1b; }
 .badge.groen { background: #dcfce7; color: #15803d; }
 
 .leeg { padding: 28px; color: #64748b; text-align: center; }

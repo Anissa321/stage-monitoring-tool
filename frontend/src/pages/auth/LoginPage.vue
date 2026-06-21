@@ -141,9 +141,12 @@ async function handleLogin() {
         })
         const overData = await overRes.json()
         const getekend = overData.overeenkomst?.status === 'volledig_getekend'
+        const stageGestart = overData.overeenkomst?.stage_gestart === true
         localStorage.setItem('overeenkomstGetekend', getekend ? 'true' : 'false')
+        localStorage.setItem('stageGestart', stageGestart ? 'true' : 'false')
       } catch {
         localStorage.setItem('overeenkomstGetekend', 'false')
+        localStorage.setItem('stageGestart', 'false')
       }
     } else if (data.user.rol === 'mentor') {
       try {

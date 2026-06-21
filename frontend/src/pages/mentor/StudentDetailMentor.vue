@@ -72,10 +72,7 @@ const studentHeeftGetekend = computed(() => !!overeenkomst.value?.student_handte
 const mentorHeeftGetekend = computed(() => !!overeenkomst.value?.mentor_handtekening)
 const volledigGetekend = computed(() => overeenkomst.value?.status === 'volledig_getekend')
 
-const logboekenIngevuld = computed(() => logboeken.value.filter(l => l.status !== 'niet_ingevuld').length)
-const logboekenAfgetekend = computed(() => logboeken.value.filter(l => l.status === 'goedgekeurd').length)
-const logboekenTotaal = computed(() => logboeken.value.length)
-
+// Bepaal status per week — INCLUSIEF afgekeurd, anders verdwijnt die status in de mist
 const logboekenPerWeek = computed(() => {
   const weken = {}
   logboeken.value.forEach(log => {
@@ -86,10 +83,11 @@ const logboekenPerWeek = computed(() => {
     weken[week].logs.push(log)
   })
 
-  // Bepaal status per week
   Object.values(weken).forEach(w => {
     const statussen = w.logs.map(l => l.status)
-    if (statussen.every(s => s === 'goedgekeurd')) {
+    if (statussen.some(s => s === 'afgekeurd')) {
+      w.status = 'afgekeurd'
+    } else if (statussen.every(s => s === 'goedgekeurd')) {
       w.status = 'goedgekeurd'
     } else if (statussen.some(s => s === 'ingediend')) {
       w.status = 'ingediend'
@@ -103,8 +101,18 @@ const logboekenPerWeek = computed(() => {
   return Object.values(weken).sort((a, b) => b.week - a.week)
 })
 
+// Weken-tellers ipv dagen-tellers
+const wekenTotaal = computed(() => logboekenPerWeek.value.length)
+const wekenIngevuld = computed(() =>
+  logboekenPerWeek.value.filter(w => w.status !== 'niet_ingevuld').length
+)
+const wekenAfgetekend = computed(() =>
+  logboekenPerWeek.value.filter(w => w.status === 'goedgekeurd' || w.status === 'afgekeurd').length
+)
+
 function weekStatusLabel(status) {
   if (status === 'goedgekeurd') return 'Goedgekeurd'
+  if (status === 'afgekeurd') return 'Afgekeurd'
   if (status === 'ingediend') return 'Ingediend'
   if (status === 'concept') return 'Concept'
   return 'Niet ingevuld'
@@ -112,6 +120,7 @@ function weekStatusLabel(status) {
 
 function weekStatusKlasse(status) {
   if (status === 'goedgekeurd') return 'badge green'
+  if (status === 'afgekeurd') return 'badge red'
   if (status === 'ingediend') return 'badge blue'
   if (status === 'concept') return 'badge orange'
   return 'badge gray'
@@ -250,17 +259,17 @@ async function logout() {
           <h3>Voortgang</h3>
           <div class="voortgang-rij">
             <span>Logboeken ingevuld</span>
-            <strong>{{ logboekenIngevuld }} / {{ logboekenTotaal }} dagen</strong>
+            <strong>{{ wekenIngevuld }} / {{ wekenTotaal }} weken</strong>
           </div>
           <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: logboekenTotaal ? (logboekenIngevuld / logboekenTotaal * 100) + '%' : '0%' }"></div>
+            <div class="progress-fill" :style="{ width: wekenTotaal ? (wekenIngevuld / wekenTotaal * 100) + '%' : '0%' }"></div>
           </div>
           <div class="voortgang-rij">
             <span>Afgetekend door mentor</span>
-            <strong>{{ logboekenAfgetekend }} / {{ logboekenIngevuld }}</strong>
+            <strong>{{ wekenAfgetekend }} / {{ wekenIngevuld }} weken</strong>
           </div>
           <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: logboekenIngevuld ? (logboekenAfgetekend / logboekenIngevuld * 100) + '%' : '0%' }"></div>
+            <div class="progress-fill" :style="{ width: wekenIngevuld ? (wekenAfgetekend / wekenIngevuld * 100) + '%' : '0%' }"></div>
           </div>
           <div class="voortgang-status-rij">
             <span>Stageovereenkomst</span>
@@ -446,6 +455,7 @@ nav a:hover, nav a.active { background: #fee2e2; color: #991b1b; }
 .green { background: #dcfce7; color: #15803d; }
 .blue { background: #dbeafe; color: #1d4ed8; }
 .orange { background: #fef3c7; color: #b45309; }
+.red { background: #fee2e2; color: #991b1b; }
 .gray { background: #f1f5f9; color: #64748b; }
 .volledig-banner { margin-top: 14px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; padding: 14px 18px; border-radius: 12px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pdf-btn { background: #047857; color: white; padding: 8px 16px; border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 700; }

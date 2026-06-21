@@ -69,7 +69,7 @@ Fase 5a: Tussentijdse evaluatie/bespreking
 Fase 5b: Finale evaluatie op competenties + eindoverzicht
 🗂️ ERD
 
-![ERD Stage Monitoring Tool](docs/erd.png)
+![ERD Stage Monitoring Tool](docs/ERD_Stage_Monitoring_Tool.png)
 
 🛠️ Technologieën
 Laag	Technologie

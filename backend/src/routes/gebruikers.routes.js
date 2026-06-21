@@ -147,20 +147,115 @@ router.post('/', authMiddleware, requireRole('administratie'), async (req, res) 
   }
 })
 
-// DELETE /api/gebruikers/:id — admin verwijdert account
+// Helper: voert een delete uit en gooit een duidelijke fout als het misloopt
+async function veiligVerwijderen(stap, queryBuilder) {
+  const { error } = await queryBuilder
+  if (error) {
+    throw new Error(`Stap "${stap}" mislukt: ${error.message}`)
+  }
+}
+
+// Helper: verwijdert alle gekoppelde activiteit/data van een gebruiker, afhankelijk van zijn rol
+// Volgorde is cruciaal: altijd eerst de "kinderen" (rijen die naar iets anders verwijzen),
+// dan pas de "ouders" (de rijen waar die kinderen naar verwezen).
+async function verwijderGekoppeldeData(userId, rol) {
+  if (rol === 'student') {
+    // 1. Logboek-gerelateerd (kinderen eerst)
+    const { data: logboeken } = await supabaseAdmin
+      .from('logbooks')
+      .select('id')
+      .eq('student_id', userId)
+
+    const logboekIds = (logboeken || []).map(l => l.id)
+    if (logboekIds.length > 0) {
+      await veiligVerwijderen('logbook_competencies', supabaseAdmin.from('logbook_competencies').delete().in('logbook_id', logboekIds))
+      await veiligVerwijderen('logbook_reviews', supabaseAdmin.from('logbook_reviews').delete().in('logbook_id', logboekIds))
+    }
+    await veiligVerwijderen('logbooks', supabaseAdmin.from('logbooks').delete().eq('student_id', userId))
+
+    // 2. Evaluaties en rapporten
+    await veiligVerwijderen('tussentijdse_evaluaties', supabaseAdmin.from('tussentijdse_evaluaties').delete().eq('student_id', userId))
+    await veiligVerwijderen('student_evaluaties', supabaseAdmin.from('student_evaluaties').delete().eq('student_id', userId))
+    await veiligVerwijderen('tussentijdse_rapporten', supabaseAdmin.from('tussentijdse_rapporten').delete().eq('student_id', userId))
+
+    // 3. Stageovereenkomst (verwijst naar stagevoorstel, dus VOOR het stagevoorstel zelf)
+    await veiligVerwijderen('stageovereenkomsten', supabaseAdmin.from('stageovereenkomsten').delete().eq('student_id', userId))
+
+    // 4. Stagevoorstel-aanpassingen (verwijzen naar stagevoorstel, dus VOOR het stagevoorstel zelf)
+    const { data: voorstellen } = await supabaseAdmin
+      .from('stagevoorstellen')
+      .select('id')
+      .eq('student_id', userId)
+
+    const voorstelIds = (voorstellen || []).map(v => v.id)
+    if (voorstelIds.length > 0) {
+      await veiligVerwijderen('stagevoorstel_aanpassingen', supabaseAdmin.from('stagevoorstel_aanpassingen').delete().in('stagevoorstel_id', voorstelIds))
+    }
+
+    // 5. Nu pas het stagevoorstel zelf
+    await veiligVerwijderen('stagevoorstellen', supabaseAdmin.from('stagevoorstellen').delete().eq('student_id', userId))
+
+    // 6. Koppelingen met mentor/docent
+    await veiligVerwijderen('mentor_studenten (student)', supabaseAdmin.from('mentor_studenten').delete().eq('student_id', userId))
+    await veiligVerwijderen('docent_studenten (student)', supabaseAdmin.from('docent_studenten').delete().eq('student_id', userId))
+
+  } else if (rol === 'mentor') {
+    await veiligVerwijderen('logbook_reviews (mentor)', supabaseAdmin.from('logbook_reviews').delete().eq('mentor_id', userId))
+    await veiligVerwijderen('tussentijdse_evaluaties (mentor)', supabaseAdmin.from('tussentijdse_evaluaties').delete().eq('mentor_id', userId))
+    await veiligVerwijderen('mentor_studenten (mentor)', supabaseAdmin.from('mentor_studenten').delete().eq('mentor_id', userId))
+
+    // Stagevoorstellen niet verwijderen, enkel loskoppelen — de student moet zijn voorstel behouden
+    await veiligVerwijderen('stagevoorstellen mentor_id loskoppelen', supabaseAdmin.from('stagevoorstellen').update({ mentor_id: null }).eq('mentor_id', userId))
+
+  } else if (rol === 'docent') {
+    await veiligVerwijderen('logbook_reviews (docent)', supabaseAdmin.from('logbook_reviews').delete().eq('docent_id', userId))
+    await veiligVerwijderen('tussentijdse_rapporten (docent)', supabaseAdmin.from('tussentijdse_rapporten').delete().eq('docent_id', userId))
+    await veiligVerwijderen('docent_studenten (docent)', supabaseAdmin.from('docent_studenten').delete().eq('docent_id', userId))
+
+    await veiligVerwijderen('stagevoorstellen docent_id loskoppelen', supabaseAdmin.from('stagevoorstellen').update({ docent_id: null }).eq('docent_id', userId))
+  }
+}
+
+// DELETE /api/gebruikers/:id — admin verwijdert account + alle gekoppelde data
 router.delete('/:id', authMiddleware, requireRole('administratie'), async (req, res) => {
   try {
     const { id } = req.params
 
-    await supabaseAdmin.from('profiles').delete().eq('id', id)
+    const { data: profiel } = await supabaseAdmin
+      .from('profiles')
+      .select('id, rol')
+      .eq('id', id)
+      .single()
 
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(id)
-    if (error) return res.status(500).json({ error: 'Kon gebruiker niet verwijderen' })
+    if (!profiel) {
+      return res.status(404).json({ error: 'Gebruiker niet gevonden' })
+    }
+
+    // Eerst alle gekoppelde activiteit/data opruimen — gooit een duidelijke fout als een stap faalt
+    await verwijderGekoppeldeData(id, profiel.rol)
+
+    // Dan het profiel zelf
+    const { error: profileDeleteError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', id)
+
+    if (profileDeleteError) {
+      console.error('Profiel verwijderen error:', profileDeleteError)
+      return res.status(500).json({ error: 'Kon profiel niet verwijderen: ' + profileDeleteError.message })
+    }
+
+    // Tot slot het Auth-account
+    const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(id)
+    if (authDeleteError) {
+      console.error('Auth account verwijderen error:', authDeleteError)
+      return res.status(500).json({ error: 'Profiel verwijderd, maar kon Auth-account niet verwijderen: ' + authDeleteError.message })
+    }
 
     res.json({ success: true })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: 'Server fout' })
+    console.error('Gebruiker verwijderen error:', err)
+    res.status(500).json({ error: err.message || 'Server fout' })
   }
 })
 
