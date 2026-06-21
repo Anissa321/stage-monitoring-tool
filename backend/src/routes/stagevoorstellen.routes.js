@@ -316,6 +316,23 @@ router.put('/:id/beoordelen', authMiddleware, requireRole('stagecommissie'), asy
 router.get('/:id/aanpassingen', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params
+    const { rol, id: userId } = req.user
+
+    // Eigendoms-/toegangscheck: enkel de eigen student, of mentor/docent/commissie/admin mogen dit zien
+    if (rol === 'student') {
+      const { data: voorstel } = await supabaseAdmin
+        .from('stagevoorstellen')
+        .select('student_id')
+        .eq('id', id)
+        .single()
+
+      if (!voorstel || voorstel.student_id !== userId) {
+        return res.status(403).json({ error: 'Geen toegang' })
+      }
+    } else if (!['stagecommissie', 'docent', 'mentor', 'administratie'].includes(rol)) {
+      return res.status(403).json({ error: 'Geen toegang' })
+    }
+
     const { data, error } = await supabaseAdmin
       .from('stagevoorstel_aanpassingen')
       .select('*')
